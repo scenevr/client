@@ -1,0 +1,11 @@
+{
+  "name": "mv-web-client",
+  "version": "0.0.1",
+  "dependencies": {
+    "three": "0.66.2"
+  },
+  "scripts": {
+    "start": "watchify --debug -t coffeeify --extension='.coffee' index.coffee -o bundle.js",
+    "test": "NODE_ENV=test mocha spec/*_spec.js"
+  }
+}

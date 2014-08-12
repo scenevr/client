@@ -1,3 +1,6 @@
 Client = require("./app/src/client")
 
-$ -> window.client = new Client
+$ -> 
+  setTimeout(
+    -> window.client = new Client
+  , 250)

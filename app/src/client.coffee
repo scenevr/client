@@ -11,9 +11,6 @@ class Client
       position : 'relative'
     }
 
-    console.log @container
-
-
     # fixme, sample values...
     @avatar = { }
 
@@ -140,7 +137,7 @@ class Client
     $("#instructions").hide()
 
   addFloor: ->
-    floorTexture = new THREE.ImageUtils.loadTexture( '/public/images/grid.png' )
+    floorTexture = new THREE.ImageUtils.loadTexture( '/images/grid.png' )
     floorTexture.wrapS = floorTexture.wrapT = THREE.RepeatWrapping;
     floorTexture.repeat.set( 100, 100 )
 

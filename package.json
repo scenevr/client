@@ -1,8 +1,10 @@
 {
-  "name": "mv-web-client",
+  "name": "ss-web-client",
   "version": "0.0.1",
   "dependencies": {
-    "three": "0.66.2"
+    "three": "0.66.2",
+    "watchify": "~2.1.1",
+    "coffeeify": "~0.7.0"
   },
   "scripts": {
     "start": "watchify --debug -t coffeeify --extension='.coffee' index.coffee -o bundle.js",

@@ -1,9 +1,13 @@
 Utils = {
-  attributeToVector: (attributeString) ->
-    [x,y,z] = attributeString.split(' ').map(parseFloat)
-    new THREE.Vector3 x,y,z
+  parseVector: (value) ->
+    vector = new THREE.Vector3().fromArray(value.split(' ').map(parseFloat))
 
-  attributeToEuler: (attributeString) ->
+    if isFinite(vector.length())
+      vector
+    else
+      raise "Invalid vector string"
+
+  parseEuler: (attributeString) ->
     [x,y,z] = attributeString.split(' ').map(parseFloat)
     new THREE.Euler x,y,z
 

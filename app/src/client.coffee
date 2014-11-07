@@ -6,9 +6,6 @@ class Client
       position : 'relative'
     }
 
-    @connector = new Connector(this, @scene, @camera)
-    @connector.connect()
-    
     @width = @container.width()
     @height = @container.height()
 
@@ -16,8 +13,8 @@ class Client
     @stats.setMode(0)
 
     @stats.domElement.style.position = 'absolute';
-    @stats.domElement.style.left = '0px';
-    @stats.domElement.style.top = '0px';
+    @stats.domElement.style.left = '10px';
+    @stats.domElement.style.top = '10px';
     @container.append(@stats.domElement)
 
     VIEW_ANGLE = 45
@@ -28,13 +25,16 @@ class Client
     @scene = new THREE.Scene()
     @scene.fog = new THREE.Fog( 0xffffff, 500, 700 );
 
+    @connector = new Connector(this)
+    @connector.connect()
+    
     @camera = new THREE.PerspectiveCamera( VIEW_ANGLE, ASPECT, NEAR, FAR)
-    @camera.position.set(0,10,0)
+    @camera.position.set(0,1.5,0)
     @scene.add(@camera)
 
-    @renderer = new THREE.WebGLRenderer( {antialias:true} )
+    @renderer = new THREE.WebGLRenderer( {antialias:false} )
     @renderer.setSize(@width, @height)
-    @renderer.shadowMapEnabled = true
+    @renderer.shadowMapEnabled = false
     @renderer.setClearColor( 0xffffff, 1)
 
     @projector = new THREE.Projector()
@@ -45,7 +45,7 @@ class Client
     @addControls()
     @addInstructions()
 
-    axes = new THREE.AxisHelper(10)
+    axes = new THREE.AxisHelper(2)
     @scene.add(axes)
 
     @container.append( @renderer.domElement );
@@ -76,14 +76,14 @@ class Client
 
   addInstructions: ->
     @instructions = $('<div id="instructions" class="overlay">
-      <h1>Click to play</h1>
+      <h1>Click to join</h1>
 
-      <div class="keys">
+      <!--div class="keys">
         <span class="key w">W</span>
         <span class="key a">A</span>
         <span class="key s">S</span>
         <span class="key d">D</span>
-      </div>
+      </div-->
 
       <small>
         (W, A, S, D = Move, MOUSE = Look around)
@@ -128,7 +128,7 @@ class Client
     floorTexture.repeat.set( 100, 100 )
 
     floorMaterial = new THREE.MeshBasicMaterial( { map: floorTexture } );
-    floorGeometry = new THREE.PlaneGeometry(1000, 1000, 1, 1)
+    floorGeometry = new THREE.PlaneGeometry(100, 100, 1, 1)
     
     @floor = new THREE.Mesh(floorGeometry, floorMaterial)
     @floor.position.y = 0
@@ -159,28 +159,6 @@ class Client
     ambientLight = new THREE.AmbientLight(0x111111)
     @scene.add(ambientLight)
 
-  generateMesh: (element) ->
-    element.tmodel = {} # some kind of stub - maybe a Promise?
-
-    loader = new THREE.JSONLoader
-    loader.crossOrigin = ""
-
-    if element instanceof Box
-      material = new THREE.MeshLambertMaterial( { color: 0xFF00aa } )
-      cubeGeometry = new THREE.CubeGeometry(1, 1, 1, 1, 1, 1)
-      mesh = new THREE.Mesh(cubeGeometry, material)
-      mesh.castShadow = true
-      @scene.add(mesh) 
-      element.tmodel = mesh
-
-    if element instanceof Model
-      loader.load element.src, (geometry, materials) =>
-        material = new THREE.MeshFaceMaterial( materials )
-        mesh = new THREE.Mesh(geometry,material)
-        mesh.castShadow = true
-        @scene.add(mesh)
-        element.tmodel = mesh
-
   getPlayerDropPoint: ->
     v = new THREE.Vector3(0,0,-20)
 
@@ -191,8 +169,6 @@ class Client
   detectCollision: (x,y) ->
     vector = new THREE.Vector3( ( x / @width ) * 2 - 1, - ( y / @height ) * 2 + 1, 0.5 )
 
-    console.log @camera
-
     @projector.unprojectVector( vector, @camera )
     raycaster = new THREE.Raycaster( @camera.position, vector.sub( @camera.position ).normalize() )
     intersects = raycaster.intersectObjects([@floor])
@@ -202,115 +178,9 @@ class Client
 
     console.log 'sadface'
 
-  assetServerHost: ->
-    window.location.host.split(':')[0] + ":8090"
-
-  addHomer: ->
-    loader = new THREE.JSONLoader
-
-    # loader.load "//#{@assetServerHost()}/models/homer.js", (geometry, materials) =>
-    loader.load '/public/models/homer.js', (geometry, materials) =>
-      material = new THREE.MeshFaceMaterial( materials )
-
-      # create a mesh with models geometry and material
-      mesh = new THREE.Mesh(
-        geometry,
-        material
-      )
-      #   material
-      # )
-      
-      mesh.rotation.y = -Math.PI/2
-      mesh.castShadow = true
-      mesh.scale.x = mesh.scale.y = mesh.scale.z = 40.0
-      
-      @scene.add(mesh)
-
-      @selectModel(mesh)
-
-  appendElement: (element) ->
-    @addModel element.getSrcUrl(), element.position
-    
-  addModel: (url, position) ->
-    loader = new THREE.JSONLoader
-
-    loader.load url, (geometry, material) =>
-      # console.log(material)
-
-      # if !material
-      #   material = new THREE.MeshLambertMaterial( { color: 0xDDDDDD } )
-      
-      # create a mesh with models geometry and material
-      mesh = new THREE.Mesh(
-        geometry,
-        new THREE.MeshFaceMaterial(material)
-      )
-      
-      mesh.rotation.y = -Math.PI/2
-      mesh.castShadow = true
-      mesh.position = position
-      mesh.scale.x = mesh.scale.y = mesh.scale.z = 10.0
-      
-      window.mesh = mesh
-      
-      @scene.add(mesh)
-
-      @selectModel(mesh)
-
-  selectModel: (mesh) ->
-    return
-
-    gui = new dat.GUI()
-
-    f1 = gui.addFolder('Rotation')
-    f1.add(mesh.rotation, 'x', -Math.PI, Math.PI)
-    f1.add(mesh.rotation, 'y', -Math.PI, Math.PI)
-    f1.add(mesh.rotation, 'z', -Math.PI, Math.PI)
-
-    range = 250
-    f2 = gui.addFolder('Position')
-    f2.add(mesh.position, 'x', mesh.position.x - range, mesh.position.x + range)
-    f2.add(mesh.position, 'y', mesh.position.y - range, mesh.position.y + range)
-    f2.add(mesh.position, 'z', mesh.position.z - range, mesh.position.z + range)
-
-    min = 0.1
-    max = 100
-    f3 = gui.addFolder('Scale')
-    f3.add(mesh.scale, 'x', min, max)
-    f3.add(mesh.scale, 'y', min, max)
-    f3.add(mesh.scale, 'z', min, max)
-
-
-  addSuzanne: (position) ->
-    loader = new THREE.ColladaLoader()
-    loader.options.convertUpAxis = true
-    loader.load '/public/models/suzanne.dae', (collada) =>
-      for model in collada.scene.children when model instanceof THREE.Mesh
-        # skin = collada.skins[0]
-        model.scale.x = model.scale.y = model.scale.z = 20.0
-        model.rotation.x = Math.PI / 2
-        model.position = position
-        model.castShadow = true
-        # dae.updateMatrix()
-        @scene.add(model)
-        # alert "?"
-
-
   tick: =>
     @stats.begin()
 
-    # Animate between network updates
-    # TWEEN.update()
-
-    for key, element of @scene.childNodes
-      if !element.tmodel
-        @generateMesh(element)
-
-      element.tmodel.position = element.position
-      element.tmodel.rotation = element.rotation
-      element.tmodel.scale = element.scale
-
-    # @controls.update()
     @controls.update( Date.now() - @time )
     @renderer.render( @scene, @camera )
 

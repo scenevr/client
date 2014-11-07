@@ -12,7 +12,7 @@ THREE.PointerLockControls = function ( camera ) {
 	pitchObject.add( camera );
 
 	var yawObject = new THREE.Object3D();
-	yawObject.position.y = 10;
+	yawObject.position.y = 1.5;
 	yawObject.add( pitchObject );
 
 	var moveForward = false;
@@ -150,7 +150,7 @@ THREE.PointerLockControls = function ( camera ) {
 
 		velocity.y -= 0.25 * delta;
 
-		var speed = 1.0;
+		var speed = 0.1;
 
 		velocity.z = 0;
 		if ( moveForward ) velocity.z = -speed * delta;
@@ -170,15 +170,7 @@ THREE.PointerLockControls = function ( camera ) {
 		yawObject.translateY( velocity.y ); 
 		yawObject.translateZ( velocity.z );
 
-		if ( yawObject.position.y < 10 ) {
-
-			velocity.y = 0;
-			yawObject.position.y = 10;
-
-			canJump = true;
-
-		}
-
+		yawObject.position.y = 1.5;
 	};
 
 };

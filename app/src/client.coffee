@@ -1,10 +1,7 @@
-Scene = require("./scene")
 Connector = require("./connector")
 
 class Client
   constructor: ->
-    @scene = new Scene
-
     @container = $("#scene-view").css {
       position : 'relative'
     }
@@ -28,12 +25,12 @@ class Client
     NEAR = 0.1
     FAR = 700
 
-    @tscene = new THREE.Scene()
-    @tscene.fog = new THREE.Fog( 0xffffff, 500, 700 );
+    @scene = new THREE.Scene()
+    @scene.fog = new THREE.Fog( 0xffffff, 500, 700 );
 
     @camera = new THREE.PerspectiveCamera( VIEW_ANGLE, ASPECT, NEAR, FAR)
     @camera.position.set(0,10,0)
-    @tscene.add(@camera)
+    @scene.add(@camera)
 
     @renderer = new THREE.WebGLRenderer( {antialias:true} )
     @renderer.setSize(@width, @height)
@@ -49,7 +46,7 @@ class Client
     @addInstructions()
 
     axes = new THREE.AxisHelper(10)
-    @tscene.add(axes)
+    @scene.add(axes)
 
     @container.append( @renderer.domElement );
 
@@ -138,35 +135,29 @@ class Client
     @floor.rotation.x = -Math.PI / 2
     @floor.receiveShadow = true
 
-    @tscene.add(@floor)
+    @scene.add(@floor)
 
   addControls: ->
-    # @controls = new THREE.OrbitControls( @camera, @renderer.domElement )
     @controls = new THREE.PointerLockControls ( @camera )
     @controls.enabled = false
-    @tscene.add(@controls.getObject())
+    @scene.add(@controls.getObject())
 
   getAvatarObject: ->
     @controls.getObject()
 
   addLights: ->
-    # light = new THREE.PointLight(0xffffff)
-    # light.position.set(0,250,0)
-    # @tscene.add(light)
-
     dirLight = new THREE.DirectionalLight( 0xffffff, 1.0)
     dirLight.position.set( -1, 0.75, 1 )
     dirLight.position.multiplyScalar( 200)
     dirLight.name = "dirlight"
-    # dirLight.shadowCameraVisible = true;
 
-    @tscene.add( dirLight )
+    @scene.add( dirLight )
 
     dirLight.castShadow = true;
     dirLight.shadowMapWidth = dirLight.shadowMapHeight = 512;
 
     ambientLight = new THREE.AmbientLight(0x111111)
-    @tscene.add(ambientLight)
+    @scene.add(ambientLight)
 
   generateMesh: (element) ->
     element.tmodel = {} # some kind of stub - maybe a Promise?
@@ -179,7 +170,7 @@ class Client
       cubeGeometry = new THREE.CubeGeometry(1, 1, 1, 1, 1, 1)
       mesh = new THREE.Mesh(cubeGeometry, material)
       mesh.castShadow = true
-      @tscene.add(mesh) 
+      @scene.add(mesh) 
       element.tmodel = mesh
 
     if element instanceof Model
@@ -187,7 +178,7 @@ class Client
         material = new THREE.MeshFaceMaterial( materials )
         mesh = new THREE.Mesh(geometry,material)
         mesh.castShadow = true
-        @tscene.add(mesh)
+        @scene.add(mesh)
         element.tmodel = mesh
 
   getPlayerDropPoint: ->
@@ -233,7 +224,7 @@ class Client
       mesh.castShadow = true
       mesh.scale.x = mesh.scale.y = mesh.scale.z = 40.0
       
-      @tscene.add(mesh)
+      @scene.add(mesh)
 
       @selectModel(mesh)
 
@@ -262,7 +253,7 @@ class Client
       
       window.mesh = mesh
       
-      @tscene.add(mesh)
+      @scene.add(mesh)
 
       @selectModel(mesh)
 
@@ -301,7 +292,7 @@ class Client
         model.position = position
         model.castShadow = true
         # dae.updateMatrix()
-        @tscene.add(model)
+        @scene.add(model)
         # alert "?"
 
 
@@ -321,7 +312,7 @@ class Client
 
     # @controls.update()
     @controls.update( Date.now() - @time )
-    @renderer.render( @tscene, @camera )
+    @renderer.render( @scene, @camera )
 
     @stats.end()
 

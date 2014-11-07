@@ -1,5 +1,3 @@
-Element = require('./element')
-
 class Connector
   constructor: (@client, @scene, @camera, host, port) ->
     @host = host || window.location.host.split(":")[0]

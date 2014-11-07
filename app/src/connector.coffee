@@ -1,25 +1,11 @@
-Packets = require('./packets')
 Element = require('./element')
-
-class ConnectorAdapter
-  constructor: (@connector) ->
-    # ...
-
-  addElement: (elementId, modelId, positionX, positionY, positionZ, scaleX, scaleY, scaleZ) ->
-    element = new Element
-    element.id = elementId
-    element.position = new THREE.Vector3 positionX, positionY, positionZ
-    element.scale = new THREE.Vector3 scaleX, scaleY, scaleZ
-    element.modelId = modelId
-
-    @connector.client.appendElement(element)
 
 class Connector
   constructor: (@client, @scene, @camera, host, port) ->
     @host = host || window.location.host.split(":")[0]
     @port = port || 8080
     @adapter = new ConnectorAdapter(this)
-    @protocol = "mv-protocol"
+    @protocol = "scene-server"
     @packets = []
 
   connect: ->
@@ -37,34 +23,13 @@ class Connector
   sendPacket: (packet) ->
     @packets.push packet
 
-  dispatchPackets: ->
-    message = JSON.stringify(@packets)
-
-    console.log message
-
-    @ws.send(message)
-
-  authenticate: ->
-    # packet = new Packets.packets.Authenticate(
-    #   [null, "ben", "some-credentials-here"]
-    # )
-    # @sendPacket(packet)
+  # dispatchPackets: ->
+  #   message = JSON.stringify(@packets)
+  #   console.log message
+  #   @ws.send(message)
 
   tick: =>
-    avatar = @client.getAvatarObject()
-
-    # packet = new Packets.packets.Update(
-    #   [null, @client.avatar.id, avatar.position.x, avatar.position.y, avatar.position.z, avatar.rotation.x, avatar.rotation.y, avatar.rotation.z]
-    # )
-    # 
-    # Don't send client updates until we have authenticated and we have an id for our avatar
-    # if @client.avatar.id
-    #   sendPacket(packet.toWireFormat())
-
-    if @packets.length > 0
-      @dispatchPackets()
-
-    @packets = []
+    # send location..
 
   onMessage: (e) =>
     messages = JSON.parse(e.data)
@@ -76,12 +41,5 @@ class Connector
         @adapter[message.method].apply(@adapter, message.args)
       else
         console.log "Invalid message recieved " + JSON.stringify(message)
-
-
-      # packetId = message[0]
-      # klass = Packets.dictionary[packetId]
-
-      # packet = new klass(message)
-      # packet.process(@scene, @client)
   
 module.exports = Connector

@@ -1,7 +1,6 @@
-Element = require("../element")
-
-class Box extends Element
-  nodeName: 'box'
-  @nodeName: 'box'
-
+class Box
+  constructor: ->
+    @position = THREE.Vector3
+    @mesh = null
+    
 module.exports = Box

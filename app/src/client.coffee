@@ -1,24 +1,17 @@
 Scene = require("./scene")
 Connector = require("./connector")
-Uploader = require("./uploader")
-Model = require("./elements/model")
 
 class Client
   constructor: ->
     @scene = new Scene
 
-    @container = $("#world-canvas").addClass('metaverse-canvas').css {
+    @container = $("#scene-view").css {
       position : 'relative'
     }
-
-    # fixme, sample values...
-    @avatar = { }
 
     @connector = new Connector(this, @scene, @camera)
     @connector.connect()
     
-    @uploader = new Uploader(this)
-
     @width = @container.width()
     @height = @container.height()
 
@@ -55,14 +48,10 @@ class Client
     @addControls()
     @addInstructions()
 
-    axes = new THREE.AxisHelper(100)
+    axes = new THREE.AxisHelper(10)
     @tscene.add(axes)
 
     @container.append( @renderer.domElement );
-
-    # @addSuzanne(new THREE.Vector3 0, 0, 0)
-
-    # @addModel("/models/homer/model.js", new THREE.Vector3(0, 0, 0))
 
     @tick()
 

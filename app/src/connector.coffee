@@ -36,8 +36,8 @@ class Connector
       do (message) =>
         el = $(message)
         uuid = el.attr('uuid')
-        
-        newPosition = Utils.parseVector(el.attr("position"))
+
+        newPosition = el.attr("position") && Utils.parseVector(el.attr("position"))
 
         if !(obj = @scene.getObjectById(uuid))
           geometry = new THREE.BoxGeometry( 1, 1, 1 )
@@ -47,16 +47,19 @@ class Connector
           obj.position = newPosition
           @scene.add(obj)
 
-        startPosition = obj.position.clone()
-
-        if !startPosition.equals(newPosition)
-          tween = new TWEEN.Tween(startPosition)
-          tween.to(newPosition, 500)
-            .onUpdate(-> obj.position = new THREE.Vector3(@x, @y, @z))
-            .easing(TWEEN.Easing.Linear.None)
-            .start()
+        if el.is("box")
+          startPosition = obj.position.clone()
+          if !startPosition.equals(newPosition)
+            tween = new TWEEN.Tween(startPosition)
+            tween.to(newPosition, 500)
+              .onUpdate(-> obj.position = new THREE.Vector3(@x, @y, @z))
+              .easing(TWEEN.Easing.Linear.None)
+              .start()
 
         if el.is("box")
           obj.material = new THREE.MeshLambertMaterial( {color: el.attr('color') } )
+
+        if el.is("dead")
+          @scene.remove(obj)
   
 module.exports = Connector

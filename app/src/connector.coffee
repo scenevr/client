@@ -1,4 +1,5 @@
 Utils = require "./utils"
+TWEEN = require("tween.js")
 
 class Connector
   constructor: (@client, host, port) ->
@@ -32,20 +33,30 @@ class Connector
 
   onMessage: (e) =>
     for message in JSON.parse(e.data)
-      el = $(message)
-      
-      uuid = el.attr('uuid')
+      do (message) =>
+        el = $(message)
+        uuid = el.attr('uuid')
+        
+        newPosition = Utils.parseVector(el.attr("position"))
 
-      if !(obj = @scene.getObjectById(uuid))
-        geometry = new THREE.BoxGeometry( 1, 1, 1 )
-        material = new THREE.MeshLambertMaterial( {color: '#eeeeee' } )
-        obj = new THREE.Mesh( geometry, material )
-        obj.id = uuid
-        @scene.add(obj)
+        if !(obj = @scene.getObjectById(uuid))
+          geometry = new THREE.BoxGeometry( 1, 1, 1 )
+          material = new THREE.MeshLambertMaterial( {color: '#eeeeee' } )
+          obj = new THREE.Mesh( geometry, material )
+          obj.id = uuid
+          obj.position = newPosition
+          @scene.add(obj)
 
-      obj.position = Utils.parseVector(el.attr("position"))
+        startPosition = obj.position.clone()
 
-      if el.is("box")
-        obj.material = new THREE.MeshLambertMaterial( {color: el.attr('color') } )
+        if !startPosition.equals(newPosition)
+          tween = new TWEEN.Tween(startPosition)
+          tween.to(newPosition, 500)
+            .onUpdate(-> obj.position = new THREE.Vector3(@x, @y, @z))
+            .easing(TWEEN.Easing.Linear.None)
+            .start()
+
+        if el.is("box")
+          obj.material = new THREE.MeshLambertMaterial( {color: el.attr('color') } )
   
 module.exports = Connector

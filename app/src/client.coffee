@@ -1,4 +1,5 @@
 Connector = require("./connector")
+TWEEN = require("tween.js")
 
 class Client
   constructor: ->
@@ -180,6 +181,8 @@ class Client
 
   tick: =>
     @stats.begin()
+
+    TWEEN.update()
 
     @controls.update( Date.now() - @time )
     @renderer.render( @scene, @camera )

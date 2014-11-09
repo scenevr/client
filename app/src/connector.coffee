@@ -9,7 +9,7 @@ class Connector
     @packets = []
     @scene = @client.scene
     @uuid = null
-    @spawnedYet = false
+    @spawned = false
 
   setPosition: (v) ->
     @client.getPlayerObject().position = v
@@ -25,8 +25,8 @@ class Connector
       clearInterval @interval
     @ws.onmessage = @onMessage
 
-  sendMessage: (message) ->
-    xml = "<packet>" + message + "<packet>"
+  sendMessage: (el) ->
+    xml = "<packet>" + $("<packet />").append(el).html() + "<packet>"
     console.log "> #{xml}"
     @ws.send(xml)
 
@@ -36,7 +36,9 @@ class Connector
   #   @ws.send(message)
 
   tick: =>
-    # send location..
+    if @spawned
+      # send location..
+      @sendMessage $("<player />").attr("position", @client.getPlayerObject().position.toArray().join(" "))
 
   onMessage: (e) =>
     # console.log e.data
@@ -62,9 +64,9 @@ class Connector
         if !(obj = @scene.getObjectById(uuid))
           if el.is("spawn")
             obj = new THREE.Object3D()
-            if !@spawnedYet
+            if !@spawned
               @setPosition newPosition
-              @spawnedYet = true
+              @spawned = true
 
           else if el.is("box")
             geometry = new THREE.BoxGeometry( 1, 1, 1 )

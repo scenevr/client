@@ -54,13 +54,14 @@ class Connector extends EventEmitter
           console.log "Unrecognized event #{message}"
 
       else if uuid = el.attr('uuid')
-        if el.is("dead") and obj = @scene.getObjectById(uuid)
-          @scene.remove(obj)
+        if el.is("dead") 
+          if obj = @scene.getObjectByName(uuid)
+            @scene.remove(obj)
           return
 
         newPosition = el.attr("position") && Utils.parseVector(el.attr("position"))
 
-        if !(obj = @scene.getObjectById(uuid))
+        if !(obj = @scene.getObjectByName(uuid))
           if el.is("spawn")
             obj = new THREE.Object3D()
             if !@spawned
@@ -85,20 +86,24 @@ class Connector extends EventEmitter
             material = new THREE.MeshLambertMaterial( {color: '#999999' } )
             obj = new THREE.Mesh( geometry, material )
 
-          obj.id = uuid
-          obj.position = newPosition
+          else
+            console.log "Unknown element..."
+            console.log el[0].outerHTML
+
+          obj.name = uuid
+          obj.position.copy(newPosition)
           @scene.add(obj)
 
         if el.is("spawn")
           # Don't tween spawn
-          obj.position = newPosition
+          obj.position.copy(newPosition)
         else if el.is("box") or el.is("player")
           # Tween away
           startPosition = obj.position.clone()
           if !startPosition.equals(newPosition)
             tween = new TWEEN.Tween(startPosition)
             tween.to(newPosition, 500)
-              .onUpdate(-> obj.position = new THREE.Vector3(@x, @y, @z))
+              .onUpdate(-> obj.position.set(@x, @y, @z))
               .easing(TWEEN.Easing.Linear.None)
               .start()
 

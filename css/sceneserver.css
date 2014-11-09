@@ -6,7 +6,7 @@ body,html{
 }
 
 body{
-  font-family: sans-serif;
+  font-family: 'helvetica neue', sans-serif;
   font-size: 0.85em;
 }
 
@@ -20,11 +20,18 @@ header{
 header h1{
   margin: 0;
   background: white;
-  color: #555;
-  border: 1px solid #ccc;
+  color: #888;
+  border: 1px solid #bbb;
+  box-shadow: 1px 1px 3px rgba(0,0,0,0.2);
   font-size: 1.5em;
   border-radius: 3px;
   padding: 10px;
+  font-weight: 200;
+  font-size: 13px;
+  text-align: center;
+}
+header h1 span{
+  font-size: 0.95em;
 }
 
 #stats{

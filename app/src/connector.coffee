@@ -8,6 +8,11 @@ class Connector
     @protocol = "scene-server"
     @packets = []
     @scene = @client.scene
+    @uuid = null
+    @spawnedYet = false
+
+  setPosition: (v) ->
+    @client.getPlayerObject().position = v
 
   connect: ->
     @ws = new WebSocket("ws://#{@host}:#{@port}/", @protocol);
@@ -20,8 +25,10 @@ class Connector
       clearInterval @interval
     @ws.onmessage = @onMessage
 
-  sendPacket: (packet) ->
-    @packets.push packet
+  sendMessage: (message) ->
+    xml = "<packet>" + message + "<packet>"
+    console.log "> #{xml}"
+    @ws.send(xml)
 
   # dispatchPackets: ->
   #   message = JSON.stringify(@packets)
@@ -32,22 +39,47 @@ class Connector
     # send location..
 
   onMessage: (e) =>
-    for message in JSON.parse(e.data)
-      do (message) =>
-        el = $(message)
-        uuid = el.attr('uuid')
+    # console.log e.data
+
+    $(e.data).children().each (index, el) =>
+      el = $(el)
+
+      if el.is("event")
+        name = el.attr("name")
+
+        if name == "ready"
+          @uuid = el.attr("uuid")
+        else
+          console.log "Unrecognized event #{message}"
+
+      else if uuid = el.attr('uuid')
+        if el.is("dead")
+          @scene.remove(obj)
+          return
 
         newPosition = el.attr("position") && Utils.parseVector(el.attr("position"))
 
         if !(obj = @scene.getObjectById(uuid))
-          geometry = new THREE.BoxGeometry( 1, 1, 1 )
-          material = new THREE.MeshLambertMaterial( {color: '#eeeeee' } )
-          obj = new THREE.Mesh( geometry, material )
+          if el.is("spawn")
+            obj = new THREE.Object3D()
+            if !@spawnedYet
+              @setPosition newPosition
+              @spawnedYet = true
+
+          else if el.is("box")
+            geometry = new THREE.BoxGeometry( 1, 1, 1 )
+            material = new THREE.MeshLambertMaterial( {color: '#eeeeee' } )
+            obj = new THREE.Mesh( geometry, material )
+
           obj.id = uuid
           obj.position = newPosition
           @scene.add(obj)
 
-        if el.is("box")
+        if el.is("spawn")
+          # Don't tween spawn
+          obj.position = newPosition
+        else if el.is("box")
+          # Tween away
           startPosition = obj.position.clone()
           if !startPosition.equals(newPosition)
             tween = new TWEEN.Tween(startPosition)
@@ -58,8 +90,5 @@ class Connector
 
         if el.is("box")
           obj.material = new THREE.MeshLambertMaterial( {color: el.attr('color') } )
-
-        if el.is("dead")
-          @scene.remove(obj)
   
 module.exports = Connector

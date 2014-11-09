@@ -143,7 +143,7 @@ class Client
     @controls.enabled = false
     @scene.add(@controls.getObject())
 
-  getAvatarObject: ->
+  getPlayerObject: ->
     @controls.getObject()
 
   addLights: ->
@@ -191,6 +191,8 @@ class Client
 
     @time = Date.now()
 
+    # Airplane mode
+    # setTimeout(@tick, 1000 / 5)
     requestAnimationFrame @tick
 
 module.exports = Client

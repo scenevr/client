@@ -192,7 +192,7 @@ class Client
     @time = Date.now()
 
     # Airplane mode
-    # setTimeout(@tick, 1000 / 5)
-    requestAnimationFrame @tick
+    setTimeout(@tick, 1000 / 25)
+    # requestAnimationFrame @tick
 
 module.exports = Client

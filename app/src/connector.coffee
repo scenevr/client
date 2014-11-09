@@ -27,18 +27,14 @@ class Connector
 
   sendMessage: (el) ->
     xml = "<packet>" + $("<packet />").append(el).html() + "<packet>"
-    console.log "> #{xml}"
     @ws.send(xml)
 
-  # dispatchPackets: ->
-  #   message = JSON.stringify(@packets)
-  #   console.log message
-  #   @ws.send(message)
-
   tick: =>
+    position = new THREE.Vector3(0,-0.75,0).add(@client.getPlayerObject().position)
+
     if @spawned
       # send location..
-      @sendMessage $("<player />").attr("position", @client.getPlayerObject().position.toArray().join(" "))
+      @sendMessage $("<player />").attr("position", position.toArray().join(" "))
 
   onMessage: (e) =>
     # console.log e.data
@@ -55,7 +51,7 @@ class Connector
           console.log "Unrecognized event #{message}"
 
       else if uuid = el.attr('uuid')
-        if el.is("dead")
+        if el.is("dead") and obj = @scene.getObjectById(uuid)
           @scene.remove(obj)
           return
 
@@ -73,6 +69,19 @@ class Connector
             material = new THREE.MeshLambertMaterial( {color: '#eeeeee' } )
             obj = new THREE.Mesh( geometry, material )
 
+          else if el.is("player")
+            if uuid == @uuid
+              # That's me!
+              return
+
+            if !newPosition
+              # Don't add users who haven't spawned yet
+              return
+
+            geometry = new THREE.BoxGeometry( 0.33, 1.5, 0.33 )
+            material = new THREE.MeshLambertMaterial( {color: '#999999' } )
+            obj = new THREE.Mesh( geometry, material )
+
           obj.id = uuid
           obj.position = newPosition
           @scene.add(obj)
@@ -80,7 +89,7 @@ class Connector
         if el.is("spawn")
           # Don't tween spawn
           obj.position = newPosition
-        else if el.is("box")
+        else if el.is("box") or el.is("player")
           # Tween away
           startPosition = obj.position.clone()
           if !startPosition.equals(newPosition)

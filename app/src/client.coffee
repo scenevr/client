@@ -26,11 +26,8 @@ class Client
     @scene = new THREE.Scene()
     @scene.fog = new THREE.Fog( 0xffffff, 500, 700 );
 
-    @connector = new Connector(this)
-    @connector.connect()
-    
     @camera = new THREE.PerspectiveCamera( VIEW_ANGLE, ASPECT, NEAR, FAR)
-    @camera.position.set(0,1.5,0)
+    @camera.position.set(0,0,0)
     @scene.add(@camera)
 
     @renderer = new THREE.WebGLRenderer( {antialias:false} )
@@ -44,7 +41,16 @@ class Client
     @addLights()
     @addFloor()
     @addControls()
-    @addInstructions()
+
+    @connector = new Connector(this)
+    @connector.connect()
+    @addConnecting()
+
+    @connector.on 'connected', =>
+      @addInstructions()
+
+    @connector.on 'disconnected', =>
+      @addConnectionError()
 
     axes = new THREE.AxisHelper(2)
     @scene.add(axes)
@@ -70,13 +76,29 @@ class Client
       @hideBlocker()
 
   hideOverlays: ->
-    @instructions.hide()
+    $(".overlay").hide()
 
   showOverlays: ->
-    @instructions.show()
+    $(".overlay").show()
+
+  addConnectionError: ->
+    $(".overlay").remove()
+
+    @overlay = $("<div id='connecting' class='overlay'>
+      <h1>Unable to connect to //#{@connector.host}:#{@connector.port}</h1>
+    </div>").appendTo(@container)
+
+  addConnecting: ->
+    $(".overlay").remove()
+
+    @overlay = $("<div id='connecting' class='overlay'>
+      <h1>Connecting to //#{@connector.host}:#{@connector.port}...</h1>
+    </div>").appendTo(@container)
 
   addInstructions: ->
-    @instructions = $('<div id="instructions" class="overlay">
+    $(".overlay").remove()
+
+    @overlay = $('<div id="instructions" class="overlay">
       <h1>Click to join</h1>
 
       <!--div class="keys">
@@ -91,7 +113,7 @@ class Client
       </small>
     </div>').appendTo(@container)
 
-    @instructions.show().click =>
+    @overlay.show().click =>
       # if !@hasPointerLock()
       #   alert "[FAIL] Your browser doesn't seem to support pointerlock. You will not be able to use metaverse.sh."
       # else

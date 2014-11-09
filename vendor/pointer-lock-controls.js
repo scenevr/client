@@ -170,7 +170,7 @@ THREE.PointerLockControls = function ( camera ) {
 		yawObject.translateY( velocity.y ); 
 		yawObject.translateZ( velocity.z );
 
-		yawObject.position.y = 1.0;
+		yawObject.position.y = 1.5;
 	};
 
 };

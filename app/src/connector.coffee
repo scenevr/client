@@ -1,7 +1,8 @@
 Utils = require "./utils"
 TWEEN = require("tween.js")
+EventEmitter = require('wolfy87-eventemitter');
 
-class Connector
+class Connector extends EventEmitter
   constructor: (@client, host, port) ->
     @host = host || window.location.host.split(":")[0]
     @port = port || 8080
@@ -20,9 +21,11 @@ class Connector
     @ws.onopen = =>
       console.log "Opened socket"
       @interval = setInterval @tick, 1000 / 2
+      @trigger 'connected'
     @ws.onclose = =>
       console.log "Closed socket"
       clearInterval @interval
+      @trigger 'disconnected'
     @ws.onmessage = @onMessage
 
   sendMessage: (el) ->

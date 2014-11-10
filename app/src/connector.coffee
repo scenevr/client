@@ -107,8 +107,17 @@ class Connector extends EventEmitter
 
           obj.name = uuid
           obj.position.copy(newPosition)
-          obj.position.y = -1.0
           @scene.add(obj)
+
+          if obj.material
+            obj.material.setValues { transparent : true, opacity: 0.5 }
+
+            tween = new TWEEN.Tween({ opacity : 0.0 })
+            tween.to({ opacity : 1.0 }, 500)
+              .onUpdate(-> obj.material.setValues { opacity : @opacity })
+              .onComplete(-> obj.material.setValues { transparent : false })
+              .easing(TWEEN.Easing.Linear.None)
+              .start()
 
         if el.is("spawn")
           # Don't tween spawn
@@ -124,6 +133,6 @@ class Connector extends EventEmitter
               .start()
 
         if el.is("box")
-          obj.material = new THREE.MeshLambertMaterial( {color: el.attr('color') } )
+          obj.material.setValues { color : el.attr('color') }
   
 module.exports = Connector

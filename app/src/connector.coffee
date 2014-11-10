@@ -107,6 +107,7 @@ class Connector extends EventEmitter
 
           obj.name = uuid
           obj.position.copy(newPosition)
+          obj.castShadow = true
           @scene.add(obj)
 
           if obj.material

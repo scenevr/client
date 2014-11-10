@@ -185,11 +185,10 @@ class Client extends EventEmitter
     dirLight.position.set( -1, 0.75, 1 )
     dirLight.position.multiplyScalar( 200)
     dirLight.name = "dirlight"
+    dirLight.castShadow = true;
+    dirLight.shadowMapWidth = dirLight.shadowMapHeight = 256
 
     @scene.add( dirLight )
-
-    dirLight.castShadow = true;
-    dirLight.shadowMapWidth = dirLight.shadowMapHeight = 512;
 
     ambientLight = new THREE.AmbientLight(0x111111)
     @scene.add(ambientLight)

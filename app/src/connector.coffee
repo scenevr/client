@@ -88,9 +88,18 @@ class Connector extends EventEmitter
               # Don't add users who haven't spawned yet
               return
 
-            geometry = new THREE.BoxGeometry( 0.33, 1.5, 0.33 )
-            material = new THREE.MeshLambertMaterial( {color: '#999999' } )
-            obj = new THREE.Mesh( geometry, material )
+            geometry1 = new THREE.CylinderGeometry( 0.02, 0.5, 1.3, 10 )
+            mesh1 = new THREE.Mesh( geometry1 )
+            geometry2 = new THREE.SphereGeometry( 0.3, 10, 10 )
+            mesh2 = new THREE.Mesh( geometry2 )
+            mesh2.position.y = 0.6
+
+            combined = new THREE.Geometry()
+            THREE.GeometryUtils.merge( combined, mesh1 )
+            THREE.GeometryUtils.merge( combined, mesh2 )
+
+            material = new THREE.MeshPhongMaterial( {color: '#999999' } )
+            obj = new THREE.Mesh( combined, material )
 
           else
             console.log "Unknown element..."

@@ -2,7 +2,7 @@
  * @author mrdoob / http://mrdoob.com/
  */
 
-THREE.PointerLockControls = function ( camera ) {
+THREE.PointerLockControls = function ( camera, client ) {
 
 	var scope = this;
 
@@ -26,6 +26,14 @@ THREE.PointerLockControls = function ( camera ) {
 	var velocity = new THREE.Vector3();
 
 	var PI_2 = Math.PI / 2;
+
+	var onMouseClick = function( event) {
+		if ( scope.enabled === false ) return;
+
+		event.preventDefault();
+
+		client.trigger('click');
+	};
 
 	var onMouseMove = function ( event ) {
 
@@ -101,6 +109,7 @@ THREE.PointerLockControls = function ( camera ) {
 
 	};
 
+	document.body.addEventListener( 'click', onMouseClick, false );
 	document.addEventListener( 'mousemove', onMouseMove, false );
 	document.addEventListener( 'keydown', onKeyDown, false );
 	document.addEventListener( 'keyup', onKeyUp, false );

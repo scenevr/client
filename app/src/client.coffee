@@ -1,7 +1,8 @@
 Connector = require("./connector")
 TWEEN = require("tween.js")
+EventEmitter = require('wolfy87-eventemitter');
 
-class Client
+class Client extends EventEmitter
   constructor: ->
     @container = $("#scene-view").css {
       position : 'relative'
@@ -26,20 +27,18 @@ class Client
     @scene = new THREE.Scene()
     @scene.fog = new THREE.Fog( 0xffffff, 500, 700 );
 
-    @camera = new THREE.PerspectiveCamera( VIEW_ANGLE, ASPECT, NEAR, FAR)
-    @camera.position.set(0,0,0)
-    @scene.add(@camera)
-
     @renderer = new THREE.WebGLRenderer( {antialias:false} )
     @renderer.setSize(@width, @height)
     @renderer.shadowMapEnabled = false
     @renderer.setClearColor( 0xffffff, 1)
 
-    @projector = new THREE.Projector()
+    # @projector = new THREE.Projector()
     @time = Date.now()
 
     @addLights()
     @addFloor()
+
+    @camera = new THREE.PerspectiveCamera( VIEW_ANGLE, ASPECT, NEAR, FAR)
     @addControls()
 
     @connector = new Connector(this)
@@ -52,6 +51,8 @@ class Client
     @connector.on 'disconnected', =>
       @addConnectionError()
 
+    this.on 'click', @onClick
+
     axes = new THREE.AxisHelper(2)
     @scene.add(axes)
 
@@ -63,7 +64,7 @@ class Client
     document.pointerLockElement || document.mozPointerLockElement || document.webkitPointerLockElement
 
   pointerlockerror: (event) =>
-    alert "[FAIL] There was an error acquiring pointerLock. You will not be able to use metaverse.sh."
+    alert "[FAIL] There was an error acquiring pointerLock. You will not be able to use sceneserver."
 
   pointerlockchange: (event) =>
     if @hasPointerLock()
@@ -74,6 +75,17 @@ class Client
       @controls.enabled = false
       @showInstructions()
       @hideBlocker()
+
+  onClick: =>
+    @raycaster = new THREE.Raycaster
+    @raycaster.set( @controls.getObject().position, @controls.getDirection(new THREE.Vector3) )
+
+    for intersection in @raycaster.intersectObjects( @scene.children ) when intersection.object.name
+      @connector.onClick {
+        uuid : intersection.object.name
+        point : intersection.point
+      }
+      return
 
   hideOverlays: ->
     $(".overlay").hide()
@@ -115,7 +127,7 @@ class Client
 
     @overlay.show().click =>
       # if !@hasPointerLock()
-      #   alert "[FAIL] Your browser doesn't seem to support pointerlock. You will not be able to use metaverse.sh."
+      #   alert "[FAIL] Your browser doesn't seem to support pointerlock. You will not be able to use sceneserver."
       # else
 
       element = document.body
@@ -161,7 +173,7 @@ class Client
     @scene.add(@floor)
 
   addControls: ->
-    @controls = new THREE.PointerLockControls ( @camera )
+    @controls = new THREE.PointerLockControls(@camera, @)
     @controls.enabled = false
     @scene.add(@controls.getObject())
 
@@ -189,18 +201,6 @@ class Client
       v.applyEuler(@getAvatarObject().rotation)
     )
 
-  detectCollision: (x,y) ->
-    vector = new THREE.Vector3( ( x / @width ) * 2 - 1, - ( y / @height ) * 2 + 1, 0.5 )
-
-    @projector.unprojectVector( vector, @camera )
-    raycaster = new THREE.Raycaster( @camera.position, vector.sub( @camera.position ).normalize() )
-    intersects = raycaster.intersectObjects([@floor])
-
-    for i in intersects
-      return i.point
-
-    console.log 'sadface'
-
   tick: =>
     @stats.begin()
 
@@ -214,7 +214,7 @@ class Client
     @time = Date.now()
 
     # Airplane mode
-    setTimeout(@tick, 1000 / 25)
-    # requestAnimationFrame @tick
+    # setTimeout(@tick, 1000 / 25)
+    requestAnimationFrame @tick
 
 module.exports = Client

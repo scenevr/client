@@ -29,8 +29,14 @@ class Connector extends EventEmitter
     @ws.onmessage = @onMessage
 
   sendMessage: (el) ->
-    xml = "<packet>" + $("<packet />").append(el).html() + "<packet>"
+    xml = "<packet>" + $("<packet />").append(el).html() + "</packet>"
     @ws.send(xml)
+
+  onClick: (e) ->
+    @sendMessage $("<event />").
+      attr("name", "click").
+      attr("uuid", e.uuid).
+      attr("point", e.point.toArray().join(" "))
 
   tick: =>
     position = new THREE.Vector3(0,-0.75,0).add(@client.getPlayerObject().position)

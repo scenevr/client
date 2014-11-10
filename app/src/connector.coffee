@@ -13,7 +13,7 @@ class Connector extends EventEmitter
     @spawned = false
 
   setPosition: (v) ->
-    @client.getPlayerObject().position = v
+    @client.getPlayerObject().position.copy(v)
 
   connect: ->
     @ws = new WebSocket("ws://#{@host}:#{@port}/", @protocol);

@@ -107,6 +107,7 @@ class Connector extends EventEmitter
 
           obj.name = uuid
           obj.position.copy(newPosition)
+          obj.position.y = -1.0
           @scene.add(obj)
 
         if el.is("spawn")

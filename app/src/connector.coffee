@@ -20,7 +20,7 @@ class Connector extends EventEmitter
     @ws.binaryType = 'arraybuffer'
     @ws.onopen = =>
       console.log "Opened socket"
-      @interval = setInterval @tick, 1000 / 2
+      @interval = setInterval @tick, 1000 / 5
       @trigger 'connected'
     @ws.onclose = =>
       console.log "Closed socket"
@@ -33,10 +33,25 @@ class Connector extends EventEmitter
     @ws.send(xml)
 
   onClick: (e) ->
+    @flashObject(@scene.getObjectByName(e.uuid))
+
     @sendMessage $("<event />").
       attr("name", "click").
       attr("uuid", e.uuid).
       attr("point", e.point.toArray().join(" "))
+
+  flashObject: (obj) ->
+    # todo - flash white then back to normal color
+    if obj.material
+      obj.material.setValues { transparent : true }
+
+      tween = new TWEEN.Tween({ opacity : 0.5 })
+      tween.to({ opacity : 1.0 }, 200)
+        .onUpdate(-> obj.material.setValues { opacity : @opacity })
+        .onComplete(-> obj.material.setValues { transparent : false })
+        .easing(TWEEN.Easing.Linear.None)
+        .start()
+
 
   tick: =>
     position = new THREE.Vector3(0,-0.75,0).add(@client.getPlayerObject().position)
@@ -114,7 +129,7 @@ class Connector extends EventEmitter
             obj.material.setValues { transparent : true, opacity: 0.5 }
 
             tween = new TWEEN.Tween({ opacity : 0.0 })
-            tween.to({ opacity : 1.0 }, 500)
+            tween.to({ opacity : 1.0 }, 200)
               .onUpdate(-> obj.material.setValues { opacity : @opacity })
               .onComplete(-> obj.material.setValues { transparent : false })
               .easing(TWEEN.Easing.Linear.None)
@@ -128,12 +143,12 @@ class Connector extends EventEmitter
           startPosition = obj.position.clone()
           if !startPosition.equals(newPosition)
             tween = new TWEEN.Tween(startPosition)
-            tween.to(newPosition, 500)
+            tween.to(newPosition, 200)
               .onUpdate(-> obj.position.set(@x, @y, @z))
               .easing(TWEEN.Easing.Linear.None)
               .start()
 
-        if el.is("box")
+        if el.is("box") 
           obj.material.setValues { color : el.attr('color') }
   
 module.exports = Connector

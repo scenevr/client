@@ -6,7 +6,8 @@
     "watchify": "~2.1.1",
     "coffeeify": "~0.7.0",
     "tween.js": "~0.14.0",
-    "wolfy87-eventemitter": "~4.2.9"
+    "wolfy87-eventemitter": "~4.2.9",
+    "cannon": "~0.6.1"
   },
   "scripts": {
     "start": "watchify --debug -t coffeeify --extension='.coffee' index.coffee -o bundle.js",

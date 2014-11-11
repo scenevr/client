@@ -1,4 +1,5 @@
 Connector = require("./connector")
+window.CANNON = require("cannon")
 TWEEN = require("tween.js")
 EventEmitter = require('wolfy87-eventemitter');
 
@@ -27,6 +28,10 @@ class Client extends EventEmitter
     @scene = new THREE.Scene()
     @scene.fog = new THREE.Fog( 0xffffff, 500, 700 );
 
+    @world = new CANNON.World()
+    @world.gravity.set(0,-20,0); # m/s²
+    @world.broadphase = new CANNON.NaiveBroadphase()
+
     @renderer = new THREE.WebGLRenderer( {antialias:false} )
     @renderer.setSize(@width, @height)
     @renderer.shadowMapEnabled = false
@@ -37,6 +42,7 @@ class Client extends EventEmitter
 
     @addLights()
     @addFloor()
+    @addPlayerBody()
 
     @camera = new THREE.PerspectiveCamera( VIEW_ANGLE, ASPECT, NEAR, FAR)
     @addControls()
@@ -172,8 +178,25 @@ class Client extends EventEmitter
 
     @scene.add(@floor)
 
+    groundBody = new CANNON.Body { mass: 0 } # static
+    groundShape = new CANNON.Plane()
+    groundBody.addShape(groundShape)
+    groundBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1,0,0),-Math.PI/2);
+    
+    @world.add(groundBody)
+
+  addPlayerBody: ->
+    @playerBody = new CANNON.Body { mass : 100 }
+    sphereShape = new CANNON.Sphere(0.5)
+    @playerBody.addShape(sphereShape)
+    @playerBody.position.set(0,5,10)
+    @playerBody.linearDamping = 0.9
+    @world.add(@playerBody)
+
   addControls: ->
-    @controls = new THREE.PointerLockControls(@camera, @)
+    console.log @playerBody
+
+    @controls = new PointerLockControls(@camera, this, @playerBody)
     @controls.enabled = false
     @scene.add(@controls.getObject())
 
@@ -203,9 +226,18 @@ class Client extends EventEmitter
   tick: =>
     @stats.begin()
 
+    # Simulate physics
+    timeStep = 1.0/60.0 # seconds
+    @world.step(timeStep)
+    # console.log("Sphere z position: " + @sphereBody.position.z)
+
+    # Animate
     TWEEN.update()
 
+    # Controls
     @controls.update( Date.now() - @time )
+
+    # Render webGL
     @renderer.render( @scene, @camera )
 
     @stats.end()

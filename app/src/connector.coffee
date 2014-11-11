@@ -13,7 +13,7 @@ class Connector extends EventEmitter
     @spawned = false
 
   setPosition: (v) ->
-    @client.getPlayerObject().position.copy(v)
+    @client.getPlayerObject().position.copy(v).setY(1.5)
 
   connect: ->
     @ws = new WebSocket("ws://#{@host}:#{@port}/", @protocol);
@@ -94,6 +94,13 @@ class Connector extends EventEmitter
             material = new THREE.MeshLambertMaterial( {color: '#eeeeee' } )
             obj = new THREE.Mesh( geometry, material )
 
+            # all server supplied objects are static
+            boxShape = new CANNON.Box(new CANNON.Vec3(0.5,0.5,0.5))
+            boxBody = new CANNON.Body({ mass: 0 })
+            boxBody.addShape(boxShape)
+            @client.world.add(boxBody)
+            obj.body = boxBody
+
           else if el.is("player")
             if uuid == @uuid
               # That's me!
@@ -141,6 +148,11 @@ class Connector extends EventEmitter
         else if el.is("box") or el.is("player")
           # Tween away
           startPosition = obj.position.clone()
+
+          # Physics simulation isn't tweened
+          if obj.body
+            obj.body.position.copy(newPosition)
+
           if !startPosition.equals(newPosition)
             tween = new TWEEN.Tween(startPosition)
             tween.to(newPosition, 200)

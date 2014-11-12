@@ -1,7 +1,11 @@
 Connector = require("./connector")
+
+# fixme - do we have to export to window? bit gross.
 window.CANNON = require("cannon")
+
 TWEEN = require("tween.js")
 EventEmitter = require('wolfy87-eventemitter');
+rasterizeHTML = require("rasterizehtml")
 
 class Client extends EventEmitter
   constructor: ->
@@ -85,6 +89,10 @@ class Client extends EventEmitter
   onClick: =>
     @raycaster = new THREE.Raycaster
     @raycaster.set( @controls.getObject().position, @controls.getDirection(new THREE.Vector3) )
+
+    console.log @controls.getObject().position
+    console.log @controls.getDirection(new THREE.Vector3)
+    console.log @raycaster.intersectObjects( @scene.children )
 
     for intersection in @raycaster.intersectObjects( @scene.children ) when intersection.object.name
       @connector.onClick {
@@ -194,8 +202,6 @@ class Client extends EventEmitter
     @world.add(@playerBody)
 
   addControls: ->
-    console.log @playerBody
-
     @controls = new PointerLockControls(@camera, this, @playerBody)
     @controls.enabled = false
     @scene.add(@controls.getObject())

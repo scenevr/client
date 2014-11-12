@@ -141,7 +141,7 @@
 
     this.getDirection = function(targetVec){
         targetVec.set(0,0,-1);
-        quat.multiplyVector3(targetVec);
+        targetVec.applyQuaternion(quat);
         return targetVec;
     }
 
@@ -176,7 +176,6 @@
         euler.order = "XYZ";
         quat.setFromEuler(euler);
         inputVelocity.applyQuaternion(quat);
-        //quat.multiplyVector3(inputVelocity);
 
         // Add to the object
         velocity.x += inputVelocity.x;

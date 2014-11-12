@@ -60,6 +60,40 @@ class Connector extends EventEmitter
       # send location..
       @sendMessage $("<player />").attr("position", position.toArray().join(" "))
 
+  createBillboard: (el) ->
+    canvas = $("<canvas width='256' height='256' />")[0]
+
+    div = $("<div />").html(el.html()).css({ background : 'white', width : 256, height : 256, padding : '10px', border : '1px solid #ccc' })
+
+    div.appendTo 'body'
+
+    obj = new THREE.Object3D
+
+    geometry = new THREE.BoxGeometry( 2, 2, 0.5 )
+    material = new THREE.MeshLambertMaterial( {color: '#eeeeee' } )
+    box = new THREE.Mesh( geometry, material )
+
+    material = new THREE.MeshLambertMaterial( {color: '#ff7700' } )
+    mesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material)
+    mesh.position.setZ(0.26)
+
+    html2canvas div[0], {
+      onrendered: (canvas) =>
+        texture = new THREE.Texture(canvas) 
+        texture.needsUpdate = true;
+        material = new THREE.MeshBasicMaterial( {map: texture, side:THREE.DoubleSide } )
+        material.transparent = false;
+        mesh.material = material
+
+        div.remove()
+    }
+
+    obj.add(box)
+    obj.add(mesh)
+
+    obj
+
+
   onMessage: (e) =>
     # console.log e.data
 
@@ -88,6 +122,9 @@ class Connector extends EventEmitter
             if !@spawned
               @setPosition newPosition
               @spawned = true
+
+          else if el.is("billboard")
+            obj = @createBillboard(el)
 
           else if el.is("box")
             geometry = new THREE.BoxGeometry( 1, 1, 1 )

@@ -24,7 +24,7 @@ class Client extends EventEmitter
     @stats.domElement.style.top = '10px';
     @container.append(@stats.domElement)
 
-    VIEW_ANGLE = 45
+    VIEW_ANGLE = 75
     ASPECT = @width / @height
     NEAR = 0.1
     FAR = 700
@@ -89,10 +89,6 @@ class Client extends EventEmitter
   onClick: =>
     @raycaster = new THREE.Raycaster
     @raycaster.set( @controls.getObject().position, @controls.getDirection(new THREE.Vector3) )
-
-    console.log @controls.getObject().position
-    console.log @controls.getDirection(new THREE.Vector3)
-    console.log @raycaster.intersectObjects( @scene.children )
 
     for intersection in @raycaster.intersectObjects( @scene.children ) when intersection.object.name
       @connector.onClick {

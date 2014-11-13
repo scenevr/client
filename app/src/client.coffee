@@ -5,7 +5,6 @@ window.CANNON = require("cannon")
 
 TWEEN = require("tween.js")
 EventEmitter = require('wolfy87-eventemitter');
-rasterizeHTML = require("rasterizehtml")
 
 class Client extends EventEmitter
   constructor: ->

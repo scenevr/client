@@ -47,6 +47,7 @@ class Client extends EventEmitter
     @addLights()
     @addFloor()
     @addPlayerBody()
+    @addDot()
 
     @camera = new THREE.PerspectiveCamera( VIEW_ANGLE, ASPECT, NEAR, FAR)
     @addControls()
@@ -196,6 +197,9 @@ class Client extends EventEmitter
     @playerBody.position.set(0,5,10)
     @playerBody.linearDamping = 0.9
     @world.add(@playerBody)
+
+  addDot: ->
+    $("<div />").addClass('aiming-point').appendTo 'body'
 
   addControls: ->
     @controls = new PointerLockControls(@camera, this, @playerBody)

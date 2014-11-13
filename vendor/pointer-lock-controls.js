@@ -139,6 +139,10 @@
         return yawObject;
     };
 
+    this.getYaw = function(){
+        return yawObject.rotation.y;
+    }
+
     this.getDirection = function(targetVec){
         targetVec.set(0,0,-1);
         targetVec.applyQuaternion(quat);
@@ -149,7 +153,6 @@
     var inputVelocity = new THREE.Vector3();
     var euler = new THREE.Euler();
     this.update = function ( delta ) {
-
         if ( scope.enabled === false ) return;
 
         delta *= 0.1;

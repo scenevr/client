@@ -24,7 +24,7 @@ class Client extends EventEmitter
     @stats.domElement.style.top = '10px';
     @container.append(@stats.domElement)
 
-    VIEW_ANGLE = 75
+    VIEW_ANGLE = 45
     ASPECT = @width / @height
     NEAR = 0.1
     FAR = 700
@@ -40,6 +40,8 @@ class Client extends EventEmitter
     @renderer.setSize(@width, @height)
     @renderer.shadowMapEnabled = false
     @renderer.setClearColor( 0xffffff, 1)
+
+    @initVR()
 
     # @projector = new THREE.Projector()
     @time = Date.now()
@@ -85,6 +87,26 @@ class Client extends EventEmitter
       @controls.enabled = false
       @showInstructions()
       @hideBlocker()
+
+  initVR: ->
+    if (navigator.getVRDevices)
+      navigator.getVRDevices().then(@vrDeviceCallback)
+    else if (navigator.mozGetVRDevices)
+      navigator.mozGetVRDevices(@vrDeviceCallback)
+
+  vrDeviceCallback: (vrdevs) =>
+    for device in vrdevs
+      if device instanceof HMDVRDevice
+        @vrHMD = device
+        break
+
+    for device in vrdevs
+      if device instanceof PositionSensorVRDevice && device.hardwareUnitId == @vrHMD.hardwareUnitId
+        @vrHMDSensor = device
+        break
+
+    if @vrHMD
+      @vrrenderer = new THREE.VRRenderer(@renderer, @vrHMD)
 
   onClick: =>
     @raycaster = new THREE.Raycaster
@@ -236,11 +258,17 @@ class Client extends EventEmitter
     # Animate
     TWEEN.update()
 
+    if @vrrenderer
+      # VR
+      state = @vrHMDSensor.getState()
+      @camera.quaternion.set(state.orientation.x, state.orientation.y, state.orientation.z, state.orientation.w)
+      @vrrenderer.render(@scene, @camera, @controls )
+    else
+      # Render webGL
+      @renderer.render( @scene, @camera  )
+
     # Controls
     @controls.update( Date.now() - @time )
-
-    # Render webGL
-    @renderer.render( @scene, @camera )
 
     @stats.end()
 

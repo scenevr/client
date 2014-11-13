@@ -152,7 +152,7 @@
 
         if ( scope.enabled === false ) return;
 
-        delta *= 0.1;
+        delta *= 0.5;
 
         inputVelocity.set(0,0,0);
 
@@ -178,8 +178,8 @@
         inputVelocity.applyQuaternion(quat);
 
         // Add to the object
-        velocity.x += inputVelocity.x;
-        velocity.z += inputVelocity.z;
+        velocity.x = velocity.x * 0.7 + inputVelocity.x;
+        velocity.z = velocity.z * 0.7 + inputVelocity.z;
 
         yawObject.position.copy(cannonBody.position).add(new THREE.Vector3(0,0.9,0));
     };

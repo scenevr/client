@@ -1,4 +1,4 @@
-Connector = require("./connector")
+Connector = require("./connector.coffee")
 
 # fixme - do we have to export to window? bit gross.
 window.CANNON = require("cannon")

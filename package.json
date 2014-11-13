@@ -1,5 +1,5 @@
 {
-  "name": "ss-web-client",
+  "name": "scenevr-web",
   "version": "0.0.1",
   "dependencies": {
     "three": "0.66.2",
@@ -7,10 +7,12 @@
     "coffeeify": "~0.7.0",
     "tween.js": "~0.14.0",
     "wolfy87-eventemitter": "~4.2.9",
-    "cannon": "~0.6.1"
+    "cannon": "~0.6.1",
+    "browserify-middleware": "~4.1.0",
+    "express": "~4.10.2"
   },
   "scripts": {
-    "start": "watchify --debug -t coffeeify --extension='.coffee' index.coffee -o bundle.js",
+    "start": "coffee server.coffee",
     "test": "NODE_ENV=test mocha spec/*_spec.js"
   }
 }

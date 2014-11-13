@@ -1,4 +1,4 @@
-Utils = require "./utils"
+Utils = require "./utils.coffee"
 TWEEN = require("tween.js")
 EventEmitter = require('wolfy87-eventemitter');
 
@@ -6,8 +6,7 @@ class Connector extends EventEmitter
   constructor: (@client, host, port) ->
     @host = host || window.location.host.split(":")[0]
     @port = port || 8080
-    @protocol = "scene-server"
-    @packets = []
+    @protocol = "scenevr"
     @scene = @client.scene
     @uuid = null
     @spawned = false

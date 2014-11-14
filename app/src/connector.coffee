@@ -62,7 +62,7 @@ class Connector extends EventEmitter
   createBillboard: (el) ->
     canvas = $("<canvas width='256' height='256' />")[0]
 
-    div = $("<div />").html(el.html()).css({ background : 'white', width : 256, height : 256, padding : '10px', border : '1px solid #ccc' })
+    div = $("<div />").html(el.html()).css({ position : 'absolute', left : 0, top : 0, background : 'white', width : 256, height : 256, padding : '10px', border : '1px solid #ccc' })
 
     div.appendTo 'body'
 

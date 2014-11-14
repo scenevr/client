@@ -19,8 +19,8 @@ class Client extends EventEmitter
     @stats.setMode(0)
 
     @stats.domElement.style.position = 'absolute';
-    @stats.domElement.style.left = '10px';
-    @stats.domElement.style.top = '10px';
+    @stats.domElement.style.right = '10px';
+    @stats.domElement.style.bottom = '10px';
     @container.append(@stats.domElement)
 
     VIEW_ANGLE = 75

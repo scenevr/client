@@ -3,6 +3,7 @@ body,html{
   height: 100%;
   margin: 0;
   padding: 0;
+  overflow: hidden;
 }
 
 body{
@@ -19,9 +20,9 @@ header{
 
 header h1{
   margin: 0;
-  background: white;
-  color: #888;
-  border: 1px solid #bbb;
+  background: linear-gradient(#222, #333);
+  color: #f70;
+  border: 1px solid black;
   box-shadow: 1px 1px 3px rgba(0,0,0,0.2);
   font-size: 1.5em;
   border-radius: 3px;
@@ -29,9 +30,11 @@ header h1{
   font-weight: 200;
   font-size: 13px;
   text-align: center;
+  text-shadow: 1px 1px 1px black;
 }
 header h1 span{
-  font-size: 0.95em;
+  font-size: 1.2em;
+  font-weight: bold;
 }
 
 #stats{

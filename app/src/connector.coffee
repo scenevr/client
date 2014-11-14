@@ -12,7 +12,8 @@ class Connector extends EventEmitter
     @spawned = false
 
   setPosition: (v) ->
-    @client.getPlayerObject().position.copy(v).setY(1.5)
+    # Fixme - if the controls aren't active, the player body isn't copied to the camera
+    @client.playerBody.position.copy(v).y = 1.5
 
   connect: ->
     @ws = new WebSocket("ws://#{@host}:#{@port}/", @protocol);

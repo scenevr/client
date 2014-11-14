@@ -195,7 +195,7 @@ class Client extends EventEmitter
     @playerBody = new CANNON.Body { mass : 100 }
     sphereShape = new CANNON.Sphere(0.5)
     @playerBody.addShape(sphereShape)
-    @playerBody.position.set(0,5,10)
+    @playerBody.position.set(0,0,0)
     @playerBody.linearDamping = 0.9
     @world.add(@playerBody)
 

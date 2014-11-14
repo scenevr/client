@@ -88,16 +88,33 @@ class Client extends EventEmitter
       @showInstructions()
       @hideBlocker()
 
+  getAllClickableObjects: ->
+    list = []
+
+    @scene.traverse (obj) ->
+      list.push(obj)
+
+    list
+
   onClick: =>
     @raycaster = new THREE.Raycaster
     @raycaster.set( @controls.getObject().position, @controls.getDirection(new THREE.Vector3) )
 
-    for intersection in @raycaster.intersectObjects( @scene.children ) when intersection.object.name
-      @connector.onClick {
-        uuid : intersection.object.name
-        point : intersection.point
-      }
-      return
+    for intersection in @raycaster.intersectObjects( @getAllClickableObjects() ) 
+      if intersection.object.name
+        @connector.onClick {
+          uuid : intersection.object.name
+          point : intersection.point
+        }
+        return
+
+      # For things like billboards...
+      if intersection.object.parent && intersection.object.parent.name
+        @connector.onClick {
+          uuid : intersection.object.parent.name
+          point : intersection.point
+        }
+        return
 
   hideOverlays: ->
     $(".overlay").hide()

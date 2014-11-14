@@ -151,6 +151,8 @@ class Connector extends EventEmitter
       else if uuid = el.attr('uuid')
         if el.is("dead") 
           if obj = @scene.getObjectByName(uuid)
+            if obj.body
+              @client.world.remove(obj.body)
             @scene.remove(obj)
           return
 

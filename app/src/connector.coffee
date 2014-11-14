@@ -96,8 +96,42 @@ class Connector extends EventEmitter
     obj.add(box)
     obj.add(mesh)
 
+    # Add physics model
+    boxShape = new CANNON.Box(new CANNON.Vec3(1,1,0.25))
+    boxBody = new CANNON.Body({ mass: 0 })
+    boxBody.addShape(boxShape)
+    @client.world.add(boxBody)
+    obj.body = boxBody
+
     obj
 
+  createPlayer: (el) ->
+    geometry1 = new THREE.CylinderGeometry( 0.02, 0.5, 1.3, 10 )
+    mesh1 = new THREE.Mesh( geometry1 )
+    geometry2 = new THREE.SphereGeometry( 0.3, 10, 10 )
+    mesh2 = new THREE.Mesh( geometry2 )
+    mesh2.position.y = 0.6
+
+    combined = new THREE.Geometry()
+    THREE.GeometryUtils.merge( combined, mesh1 )
+    THREE.GeometryUtils.merge( combined, mesh2 )
+
+    material = new THREE.MeshPhongMaterial( {color: '#999999' } )
+    new THREE.Mesh( combined, material )
+
+  createBox: (el) ->
+    geometry = new THREE.BoxGeometry( 1, 1, 1 )
+    material = new THREE.MeshLambertMaterial( {color: '#eeeeee' } )
+    obj = new THREE.Mesh( geometry, material )
+
+    # Add physics model
+    boxShape = new CANNON.Box(new CANNON.Vec3(0.5,0.5,0.5))
+    boxBody = new CANNON.Body({ mass: 0 })
+    boxBody.addShape(boxShape)
+    @client.world.add(boxBody)
+    obj.body = boxBody
+
+    obj
 
   onMessage: (e) =>
     # console.log e.data
@@ -132,16 +166,7 @@ class Connector extends EventEmitter
             obj = @createBillboard(el)
 
           else if el.is("box")
-            geometry = new THREE.BoxGeometry( 1, 1, 1 )
-            material = new THREE.MeshLambertMaterial( {color: '#eeeeee' } )
-            obj = new THREE.Mesh( geometry, material )
-
-            # all server supplied objects are static
-            boxShape = new CANNON.Box(new CANNON.Vec3(0.5,0.5,0.5))
-            boxBody = new CANNON.Body({ mass: 0 })
-            boxBody.addShape(boxShape)
-            @client.world.add(boxBody)
-            obj.body = boxBody
+            obj = @createBox(el)
 
           else if el.is("player")
             if uuid == @uuid
@@ -152,18 +177,7 @@ class Connector extends EventEmitter
               # Don't add users who haven't spawned yet
               return
 
-            geometry1 = new THREE.CylinderGeometry( 0.02, 0.5, 1.3, 10 )
-            mesh1 = new THREE.Mesh( geometry1 )
-            geometry2 = new THREE.SphereGeometry( 0.3, 10, 10 )
-            mesh2 = new THREE.Mesh( geometry2 )
-            mesh2.position.y = 0.6
-
-            combined = new THREE.Geometry()
-            THREE.GeometryUtils.merge( combined, mesh1 )
-            THREE.GeometryUtils.merge( combined, mesh2 )
-
-            material = new THREE.MeshPhongMaterial( {color: '#999999' } )
-            obj = new THREE.Mesh( combined, material )
+            obj = @createPlayer(el)
 
           else
             console.log "Unknown element..."
@@ -187,7 +201,7 @@ class Connector extends EventEmitter
         if el.is("spawn")
           # Don't tween spawn
           obj.position.copy(newPosition)
-        else if el.is("box") or el.is("player")
+        else if el.is("box") or el.is("player") or el.is("billboard")
           # Tween away
           startPosition = obj.position.clone()
 

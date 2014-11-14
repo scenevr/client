@@ -59,14 +59,20 @@ class Connector extends EventEmitter
       # send location..
       @sendMessage $("<player />").attr("position", position.toArray().join(" "))
 
+  getHost: ->
+    window.location.host.split(":")[0]
+
   createBillboard: (el) ->
+    obj = new THREE.Object3D
+
     canvas = $("<canvas width='256' height='256' />")[0]
 
     div = $("<div />").html(el.html()).css({ position : 'absolute', left : 0, top : 0, background : 'white', width : 256, height : 256, padding : '10px', border : '1px solid #ccc' })
 
-    div.appendTo 'body'
+    div.find("img").each (index, img) =>
+      img.src =  "//" + @getHost() + ":8090" + img.getAttribute("src")
 
-    obj = new THREE.Object3D
+    div.appendTo 'body'
 
     geometry = new THREE.BoxGeometry( 2, 2, 0.5 )
     material = new THREE.MeshLambertMaterial( {color: '#eeeeee' } )
@@ -77,13 +83,13 @@ class Connector extends EventEmitter
     mesh.position.setZ(0.26)
 
     html2canvas div[0], {
+      useCORS : true
       onrendered: (canvas) =>
         texture = new THREE.Texture(canvas) 
         texture.needsUpdate = true;
         material = new THREE.MeshBasicMaterial( {map: texture, side:THREE.DoubleSide } )
         material.transparent = false;
         mesh.material = material
-
         div.remove()
     }
 

@@ -27,6 +27,7 @@ class Client extends EventEmitter
     ASPECT = @width / @height
     NEAR = 0.1
     FAR = 700
+    DOWN_SAMPLE = 1
 
     @scene = new THREE.Scene()
     @scene.fog = new THREE.Fog( 0xffffff, 500, 700 );
@@ -36,7 +37,7 @@ class Client extends EventEmitter
     @world.broadphase = new CANNON.NaiveBroadphase()
 
     @renderer = new THREE.WebGLRenderer( {antialias:false} )
-    @renderer.setSize(@width, @height)
+    @renderer.setSize(@width / DOWN_SAMPLE, @height / DOWN_SAMPLE)
     @renderer.shadowMapEnabled = false
     @renderer.setClearColor( 0xffffff, 1)
 
@@ -67,6 +68,7 @@ class Client extends EventEmitter
     @scene.add(axes)
 
     @container.append( @renderer.domElement );
+    $(@renderer.domElement).css { width : @width, height : @height }
 
     @tick()
 

@@ -33,6 +33,11 @@ class Connector extends EventEmitter
     xml = "<packet>" + $("<packet />").append(el).html() + "</packet>"
     @ws.send(xml)
 
+  sendChat: (message) ->
+    @sendMessage $("<event />").
+      attr("name", "chat").
+      attr("message", message.slice(0,200))
+
   onClick: (e) ->
     @flashObject(@scene.getObjectByName(e.uuid))
 
@@ -76,13 +81,13 @@ class Connector extends EventEmitter
 
     div.appendTo 'body'
 
-    geometry = new THREE.BoxGeometry( 2, 2, 0.5 )
+    geometry = new THREE.BoxGeometry( 1, 1, 1 )
     material = new THREE.MeshLambertMaterial( {color: '#eeeeee' } )
     box = new THREE.Mesh( geometry, material )
 
-    material = new THREE.MeshLambertMaterial( {color: '#ff7700' } )
-    mesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material)
-    mesh.position.setZ(0.26)
+    material = new THREE.MeshLambertMaterial( {color: '#ffffff' } )
+    mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), material)
+    mesh.position.setZ(0.52)
 
     html2canvas div[0], {
       useCORS : true
@@ -98,8 +103,15 @@ class Connector extends EventEmitter
     obj.add(box)
     obj.add(mesh)
 
+    newScale = if el.attr("scale")
+      Utils.parseVector(el.attr("scale"))
+    else
+      new THREE.Vector3(2,2,0.5)
+
+    obj.scale.copy(newScale)
+
     # Add physics model
-    boxShape = new CANNON.Box(new CANNON.Vec3(1,1,0.25))
+    boxShape = new CANNON.Box(new CANNON.Vec3().copy(newScale.multiplyScalar(0.5)))
     boxBody = new CANNON.Body({ mass: 0 })
     boxBody.addShape(boxShape)
     @client.world.add(boxBody)
@@ -126,8 +138,15 @@ class Connector extends EventEmitter
     material = new THREE.MeshLambertMaterial( {color: '#eeeeee' } )
     obj = new THREE.Mesh( geometry, material )
 
+    newScale = if el.attr("scale")
+      Utils.parseVector(el.attr("scale"))
+    else
+      new THREE.Vector3(1,1,1)
+
+    obj.scale.copy(newScale)
+    
     # Add physics model
-    boxShape = new CANNON.Box(new CANNON.Vec3(0.5,0.5,0.5))
+    boxShape = new CANNON.Box(new CANNON.Vec3().copy(newScale.multiplyScalar(0.5)))
     boxBody = new CANNON.Body({ mass: 0 })
     boxBody.addShape(boxShape)
     @client.world.add(boxBody)
@@ -212,6 +231,14 @@ class Connector extends EventEmitter
           # Physics simulation isn't tweened
           if obj.body
             obj.body.position.copy(newPosition)
+
+          # Todo - tween rotations
+          if el.attr("rotation")
+            newRotation = Utils.parseEuler(el.attr("rotation"))
+            obj.rotation.copy(newRotation)
+
+            if obj.body
+              obj.body.quaternion.copy(new THREE.Quaternion().setFromEuler(newRotation))
 
           if !startPosition.equals(newPosition)
             tween = new TWEEN.Tween(startPosition)

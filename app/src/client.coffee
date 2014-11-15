@@ -97,6 +97,8 @@ class Client extends EventEmitter
 
     for obj in list
       @scene.remove(obj)
+      if obj.body
+        @world.remove(obj.body)
       
   getAllClickableObjects: ->
     list = []

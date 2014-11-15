@@ -20,8 +20,10 @@ class Connector extends EventEmitter
     @ws and @ws.readyState == 1
 
   disconnect: ->
+    console.log "Closing socket..."
     @ws.onopen = null
     @ws.onclose = null
+    @ws.onmessage = null
     @ws.close()
 
     delete @ws
@@ -34,6 +36,7 @@ class Connector extends EventEmitter
     @disconnect()
     @trigger 'restarting'
     @client.removeReflectedObjects()
+    clearInterval @interval
     setTimeout(@reconnect, 500)
 
   connect: ->
@@ -47,7 +50,8 @@ class Connector extends EventEmitter
       console.log "Closed socket"
       clearInterval @interval
       @trigger 'disconnected'
-    @ws.onmessage = @onMessage
+    @ws.onmessage = (e) =>
+      @onMessage(e)
 
   sendMessage: (el) ->
     if @isConnected()

@@ -62,6 +62,9 @@ class Client extends EventEmitter
     @connector.on 'disconnected', =>
       @addConnectionError()
 
+    @connector.on 'restarting', =>
+      @showMessage("Reconnecting...")
+
     this.on 'click', @onClick
 
     axes = new THREE.AxisHelper(2)
@@ -88,6 +91,13 @@ class Client extends EventEmitter
       @showInstructions()
       @hideBlocker()
 
+  removeReflectedObjects: ->
+    list = for obj in @scene.children when obj.name
+      obj
+
+    for obj in list
+      @scene.remove(obj)
+      
   getAllClickableObjects: ->
     list = []
 
@@ -180,8 +190,12 @@ class Client extends EventEmitter
     if @blockerElement
       @blockerElement.hide()
 
+  # Fixme - make some kind of overlay class
+  showMessage: (message) ->
+    $("#instructions").show().html(message)
+
   showInstructions: ->
-    $("#instructions").show()
+    @addInstructions()
 
   hideInstructions: ->
     $("#instructions").hide()
@@ -228,10 +242,9 @@ class Client extends EventEmitter
     @controls.getObject()
 
   addLights: ->
-    dirLight = new THREE.DirectionalLight( 0xffffff, 1.0)
-    dirLight.position.set( -1, 0.75, 1 )
+    dirLight = new THREE.DirectionalLight( 0xffffff, 1.1)
+    dirLight.position.set( -1, 0.75, 0.92 )
     dirLight.position.multiplyScalar( 200)
-    dirLight.name = "dirlight"
     dirLight.castShadow = true;
     dirLight.shadowMapWidth = dirLight.shadowMapHeight = 256
 

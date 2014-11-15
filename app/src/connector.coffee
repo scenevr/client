@@ -16,6 +16,26 @@ class Connector extends EventEmitter
     @client.playerBody.position.copy(v).y = 1.5
     @client.controls.getObject().position.copy(@client.playerBody.position)
 
+  isConnected: ->
+    @ws and @ws.readyState == 1
+
+  disconnect: ->
+    @ws.onopen = null
+    @ws.onclose = null
+    @ws.close()
+
+    delete @ws
+
+  reconnect: =>
+    @connect()
+
+  # Server told us to reconnect (scene probably changed)
+  restartConnection: ->
+    @disconnect()
+    @trigger 'restarting'
+    @client.removeReflectedObjects()
+    setTimeout(@reconnect, 500)
+
   connect: ->
     @ws = new WebSocket("ws://#{@host}:#{@port}/", @protocol);
     @ws.binaryType = 'arraybuffer'
@@ -30,8 +50,9 @@ class Connector extends EventEmitter
     @ws.onmessage = @onMessage
 
   sendMessage: (el) ->
-    xml = "<packet>" + $("<packet />").append(el).html() + "</packet>"
-    @ws.send(xml)
+    if @isConnected()
+      xml = "<packet>" + $("<packet />").append(el).html() + "</packet>"
+      @ws.send(xml)
 
   sendChat: (message) ->
     @sendMessage $("<event />").
@@ -60,10 +81,9 @@ class Connector extends EventEmitter
 
 
   tick: =>
-    position = new THREE.Vector3(0,-0.75,0).add(@client.getPlayerObject().position)
-
-    if @spawned
+    if @spawned and @isConnected()
       # send location..
+      position = new THREE.Vector3(0,-0.75,0).add(@client.getPlayerObject().position)
       @sendMessage $("<player />").attr("position", position.toArray().join(" "))
 
   getHost: ->
@@ -165,8 +185,11 @@ class Connector extends EventEmitter
 
         if name == "ready"
           @uuid = el.attr("uuid")
+        else if name == "restart"
+          console.log "Got restart message"
+          @restartConnection()
         else
-          console.log "Unrecognized event #{message}"
+          console.log "Unrecognized event #{el.attr('name')}"
 
       else if uuid = el.attr('uuid')
         if el.is("dead") 

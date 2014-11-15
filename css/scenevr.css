@@ -11,6 +11,10 @@ body{
   font-size: 0.85em;
 }
 
+*{
+  box-sizing: border-box;
+}
+
 header{
   position: absolute;
   right: 10px;
@@ -23,7 +27,7 @@ header a{
   display: block;
   text-decoration: none;
   background: linear-gradient(#222, #333);
-  color: #f70;
+  color: white;
   border: 1px solid black;
   box-shadow: 1px 1px 3px rgba(0,0,0,0.2);
   font-size: 1.5em;
@@ -37,6 +41,7 @@ header a{
 header a span{
   font-size: 1.2em;
   font-weight: bold;
+  color: #f70;
 }
 
 #stats{

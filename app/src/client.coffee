@@ -39,7 +39,7 @@ class Client extends EventEmitter
     @renderer = new THREE.WebGLRenderer( {antialias:false} )
     @renderer.setSize(@width / DOWN_SAMPLE, @height / DOWN_SAMPLE)
     @renderer.shadowMapEnabled = false
-    @renderer.setClearColor( 0xffffff, 1)
+    @renderer.setClearColor( 0x999999, 1)
 
     # @projector = new THREE.Projector()
     @time = Date.now()
@@ -52,7 +52,10 @@ class Client extends EventEmitter
     @camera = new THREE.PerspectiveCamera( VIEW_ANGLE, ASPECT, NEAR, FAR)
     @addControls()
 
-    @connector = new Connector(this)
+    host = window.location.pathname.split('/')[2]
+    path = "/" + window.location.pathname.split('/')[3]
+    
+    @connector = new Connector(this, host, path)
     @connector.connect()
     @addConnecting()
 

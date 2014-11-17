@@ -3,13 +3,14 @@ TWEEN = require("tween.js")
 EventEmitter = require('wolfy87-eventemitter');
 
 class Connector extends EventEmitter
-  constructor: (@client, host, port) ->
-    @host = host || window.location.host.split(":")[0]
-    @port = port || 8080
+  constructor: (@client, host, path) ->
+    @host = host || window.location.host.split(":")[0] + ":8080"
+    @path = path || "/index.xml"
     @protocol = "scenevr"
     @scene = @client.scene
     @uuid = null
     @spawned = false
+    @manager = new THREE.LoadingManager()
 
   setPosition: (v) ->
     # Fixme - if the controls aren't active, the player body isn't copied to the camera
@@ -40,7 +41,7 @@ class Connector extends EventEmitter
     setTimeout(@reconnect, 500)
 
   connect: ->
-    @ws = new WebSocket("ws://#{@host}:#{@port}/", @protocol);
+    @ws = new WebSocket("ws://#{@host}#{@path}", @protocol);
     @ws.binaryType = 'arraybuffer'
     @ws.onopen = =>
       console.log "Opened socket"
@@ -93,6 +94,9 @@ class Connector extends EventEmitter
   getHost: ->
     window.location.host.split(":")[0]
 
+  getAssetHost: ->
+    @getHost() + ":8090"
+
   createBillboard: (el) ->
     obj = new THREE.Object3D
 
@@ -101,7 +105,7 @@ class Connector extends EventEmitter
     div = $("<div />").html(el.html()).css({ position : 'absolute', left : 0, top : 0, background : 'white', width : 256, height : 256, padding : '10px', border : '1px solid #ccc' })
 
     div.find("img").each (index, img) =>
-      img.src =  "//" + @getHost() + ":8090" + img.getAttribute("src")
+      img.src =  "//" + @getAssetHost() + img.getAttribute("src")
 
     div.appendTo 'body'
 
@@ -178,6 +182,48 @@ class Connector extends EventEmitter
 
     obj
 
+  createModel: (el) ->
+    obj = new THREE.Object3D
+    texture = null
+
+    if el.attr("style")
+      styles = @parseStyleAttribute(el.attr("style"))
+
+      if styles['lightmap']
+        texture = new THREE.Texture()
+        loader = new THREE.ImageLoader( @manager )
+        loader.crossOrigin = true
+        loader.load "//" + @getAssetHost() + @getUrlFromStyle(styles['lightmap']), ( image ) ->
+          texture.image = image
+          texture.needsUpdate = true
+
+    material = new THREE.MeshBasicMaterial({ color : '#eeeeee' })
+    loader = new THREE.OBJLoader( @manager )
+    loader.load "//" + @getAssetHost() + el.attr("src"), ( object ) ->
+      object.traverse ( child ) ->
+        if child instanceof THREE.Mesh
+          child.material = material
+          if texture
+            child.material.map = texture
+      obj.add(object)
+
+    obj 
+
+  getUrlFromStyle: (value) ->
+    try
+      value.match(/\((.+?)\)/)[1]
+    catch e
+      null
+
+  parseStyleAttribute: (value) ->
+    result = {}
+
+    for pair in value.split(";")
+      [name, value] = pair.split(":")
+      result[name.trim().toLowerCase()] = value.trim()
+
+    result
+
   onMessage: (e) =>
     # console.log e.data
 
@@ -218,6 +264,9 @@ class Connector extends EventEmitter
           else if el.is("box")
             obj = @createBox(el)
 
+          else if el.is("model")
+            obj = @createModel(el)
+
           else if el.is("player")
             if uuid == @uuid
               # That's me!
@@ -230,8 +279,8 @@ class Connector extends EventEmitter
             obj = @createPlayer(el)
 
           else
-            console.log "Unknown element..."
-            console.log el[0].outerHTML
+            console.log "Unknown element... \n " + el[0].outerHTML
+            return
 
           obj.name = uuid
           obj.position.copy(newPosition)
@@ -248,10 +297,20 @@ class Connector extends EventEmitter
               .easing(TWEEN.Easing.Linear.None)
               .start()
 
+        if el.attr("style")
+          if el.css("visibility") == "hidden"
+            obj.visible = false
+          else
+            obj.visible = true
+            window.el = el
+
+          # if el.css("lightmap")
+          #   window.el = el
+
         if el.is("spawn")
           # Don't tween spawn
           obj.position.copy(newPosition)
-        else if el.is("box") or el.is("player") or el.is("billboard")
+        else if el.is("box") or el.is("player") or el.is("billboard") or el.is("model")
           # Tween away
           startPosition = obj.position.clone()
 

@@ -3,16 +3,15 @@
   "version": "0.0.1",
   "dependencies": {
     "three": "0.66.2",
-    "watchify": "~2.1.1",
     "coffeeify": "~0.7.0",
     "tween.js": "~0.14.0",
     "wolfy87-eventemitter": "~4.2.9",
     "cannon": "~0.6.1",
     "browserify-middleware": "~4.1.0",
-    "express": "~4.10.2"
+    "express": "~4.10.2",
+    "labeled-stream-splicer": "1.0.0"
   },
   "scripts": {
-    "start": "coffee server.coffee",
-    "test": "NODE_ENV=test mocha spec/*_spec.js"
+    "start": "coffee server.coffee"
   }
 }

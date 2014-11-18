@@ -10,7 +10,11 @@ app.use('/js/bundle.js', browserify('./index.coffee', {
   transform : ['coffeeify']
 }))
 
+# Try loading the path /connect/localhost:8080/index.xml to 
+# specify the server and scene you want to load
 app.get '/connect/*', (req, res) ->
   res.send fs.readFileSync(__dirname + "/index.html").toString()
+
+console.log "[webclient] Listening for connections on localhost:9000..."
 
 app.listen(9000)

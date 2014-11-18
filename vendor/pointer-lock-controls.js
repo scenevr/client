@@ -142,6 +142,10 @@
     this.getDirection = function(targetVec){
         targetVec.set(0,0,-1);
         targetVec.applyQuaternion(quat);
+
+        // Fixme - this is a gross hack, and I don't know why it's necessary
+        targetVec.y = pitchObject.rotation.x / (Math.PI / 2)
+
         return targetVec;
     }
 

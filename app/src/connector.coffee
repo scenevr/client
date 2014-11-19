@@ -1,6 +1,7 @@
 Utils = require "./utils.coffee"
 TWEEN = require("tween.js")
 EventEmitter = require('wolfy87-eventemitter');
+Color = require("color")
 
 class Connector extends EventEmitter
   constructor: (@client, host, path) ->
@@ -111,7 +112,7 @@ class Connector extends EventEmitter
     div.appendTo 'body'
 
     geometry = new THREE.BoxGeometry( 1, 1, 1 )
-    material = new THREE.MeshLambertMaterial( {color: '#eeeeee' } )
+    material = new THREE.MeshLambertMaterial( {color: '#eeeeee', emissive : '#222222' } )
     box = new THREE.Mesh( geometry, material )
 
     material = new THREE.MeshLambertMaterial( {color: '#ffffff' } )
@@ -243,8 +244,6 @@ class Connector extends EventEmitter
         path + 'top' + format, path + 'bottom' + format,
         path + 'front' + format, path + 'back' + format
       ]
-
-      console.log urls
 
       THREE.ImageUtils.crossOrigin = true
       reflectionCube = THREE.ImageUtils.loadTextureCube( urls )
@@ -408,6 +407,6 @@ class Connector extends EventEmitter
               .start()
 
         if el.is("box") 
-          obj.material.setValues { color : el.attr('color') }
+          obj.material.setValues { color : el.attr('color'), emissive : Color(el.attr('color')).darken(0.75).hexString() }
   
 module.exports = Connector

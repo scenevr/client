@@ -73,7 +73,8 @@ class Connector extends EventEmitter
       attr("point", e.point.toArray().join(" "))
 
   flashObject: (obj) ->
-    # todo - flash white then back to normal color
+    # todo - flash white then back to normal color.
+    # fixme - doesnt work on links or billboards
     if obj.material
       obj.material.setValues { transparent : true }
 
@@ -160,6 +161,27 @@ class Connector extends EventEmitter
 
     material = new THREE.MeshPhongMaterial( {color: '#999999' } )
     new THREE.Mesh( combined, material )
+
+  # Todo - do something special to indicate links....
+  createLink: (el) ->
+    obj = new THREE.Object3D
+
+    geometry2 = new THREE.SphereGeometry( 1, 16, 16 )
+    material2 = new THREE.MeshPhongMaterial( {color: '#ff7700', emissive : '#aa3300', transparent : true, opacity: 0.5 } )
+    obj.add(new THREE.Mesh( geometry2, material2 ))
+
+    geometry = new THREE.SphereGeometry( 0.5, 16, 16 )
+    material = new THREE.MeshPhongMaterial( {color: '#ff7700', emissive : '#aa3300' } )
+    obj.add(new THREE.Mesh( geometry, material ))
+
+    newScale = if el.attr("scale")
+      Utils.parseVector(el.attr("scale"))
+    else
+      new THREE.Vector3(1,1,1)
+
+    obj.scale.copy(newScale)
+
+    obj
 
   createBox: (el) ->
     geometry = new THREE.BoxGeometry( 1, 1, 1 )
@@ -267,6 +289,9 @@ class Connector extends EventEmitter
           else if el.is("model")
             obj = @createModel(el)
 
+          else if el.is("link")
+            obj = @createLink(el)
+
           else if el.is("player")
             if uuid == @uuid
               # That's me!
@@ -283,11 +308,12 @@ class Connector extends EventEmitter
             return
 
           obj.name = uuid
+          obj.userData = el
           obj.position.copy(newPosition)
           obj.castShadow = true
           @scene.add(obj)
 
-          if obj.material
+          if obj.material and el.is("box")
             obj.material.setValues { transparent : true, opacity: 0.5 }
 
             tween = new TWEEN.Tween({ opacity : 0.0 })
@@ -310,7 +336,7 @@ class Connector extends EventEmitter
         if el.is("spawn")
           # Don't tween spawn
           obj.position.copy(newPosition)
-        else if el.is("box") or el.is("player") or el.is("billboard") or el.is("model")
+        else if el.is("box") or el.is("player") or el.is("billboard") or el.is("model") or el.is("link")
           # Tween away
           startPosition = obj.position.clone()
 

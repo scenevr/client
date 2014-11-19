@@ -211,7 +211,7 @@ class Client extends EventEmitter
     floorTexture.repeat.set( 100, 100 )
 
     floorMaterial = new THREE.MeshBasicMaterial( { map: floorTexture } );
-    floorGeometry = new THREE.PlaneGeometry(100, 100, 1, 1)
+    floorGeometry = new THREE.PlaneBufferGeometry(100, 100, 1, 1)
     
     @floor = new THREE.Mesh(floorGeometry, floorMaterial)
     @floor.position.y = 0

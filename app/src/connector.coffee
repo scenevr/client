@@ -114,7 +114,7 @@ class Connector extends EventEmitter
     box = new THREE.Mesh( geometry, material )
 
     material = new THREE.MeshLambertMaterial( {color: '#ffffff' } )
-    mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), material)
+    mesh = new THREE.Mesh(new THREE.PlaneBufferGeometry(1, 1), material)
     mesh.position.setZ(0.52)
 
     html2canvas div[0], {

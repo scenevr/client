@@ -259,10 +259,10 @@ class Connector extends EventEmitter
         depthWrite: false,
         side: THREE.BackSide
       } )
-    else if color = el.css("color")
-      material = new THREE.MeshBasicMaterial( { color : color })
+    else if color = @parseStyleAttribute(el.attr('style')).color
+      material = new THREE.MeshBasicMaterial( { color : color, side : THREE.BackSide })
     else
-      material = new THREE.MeshBasicMaterial( { color : '#eeeeee' })
+      material = new THREE.MeshBasicMaterial( { color : '#eeeeee', side : THREE.BackSide })
 
     new THREE.Mesh( new THREE.BoxGeometry( 100, 100, 100 ), material );
 

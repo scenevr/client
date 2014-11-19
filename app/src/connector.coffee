@@ -231,6 +231,42 @@ class Connector extends EventEmitter
 
     obj 
 
+  createSkyBox: (el) ->
+    material = null
+
+    if src = el.attr("src")
+      path = "//" + @getAssetHost() + src.replace(/\..+?$/,'')
+      format = src.replace(/.+\./,'.')
+
+      urls = [
+        path + 'right' + format, path + 'left' + format,
+        path + 'top' + format, path + 'bottom' + format,
+        path + 'front' + format, path + 'back' + format
+      ]
+
+      console.log urls
+
+      THREE.ImageUtils.crossOrigin = true
+      reflectionCube = THREE.ImageUtils.loadTextureCube( urls )
+      reflectionCube.format = THREE.RGBFormat
+
+      shader = THREE.ShaderLib[ "cube" ];
+      shader.uniforms[ "tCube" ].value = reflectionCube
+
+      material = new THREE.ShaderMaterial( {
+        fragmentShader: shader.fragmentShader,
+        vertexShader: shader.vertexShader,
+        uniforms: shader.uniforms,
+        depthWrite: false,
+        side: THREE.BackSide
+      } )
+    else if color = el.css("color")
+      material = new THREE.MeshBasicMaterial( { color : color })
+    else
+      material = new THREE.MeshBasicMaterial( { color : '#eeeeee' })
+
+    new THREE.Mesh( new THREE.BoxGeometry( 100, 100, 100 ), material );
+
   getUrlFromStyle: (value) ->
     try
       value.match(/\((.+?)\)/)[1]
@@ -292,6 +328,9 @@ class Connector extends EventEmitter
           else if el.is("link")
             obj = @createLink(el)
 
+          else if el.is("skybox")
+            obj = @createSkyBox(el)
+
           else if el.is("player")
             if uuid == @uuid
               # That's me!
@@ -309,10 +348,19 @@ class Connector extends EventEmitter
 
           obj.name = uuid
           obj.userData = el
-          obj.position.copy(newPosition)
-          obj.castShadow = true
+
+          unless el.is("skybox")
+            # skyboxes dont have a position
+            obj.position.copy(newPosition)
+
+          if el.is("skybox")
+            obj.castShadow = false
+          else
+            obj.castShadow = true
+
           @scene.add(obj)
 
+          # Fade in boxes
           if obj.material and el.is("box")
             obj.material.setValues { transparent : true, opacity: 0.5 }
 

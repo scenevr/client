@@ -52,10 +52,7 @@ class Client extends EventEmitter
     @camera = new THREE.PerspectiveCamera( VIEW_ANGLE, ASPECT, NEAR, FAR)
     @addControls()
 
-    host = window.location.pathname.split('/')[2]
-    path = "/" + window.location.pathname.split('/')[3]
-    
-    @connector = new Connector(this, host, path)
+    @connector = new Connector(this, @getHostFromLocation(), @getPathFromLocation())
     @connector.connect()
     @addConnecting()
 
@@ -94,6 +91,25 @@ class Client extends EventEmitter
       @showInstructions()
       @hideBlocker()
 
+  getHostFromLocation: ->
+    if window.location.pathname.match /connect.+/
+      window.location.pathname.split('/')[2]
+    else
+      window.location.host.split(":")[0] + ":8080"
+
+  getPathFromLocation: ->
+    if window.location.pathname.match /connect.+/
+      "/" + window.location.pathname.split('/')[3]
+    else
+      null
+
+  loadNewScene: (path) ->
+    if path.match /^\/\//
+      alert '// hrefs not supported yet...'
+    else
+      # history.replaceState {}, "SceneVR", 
+      window.location = "/connect/#{@getHostFromLocation()}#{path}"
+
   removeReflectedObjects: ->
     list = for obj in @scene.children when obj.name
       obj
@@ -111,11 +127,21 @@ class Client extends EventEmitter
 
     list
 
+  # Fixme - the .parent tests are all a bit manky...
   onClick: =>
     @raycaster = new THREE.Raycaster
-    @raycaster.set( @controls.getObject().position, @controls.getDirection(new THREE.Vector3) )
+
+    position = @controls.getObject().position
+    direction = @controls.getDirection(new THREE.Vector3)
+
+    @raycaster.set( position, direction )
 
     for intersection in @raycaster.intersectObjects( @getAllClickableObjects() ) 
+      # For links
+      if intersection.object && intersection.object.parent && intersection.object.parent.userData.is && intersection.object.parent.userData.is("link")
+        @loadNewScene(intersection.object.parent.userData.attr("href"))
+
+      # Boxes
       if intersection.object.name
         @connector.onClick {
           uuid : intersection.object.name
@@ -123,7 +149,7 @@ class Client extends EventEmitter
         }
         return
 
-      # For things like billboards...
+      # Billboards, models
       if intersection.object.parent && intersection.object.parent.name
         @connector.onClick {
           uuid : intersection.object.parent.name
@@ -141,14 +167,14 @@ class Client extends EventEmitter
     $(".overlay").remove()
 
     @overlay = $("<div id='connecting' class='overlay'>
-      <h1>Unable to connect to //#{@connector.host}:#{@connector.port}</h1>
+      <h1>Unable to connect to #{@connector.host}</h1>
     </div>").appendTo(@container)
 
   addConnecting: ->
     $(".overlay").remove()
 
     @overlay = $("<div id='connecting' class='overlay'>
-      <h1>Connecting to //#{@connector.host}:#{@connector.port}...</h1>
+      <h1>Connecting to #{@connector.host}...</h1>
     </div>").appendTo(@container)
 
   addInstructions: ->
@@ -248,7 +274,7 @@ class Client extends EventEmitter
 
   addLights: ->
     dirLight = new THREE.DirectionalLight( 0xffffff, 1.1)
-    dirLight.position.set( -1, 0.75, 0.92 )
+    dirLight.position.set( 1, 0.75, -0.92 )
     dirLight.position.multiplyScalar( 200)
     dirLight.castShadow = true;
     dirLight.shadowMapWidth = dirLight.shadowMapHeight = 256

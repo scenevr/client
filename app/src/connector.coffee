@@ -15,7 +15,9 @@ class Connector extends EventEmitter
 
   setPosition: (v) ->
     # Fixme - if the controls aren't active, the player body isn't copied to the camera
-    @client.playerBody.position.copy(v).y = 1.5
+    @client.playerBody.position.copy(v)
+    @client.playerBody.position.y += 1.5
+    @client.playerBody.velocity.set(0,0,0)
     @client.controls.getObject().position.copy(@client.playerBody.position)
 
   isConnected: ->
@@ -264,7 +266,7 @@ class Connector extends EventEmitter
     else
       material = new THREE.MeshBasicMaterial( { color : '#eeeeee', side : THREE.BackSide })
 
-    new THREE.Mesh( new THREE.BoxGeometry( 100, 100, 100 ), material );
+    new THREE.Mesh( new THREE.BoxGeometry( 200, 200, 200 ), material );
 
   getUrlFromStyle: (value) ->
     try

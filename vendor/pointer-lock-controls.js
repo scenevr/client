@@ -69,6 +69,8 @@
 
     var onKeyDown = function ( event ) {
 
+        if ( scope.enabled === false ) return;
+
         switch ( event.keyCode ) {
 
             case 38: // up
@@ -101,6 +103,8 @@
     };
 
     var onKeyUp = function ( event ) {
+
+        if ( scope.enabled === false ) return;
 
         switch( event.keyCode ) {
 
@@ -146,6 +150,10 @@
     this.getDirection = function(targetVec){
         targetVec.set(0,0,-1);
         targetVec.applyQuaternion(quat);
+
+        // Fixme - this is a gross hack, and I don't know why it's necessary
+        targetVec.y = pitchObject.rotation.x / (Math.PI / 2)
+
         return targetVec;
     }
 
@@ -153,9 +161,8 @@
     var inputVelocity = new THREE.Vector3();
     var euler = new THREE.Euler();
     this.update = function ( delta ) {
-        if ( scope.enabled === false ) return;
 
-        delta *= 0.1;
+        delta *= 0.5;
 
         inputVelocity.set(0,0,0);
 
@@ -181,8 +188,8 @@
         inputVelocity.applyQuaternion(quat);
 
         // Add to the object
-        velocity.x += inputVelocity.x;
-        velocity.z += inputVelocity.z;
+        velocity.x = velocity.x * 0.7 + inputVelocity.x;
+        velocity.z = velocity.z * 0.7 + inputVelocity.z;
 
         yawObject.position.copy(cannonBody.position).add(new THREE.Vector3(0,0.9,0));
     };

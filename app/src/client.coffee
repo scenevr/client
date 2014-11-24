@@ -1,11 +1,10 @@
-Connector = require("./connector")
+Connector = require("./connector.coffee")
 
 # fixme - do we have to export to window? bit gross.
 window.CANNON = require("cannon")
 
 TWEEN = require("tween.js")
 EventEmitter = require('wolfy87-eventemitter');
-rasterizeHTML = require("rasterizehtml")
 
 class Client extends EventEmitter
   constructor: ->
@@ -20,14 +19,15 @@ class Client extends EventEmitter
     @stats.setMode(0)
 
     @stats.domElement.style.position = 'absolute';
-    @stats.domElement.style.left = '10px';
-    @stats.domElement.style.top = '10px';
+    @stats.domElement.style.right = '10px';
+    @stats.domElement.style.bottom = '10px';
     @container.append(@stats.domElement)
 
     VIEW_ANGLE = 45
     ASPECT = @width / @height
     NEAR = 0.1
     FAR = 700
+    DOWN_SAMPLE = 1
 
     @scene = new THREE.Scene()
     @scene.fog = new THREE.Fog( 0xffffff, 500, 700 );
@@ -37,9 +37,9 @@ class Client extends EventEmitter
     @world.broadphase = new CANNON.NaiveBroadphase()
 
     @renderer = new THREE.WebGLRenderer( {antialias:false} )
-    @renderer.setSize(@width, @height)
+    @renderer.setSize(@width / DOWN_SAMPLE, @height / DOWN_SAMPLE)
     @renderer.shadowMapEnabled = false
-    @renderer.setClearColor( 0xffffff, 1)
+    @renderer.setClearColor( 0xeeeeee, 1)
 
     @initVR()
 
@@ -49,11 +49,13 @@ class Client extends EventEmitter
     @addLights()
     @addFloor()
     @addPlayerBody()
+    @addDot()
+    @addMessageInput()
 
     @camera = new THREE.PerspectiveCamera( VIEW_ANGLE, ASPECT, NEAR, FAR)
     @addControls()
 
-    @connector = new Connector(this)
+    @connector = new Connector(this, @getHostFromLocation(), @getPathFromLocation())
     @connector.connect()
     @addConnecting()
 
@@ -63,12 +65,16 @@ class Client extends EventEmitter
     @connector.on 'disconnected', =>
       @addConnectionError()
 
+    @connector.on 'restarting', =>
+      @showMessage("Reconnecting...")
+
     this.on 'click', @onClick
 
     axes = new THREE.AxisHelper(2)
     @scene.add(axes)
 
     @container.append( @renderer.domElement );
+    $(@renderer.domElement).css { width : @width, height : @height }
 
     @tick()
 
@@ -80,13 +86,55 @@ class Client extends EventEmitter
 
   pointerlockchange: (event) =>
     if @hasPointerLock()
-      @controls.enabled = true
-      @showBlocker()
-      @hideInstructions()
+      @enableControls()
     else
-      @controls.enabled = false
-      @showInstructions()
-      @hideBlocker()
+      @disableControls()
+
+  enableControls: ->
+    @controls.enabled = true
+    @showBlocker()
+    @hideInstructions()
+
+  disableControls: ->
+    @controls.enabled = false
+    @showInstructions()
+    @hideBlocker()
+
+  getHostFromLocation: ->
+    if window.location.pathname.match /connect.+/
+      window.location.pathname.split('/')[2]
+    else
+      window.location.host.split(":")[0] + ":8080"
+
+  getPathFromLocation: ->
+    if window.location.pathname.match /connect.+/
+      "/" + window.location.pathname.split('/')[3]
+    else
+      null
+
+  loadNewScene: (path) ->
+    if path.match /^\/\//
+      alert '// hrefs not supported yet...'
+    else
+      # history.replaceState {}, "SceneVR", 
+      window.location = "/connect/#{@getHostFromLocation()}#{path}"
+
+  removeReflectedObjects: ->
+    list = for obj in @scene.children when obj.name
+      obj
+
+    for obj in list
+      @scene.remove(obj)
+      if obj.body
+        @world.remove(obj.body)
+      
+  getAllClickableObjects: ->
+    list = []
+
+    @scene.traverse (obj) ->
+      list.push(obj)
+
+    list
 
   initVR: ->
     if (navigator.getVRDevices)
@@ -108,16 +156,67 @@ class Client extends EventEmitter
     if @vrHMD
       @vrrenderer = new THREE.VRRenderer(@renderer, @vrHMD)
 
+  # Fixme - the .parent tests are all a bit manky...
   onClick: =>
     @raycaster = new THREE.Raycaster
-    @raycaster.set( @controls.getObject().position, @controls.getDirection(new THREE.Vector3) )
 
-    for intersection in @raycaster.intersectObjects( @scene.children ) when intersection.object.name
-      @connector.onClick {
-        uuid : intersection.object.name
-        point : intersection.point
-      }
-      return
+    position = @controls.getObject().position
+    direction = @controls.getDirection(new THREE.Vector3)
+
+    @raycaster.set( position, direction )
+
+    for intersection in @raycaster.intersectObjects( @getAllClickableObjects() ) 
+      # For links
+      if intersection.object && intersection.object.parent && intersection.object.parent.userData.is && intersection.object.parent.userData.is("link")
+        @loadNewScene(intersection.object.parent.userData.attr("href"))
+
+      # Boxes
+      if intersection.object.name
+        @connector.onClick {
+          uuid : intersection.object.name
+          point : intersection.point
+        }
+        return
+
+      # Billboards, models
+      if intersection.object.parent && intersection.object.parent.name
+        @connector.onClick {
+          uuid : intersection.object.parent.name
+          point : intersection.point
+        }
+        return
+
+  addMessageInput: ->
+    @chatForm = $("<div id='message-input'>
+      <input type='text' placeholder='Press enter to start chatting...' />
+    </div>").appendTo("body")
+
+    input = @chatForm.find('input')
+
+    $('body').on 'keydown', (e) =>
+      if e.keyCode == 13 and !input.is(":focus")
+        @chatForm.find('input').focus()
+        @controls.enabled = false
+
+      if e.keyCode == 27
+        @disableControls()
+
+    input.on 'keydown', (e) =>
+      if e.keyCode == 13
+        @addChatMessage({ name : 'You'}, input.val())
+        @connector.sendChat input.val()
+        input.val("").blur()
+        @enableControls()
+
+        e.preventDefault()
+        e.stopPropagation()
+
+    @chatMessages = $("<div id='messages' />").hide().appendTo 'body'
+
+  addChatMessage: (player, message) ->
+    @chatMessages.show()
+    $("<div />").text("#{player.name}: #{message}").appendTo @chatMessages
+    @chatMessages.scrollTop(@chatMessages[0].scrollHeight)
 
   hideOverlays: ->
     $(".overlay").hide()
@@ -129,14 +228,14 @@ class Client extends EventEmitter
     $(".overlay").remove()
 
     @overlay = $("<div id='connecting' class='overlay'>
-      <h1>Unable to connect to //#{@connector.host}:#{@connector.port}</h1>
+      <h1>Unable to connect to #{@connector.host}</h1>
     </div>").appendTo(@container)
 
   addConnecting: ->
     $(".overlay").remove()
 
     @overlay = $("<div id='connecting' class='overlay'>
-      <h1>Connecting to //#{@connector.host}:#{@connector.port}...</h1>
+      <h1>Connecting to #{@connector.host}...</h1>
     </div>").appendTo(@container)
 
   addInstructions: ->
@@ -183,8 +282,12 @@ class Client extends EventEmitter
     if @blockerElement
       @blockerElement.hide()
 
+  # Fixme - make some kind of overlay class
+  showMessage: (message) ->
+    $("#instructions").show().html(message)
+
   showInstructions: ->
-    $("#instructions").show()
+    @addInstructions()
 
   hideInstructions: ->
     $("#instructions").hide()
@@ -195,7 +298,7 @@ class Client extends EventEmitter
     floorTexture.repeat.set( 100, 100 )
 
     floorMaterial = new THREE.MeshBasicMaterial( { map: floorTexture } );
-    floorGeometry = new THREE.PlaneGeometry(100, 100, 1, 1)
+    floorGeometry = new THREE.PlaneBufferGeometry(100, 100, 1, 1)
     
     @floor = new THREE.Mesh(floorGeometry, floorMaterial)
     @floor.position.y = 0
@@ -215,9 +318,12 @@ class Client extends EventEmitter
     @playerBody = new CANNON.Body { mass : 100 }
     sphereShape = new CANNON.Sphere(0.5)
     @playerBody.addShape(sphereShape)
-    @playerBody.position.set(0,5,10)
-    @playerBody.linearDamping = 0.9
+    @playerBody.position.set(0,0,0)
+    @playerBody.linearDamping = 0.2
     @world.add(@playerBody)
+
+  addDot: ->
+    $("<div />").addClass('aiming-point').appendTo 'body'
 
   addControls: ->
     @controls = new PointerLockControls(@camera, this, @playerBody)
@@ -228,10 +334,9 @@ class Client extends EventEmitter
     @controls.getObject()
 
   addLights: ->
-    dirLight = new THREE.DirectionalLight( 0xffffff, 1.0)
-    dirLight.position.set( -1, 0.75, 1 )
+    dirLight = new THREE.DirectionalLight( 0xffffff, 1.1)
+    dirLight.position.set( 1, 0.75, -0.92 )
     dirLight.position.multiplyScalar( 200)
-    dirLight.name = "dirlight"
     dirLight.castShadow = true;
     dirLight.shadowMapWidth = dirLight.shadowMapHeight = 256
 

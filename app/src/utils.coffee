@@ -7,9 +7,13 @@ Utils = {
     else
       raise "Invalid vector string"
 
-  parseEuler: (attributeString) ->
-    [x,y,z] = attributeString.split(' ').map(parseFloat)
-    new THREE.Euler x,y,z
+  parseEuler: (value) ->
+    euler = new THREE.Euler().fromArray(value.split(' ').map(parseFloat))
+
+    if isFinite(euler.x) && isFinite(euler.y) && isFinite(euler.z)
+      euler
+    else
+      raise "Invalid euler string"
 
 }
 

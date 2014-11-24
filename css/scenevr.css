@@ -1,0 +1,132 @@
+body,html{
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+body{
+  font-family: 'helvetica neue', sans-serif;
+  font-size: 0.85em;
+}
+
+*{
+  box-sizing: border-box;
+}
+
+canvas, canvas *{
+  -moz-user-select: none;
+  -webkit-user-select: none;
+}
+
+header{
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  z-index: 1000;
+}
+
+header a{
+  margin: 0;
+  display: block;
+  text-decoration: none;
+  background: linear-gradient(#222, #333);
+  color: white;
+  border: 1px solid black;
+  box-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+  font-size: 1.5em;
+  border-radius: 3px;
+  padding: 10px;
+  font-weight: 200;
+  font-size: 13px;
+  text-align: center;
+  text-shadow: 1px 1px 1px black;
+}
+header a span{
+  font-size: 1.2em;
+  font-weight: bold;
+  color: #f70;
+}
+
+#stats{
+  border-radius: 3px;
+}
+
+#scene-view{
+  width: 100%;
+  height: 100%;
+}
+
+#message-input{
+  background: rgba(32,32,32,0.5);
+  border-radius: 2px;
+  width: 500px;
+  position: absolute;
+  left : 10px;
+  bottom: 10px;
+  z-index: 90;
+  padding: 10px;
+}
+#message-input label{
+  display: block;
+  color: white;
+  margin-bottom: 10px;
+  text-shadow: 1px 1px 1px black;
+}
+#message-input input{
+  width: 100%;
+  border: none;
+  box-shadow: 1px 1px 3px black;
+  font: inherit;
+  padding: 5px;
+  border-radius: 2px;
+}
+
+/* todo: style the scrollbar nicer */
+#messages{
+  background: rgba(32,32,32,0.5);
+  border-radius: 2px;
+  width: 500px;
+  height: 144px;
+  position: absolute;
+  left : 10px;
+  bottom: 62px;
+  z-index: 90;
+  padding: 10px;
+  color: white;
+  overflow: auto;
+  overflow-x: hidden;
+}
+
+.aiming-point{
+  width: 5px;
+  height: 5px;
+  background: #f70;
+  border: 1px solid #777;
+  border-radius: 5px;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 99;
+}
+
+.overlay{
+  position: absolute;
+  background: white;
+  left: 50%;
+  top: 50%;
+  margin: -50px 0 0 -100px;
+  width: 200px;
+  text-align: center;
+  border: 1px solid #ccc;
+  padding: 20px;
+  box-shadow: 1px 1px 5px rgba(0,0,0,0.2);
+  z-index: 100;
+}
+
+.overlay *{
+  margin: 0;
+  padding: 0;
+  font-size: 1em;
+}

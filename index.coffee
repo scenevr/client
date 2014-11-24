@@ -1,4 +1,4 @@
-Client = require("./app/src/client")
+Client = require("./app/src/client.coffee")
 
 $ -> 
   setTimeout(

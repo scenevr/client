@@ -70,15 +70,17 @@ THREE.VRRenderer = function(renderer, hmd) {
         cameraLeft.position.copy(camera.parent.parent.position);
         cameraRight.position.copy(camera.parent.parent.position);
 
-        euler.y = controls.getYaw() + Math.PI;
+        euler.y = controls.getYaw(); // + Math.PI / 2;
         euler.order = "XYZ";
         quat.setFromEuler(euler);
+        //quat.inverse();
 
-        //cameraLeft.quaternion.multiply(quat);
-        //cameraRight.quaternion.multiply(quat);
+        cameraLeft.quaternion.multiplyQuaternions(quat, cameraLeft.quaternion);
+        cameraRight.quaternion.multiplyQuaternions(quat, cameraRight.quaternion);
 
         cameraLeft.projectionMatrix = self.FovToProjection(self.fovLeft, true, camera.near, camera.far);
         cameraRight.projectionMatrix = self.FovToProjection(self.fovRight, true, camera.near, camera.far);
+
         var right = new THREE.Vector3(1, 0, 0);
         right.applyQuaternion(camera.quaternion);
 

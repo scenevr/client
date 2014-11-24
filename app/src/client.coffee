@@ -23,7 +23,7 @@ class Client extends EventEmitter
     @stats.domElement.style.bottom = '10px';
     @container.append(@stats.domElement)
 
-    VIEW_ANGLE = 45
+    VIEW_ANGLE = 60
     ASPECT = @width / @height
     NEAR = 0.1
     FAR = 700

@@ -184,6 +184,11 @@
         euler.x = pitchObject.rotation.x;
         euler.y = yawObject.rotation.y;
         euler.order = "XYZ";
+
+        if(client.vrHMD){
+            euler.x = 0;
+        }
+
         quat.setFromEuler(euler);
         inputVelocity.applyQuaternion(quat);
 

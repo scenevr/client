@@ -13,9 +13,9 @@ body{
 
 *{
   box-sizing: border-box;
+}
 
-  /* Fixme - be more specific */
-
+canvas, canvas *{
   -moz-user-select: none;
   -webkit-user-select: none;
 }
@@ -56,6 +56,47 @@ header a span{
 #scene-view{
   width: 100%;
   height: 100%;
+}
+
+#message-input{
+  background: rgba(32,32,32,0.5);
+  border-radius: 2px;
+  width: 500px;
+  position: absolute;
+  left : 10px;
+  bottom: 10px;
+  z-index: 90;
+  padding: 10px;
+}
+#message-input label{
+  display: block;
+  color: white;
+  margin-bottom: 10px;
+  text-shadow: 1px 1px 1px black;
+}
+#message-input input{
+  width: 100%;
+  border: none;
+  box-shadow: 1px 1px 3px black;
+  font: inherit;
+  padding: 5px;
+  border-radius: 2px;
+}
+
+/* todo: style the scrollbar nicer */
+#messages{
+  background: rgba(32,32,32,0.5);
+  border-radius: 2px;
+  width: 500px;
+  height: 144px;
+  position: absolute;
+  left : 10px;
+  bottom: 62px;
+  z-index: 90;
+  padding: 10px;
+  color: white;
+  overflow: auto;
+  overflow-x: hidden;
 }
 
 .aiming-point{

@@ -69,6 +69,8 @@
 
     var onKeyDown = function ( event ) {
 
+        if ( scope.enabled === false ) return;
+
         switch ( event.keyCode ) {
 
             case 38: // up
@@ -101,6 +103,8 @@
     };
 
     var onKeyUp = function ( event ) {
+
+        if ( scope.enabled === false ) return;
 
         switch( event.keyCode ) {
 
@@ -154,7 +158,7 @@
     var euler = new THREE.Euler();
     this.update = function ( delta ) {
 
-        if ( scope.enabled === false ) return;
+        // if ( scope.enabled === false ) return;
 
         delta *= 0.5;
 

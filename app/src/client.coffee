@@ -48,6 +48,7 @@ class Client extends EventEmitter
     @addFloor()
     @addPlayerBody()
     @addDot()
+    @addMessageInput()
 
     @camera = new THREE.PerspectiveCamera( VIEW_ANGLE, ASPECT, NEAR, FAR)
     @addControls()
@@ -83,13 +84,19 @@ class Client extends EventEmitter
 
   pointerlockchange: (event) =>
     if @hasPointerLock()
-      @controls.enabled = true
-      @showBlocker()
-      @hideInstructions()
+      @enableControls()
     else
-      @controls.enabled = false
-      @showInstructions()
-      @hideBlocker()
+      @disableControls()
+
+  enableControls: ->
+    @controls.enabled = true
+    @showBlocker()
+    @hideInstructions()
+
+  disableControls: ->
+    @controls.enabled = false
+    @showInstructions()
+    @hideBlocker()
 
   getHostFromLocation: ->
     if window.location.pathname.match /connect.+/
@@ -156,6 +163,38 @@ class Client extends EventEmitter
           point : intersection.point
         }
         return
+
+  addMessageInput: ->
+    @chatForm = $("<div id='message-input'>
+      <input type='text' placeholder='Press enter to start chatting...' />
+    </div>").appendTo("body")
+
+    input = @chatForm.find('input')
+
+    $('body').on 'keydown', (e) =>
+      if e.keyCode == 13 and !input.is(":focus")
+        @chatForm.find('input').focus()
+        @controls.enabled = false
+
+      if e.keyCode == 27
+        @disableControls()
+
+    input.on 'keydown', (e) =>
+      if e.keyCode == 13
+        @addChatMessage({ name : 'You'}, input.val())
+        @connector.sendChat input.val()
+        input.val("").blur()
+        @enableControls()
+
+        e.preventDefault()
+        e.stopPropagation()
+
+    @chatMessages = $("<div id='messages' />").hide().appendTo 'body'
+
+  addChatMessage: (player, message) ->
+    @chatMessages.show()
+    $("<div />").text("#{player.name}: #{message}").appendTo @chatMessages
+    @chatMessages.scrollTop(@chatMessages[0].scrollHeight)
 
   hideOverlays: ->
     $(".overlay").hide()

@@ -102,11 +102,13 @@ class Connector extends EventEmitter
     @getHost() + ":8090"
 
   createBillboard: (el) ->
+    SIZE = 512
+
     obj = new THREE.Object3D
 
-    canvas = $("<canvas width='256' height='256' />")[0]
+    canvas = $("<canvas width='#{SIZE}' height='#{SIZE}' />")[0]
 
-    div = $("<div />").html(el.html()).css({ position : 'absolute', left : 0, top : 0, background : 'white', width : 256, height : 256, padding : '10px', border : '1px solid #ccc' })
+    div = $("<div />").html(el.html()).css({ position : 'absolute', left : 0, top : 0, background : 'white', width : SIZE, height : SIZE, padding : '10px', border : '1px solid #ccc' })
 
     div.find("img").each (index, img) =>
       img.src =  "//" + @getAssetHost() + img.getAttribute("src")

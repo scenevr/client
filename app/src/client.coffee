@@ -78,6 +78,20 @@ class Client extends EventEmitter
 
     @tick()
 
+    window.addEventListener "keypress", (e) =>
+      if (e.charCode == 'r'.charCodeAt(0)) and @vrrenderer and @controls.enabled
+        @vrrenderer.resetOrientation(@controls, @vrHMDSensor)
+
+      if (e.charCode == 'f'.charCodeAt(0)) and @vrrenderer and @controls.enabled
+        if @renderer.domElement.mozRequestFullScreen
+          @renderer.domElement.mozRequestFullScreen {
+            vrDisplay: vrHMD
+          }
+        if @renderer.domElement.webkitRequestFullscreen
+          @renderer.domElement.webkitRequestFullscreen {
+            vrDisplay : @vrHMD
+          } 
+
   hasPointerLock: ->
     document.pointerLockElement || document.mozPointerLockElement || document.webkitPointerLockElement
 

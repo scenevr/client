@@ -63,6 +63,16 @@ THREE.VRRenderer = function(renderer, hmd) {
     var euler = new THREE.Euler();
     var quat = new THREE.Quaternion();
 
+    self.orientationOffset = 0;
+
+    self.resetOrientation = function(controls, hmdSensor){
+        var state = hmdSensor.getState(),
+            euler = new THREE.Euler().setFromQuaternion(state.orientation);
+
+        self.orientationOffset = -euler.y;
+        //controls.getObject().rotation.y += euler.y;
+    };
+
     self.render = function(scene, camera, controls) {
         var cameraLeft = camera.clone();
         var cameraRight = camera.clone();
@@ -70,7 +80,7 @@ THREE.VRRenderer = function(renderer, hmd) {
         cameraLeft.position.copy(camera.parent.parent.position);
         cameraRight.position.copy(camera.parent.parent.position);
 
-        euler.y = controls.getYaw(); // + Math.PI / 2;
+        euler.y = controls.getYaw() + self.orientationOffset; // + Math.PI / 2;
         euler.order = "XYZ";
         quat.setFromEuler(euler);
         //quat.inverse();
@@ -87,6 +97,7 @@ THREE.VRRenderer = function(renderer, hmd) {
         cameraLeft.position.sub(right.clone().multiplyScalar(self.halfIPD));
         cameraRight.position.add(right.clone().multiplyScalar(self.halfIPD));
         renderer.enableScissorTest(true);
+
         var width = renderer.domElement.width / 2;
         var height = renderer.domElement.height;
         renderer.setViewport(0, 0, width, height);

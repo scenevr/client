@@ -46,13 +46,23 @@
 
     var PI_2 = Math.PI / 2;
 
-		var onMouseClick = function( event) {
-			if ( scope.enabled === false ) return;
+	var onMouseClick = function( event) {
+		if ( scope.enabled === false ) return;
+		event.preventDefault();
+		client.trigger('click');
+	};
 
-			event.preventDefault();
+    var onMouseDown = function( event) {
+        if ( scope.enabled === false ) return;
+        event.preventDefault();
+        client.trigger('mousedown');
+    };
 
-			client.trigger('click');
-		};
+    var onMouseUp = function( event) {
+        if ( scope.enabled === false ) return;
+        event.preventDefault();
+        client.trigger('mouseup');
+    };
 
     var onMouseMove = function ( event ) {
 
@@ -132,10 +142,24 @@
 
     };
 
-		document.body.addEventListener( 'click', onMouseClick, false );
+    document.addEventListener( 'click', onMouseClick, false );
+    document.addEventListener( 'mousedown', onMouseDown, false );
+    document.addEventListener( 'mouseup', onMouseUp, false );
     document.addEventListener( 'mousemove', onMouseMove, false );
     document.addEventListener( 'keydown', onKeyDown, false );
     document.addEventListener( 'keyup', onKeyUp, false );
+
+    document.addEventListener("contextmenu",function(e){
+        if ( scope.enabled === false ) return;
+        e.preventDefault();
+        return false;
+    });
+
+    document.addEventListener("dblclick",function(e){
+        if ( scope.enabled === false ) return;
+        e.preventDefault();
+        return false;
+    });
 
     this.enabled = false;
 

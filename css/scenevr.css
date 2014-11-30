@@ -15,7 +15,7 @@ body{
   box-sizing: border-box;
 }
 
-canvas, canvas *{
+canvas, canvas *, .overlay, .overlay *{
   -moz-user-select: none;
   -webkit-user-select: none;
 }

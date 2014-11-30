@@ -116,7 +116,7 @@ class Connector extends EventEmitter
     div.appendTo 'body'
 
     geometry = new THREE.BoxGeometry( 1, 1, 1 )
-    material = new THREE.MeshLambertMaterial( {color: '#eeeeee', emissive : '#222222' } )
+    material = new THREE.MeshLambertMaterial( {color: '#eeeeee', ambient: '#eeeeee' } )
     box = new THREE.Mesh( geometry, material )
 
     material = new THREE.MeshLambertMaterial( {color: '#ffffff' } )
@@ -213,26 +213,43 @@ class Connector extends EventEmitter
     obj = new THREE.Object3D
     texture = null
 
-    if el.attr("style")
-      styles = @parseStyleAttribute(el.attr("style"))
+    styles = @parseStyleAttribute(el.attr("style"))
 
-      if styles['lightmap']
+    material = if styles['texturemap']
+        new THREE.MeshLambertMaterial({ color : '#ff0000' })
+      else
+        new THREE.MeshBasicMaterial({ color : '#eeeeee' })
+    material = new THREE.MeshLambertMaterial
+
+    if el.attr("style")
+      if styles['lightmap'] || styles['texturemap']
         texture = new THREE.Texture()
         loader = new THREE.ImageLoader( @manager )
         loader.crossOrigin = true
-        loader.load "//" + @getAssetHost() + @getUrlFromStyle(styles['lightmap']), ( image ) ->
+        loader.load "//" + @getAssetHost() + @getUrlFromStyle(styles['lightmap'] || styles['texturemap']), ( image ) ->
           texture.image = image
+          texture.magFilter = THREE.NearestFilter
           texture.needsUpdate = true
+          material.needsUpdate = true
 
-    material = new THREE.MeshBasicMaterial({ color : '#eeeeee' })
+    console.log(material)
+
     loader = new THREE.OBJLoader( @manager )
     loader.load "//" + @getAssetHost() + el.attr("src"), ( object ) ->
+      console.log(material)
       object.traverse ( child ) ->
         if child instanceof THREE.Mesh
           child.material = material
           if texture
             child.material.map = texture
       obj.add(object)
+
+    newScale = if el.attr("scale")
+      Utils.parseVector(el.attr("scale"))
+    else
+      new THREE.Vector3(1,1,1)
+
+    obj.scale.copy(newScale)
 
     obj 
 
@@ -279,9 +296,10 @@ class Connector extends EventEmitter
   parseStyleAttribute: (value) ->
     result = {}
 
-    for pair in value.split(";")
-      [name, value] = pair.split(":")
-      result[name.trim().toLowerCase()] = value.trim()
+    if value
+      for pair in value.split(";")
+        [name, value] = pair.split(":")
+        result[name.trim().toLowerCase()] = value.trim()
 
     result
 
@@ -411,6 +429,6 @@ class Connector extends EventEmitter
               .start()
 
         if el.is("box") 
-          obj.material.setValues { color : el.attr('color'), emissive : Color(el.attr('color')).darken(0.75).hexString() }
+          obj.material.setValues { color : el.attr('color'), ambient : Color(el.attr('color')).hexString() }
   
 module.exports = Connector

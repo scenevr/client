@@ -349,14 +349,11 @@ class Client extends EventEmitter
 
   addLights: ->
     dirLight = new THREE.DirectionalLight( 0xffffff, 1.1)
-    dirLight.position.set( 1, 0.75, -0.92 )
-    dirLight.position.multiplyScalar( 200)
-    dirLight.castShadow = true;
-    dirLight.shadowMapWidth = dirLight.shadowMapHeight = 256
+    dirLight.position.set( -1, 0.75, 0.92 )
 
     @scene.add( dirLight )
 
-    ambientLight = new THREE.AmbientLight(0x111111)
+    ambientLight = new THREE.AmbientLight(0x404040)
     @scene.add(ambientLight)
 
   getPlayerDropPoint: ->

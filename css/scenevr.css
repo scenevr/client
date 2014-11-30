@@ -130,3 +130,22 @@ header a span{
   padding: 0;
   font-size: 1em;
 }
+
+.dpad{
+   position: absolute;
+   bottom: 30px;
+   border: 2px solid white;
+   border-radius: 60px;
+   width: 60px;
+   height: 60px;
+   z-index: 100;
+   background: rgba(32,32,32,0.3);
+}
+
+.dpad.direction{
+  left: 30px;
+}
+
+.dpad.movement{
+  right: 30px;
+}

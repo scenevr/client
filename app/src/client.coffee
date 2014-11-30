@@ -6,6 +6,9 @@ window.CANNON = require("cannon")
 TWEEN = require("tween.js")
 EventEmitter = require('wolfy87-eventemitter');
 
+MOBILE = true
+DOWN_SAMPLE = 1
+
 class Client extends EventEmitter
   constructor: ->
     @container = $("#scene-view").css {
@@ -19,15 +22,14 @@ class Client extends EventEmitter
     @stats.setMode(0)
 
     @stats.domElement.style.position = 'absolute';
-    @stats.domElement.style.right = '10px';
-    @stats.domElement.style.bottom = '10px';
+    @stats.domElement.style.left = '10px';
+    @stats.domElement.style.top = '10px';
     @container.append(@stats.domElement)
 
     VIEW_ANGLE = 60
     ASPECT = @width / @height
     NEAR = 0.1
     FAR = 700
-    DOWN_SAMPLE = 1
 
     @scene = new THREE.Scene()
     @scene.fog = new THREE.Fog( 0xffffff, 500, 700 );
@@ -38,7 +40,6 @@ class Client extends EventEmitter
 
     @renderer = new THREE.WebGLRenderer( {antialias:false} )
     @renderer.setSize(@width / DOWN_SAMPLE, @height / DOWN_SAMPLE)
-    @renderer.shadowMapEnabled = false
     @renderer.setClearColor( 0xeeeeee, 1)
 
     @initVR()
@@ -50,7 +51,9 @@ class Client extends EventEmitter
     @addFloor()
     @addPlayerBody()
     @addDot()
-    @addMessageInput()
+    
+    unless MOBILE
+      @addMessageInput()
 
     @camera = new THREE.PerspectiveCamera( VIEW_ANGLE, ASPECT, NEAR, FAR)
     @addControls()
@@ -78,6 +81,8 @@ class Client extends EventEmitter
 
     @tick()
 
+    window.addEventListener( 'resize', @onWindowResize, false )
+
     window.addEventListener "keypress", (e) =>
       if (e.charCode == 'r'.charCodeAt(0)) and @vrrenderer and @controls.enabled
         @vrrenderer.resetOrientation(@controls, @vrHMDSensor)
@@ -91,6 +96,18 @@ class Client extends EventEmitter
           @renderer.domElement.webkitRequestFullscreen {
             vrDisplay : @vrHMD
           } 
+
+  onWindowResize: =>
+    @width = @container.width()
+    @height = @container.height()
+    
+    $(@renderer.domElement).css { width : @width, height : @height }
+
+    @camera.aspect = @width / @height
+    @camera.updateProjectionMatrix()
+
+    @renderer.setSize(@width / DOWN_SAMPLE, @height / DOWN_SAMPLE)
+
 
   hasPointerLock: ->
     document.pointerLockElement || document.mozPointerLockElement || document.webkitPointerLockElement
@@ -270,23 +287,23 @@ class Client extends EventEmitter
       </small>
     </div>').appendTo(@container)
 
-    @overlay.show().click =>
-      # if !@hasPointerLock()
-      #   alert "[FAIL] Your browser doesn't seem to support pointerlock. You will not be able to use sceneserver."
-      # else
+    if !@hasPointerLock()
+      @overlay.remove()
+      @controls.enabled = true
+    else
+      @overlay.show().click =>
+        element = document.body
 
-      element = document.body
+        document.addEventListener( 'pointerlockchange', @pointerlockchange, false )
+        document.addEventListener( 'mozpointerlockchange', @pointerlockchange, false )
+        document.addEventListener( 'webkitpointerlockchange', @pointerlockchange, false )
 
-      document.addEventListener( 'pointerlockchange', @pointerlockchange, false )
-      document.addEventListener( 'mozpointerlockchange', @pointerlockchange, false )
-      document.addEventListener( 'webkitpointerlockchange', @pointerlockchange, false )
+        document.addEventListener( 'pointerlockerror', @pointerlockerror, false )
+        document.addEventListener( 'mozpointerlockerror', @pointerlockerror, false )
+        document.addEventListener( 'webkitpointerlockerror', @pointerlockerror, false )
 
-      document.addEventListener( 'pointerlockerror', @pointerlockerror, false )
-      document.addEventListener( 'mozpointerlockerror', @pointerlockerror, false )
-      document.addEventListener( 'webkitpointerlockerror', @pointerlockerror, false )
-
-      element.requestPointerLock = element.requestPointerLock || element.mozRequestPointerLock || element.webkitRequestPointerLock;
-      element.requestPointerLock()
+        element.requestPointerLock = element.requestPointerLock || element.mozRequestPointerLock || element.webkitRequestPointerLock;
+        element.requestPointerLock()
 
   showBlocker: ->
     @blockerElement ||= $("<div />").addClass("blocker").appendTo 'body'
@@ -340,7 +357,7 @@ class Client extends EventEmitter
     $("<div />").addClass('aiming-point').appendTo 'body'
 
   addControls: ->
-    @controls = new PointerLockControls(@camera, this, @playerBody)
+    @controls = new PointerLockControls(@camera, this, @playerBody, MOBILE)
     @controls.enabled = false
     @scene.add(@controls.getObject())
 

@@ -281,7 +281,58 @@ class Connector extends EventEmitter
         side: THREE.BackSide
       } )
     else if color = @parseStyleAttribute(el.attr('style')).color
-      material = new THREE.MeshBasicMaterial( { color : color, side : THREE.BackSide })
+      if color.match /linear-gradient/
+
+        [start, finish] = color.match(/#.+?\b/g)
+
+        vertexShader = "
+          varying vec3 vWorldPosition;
+
+          void main() {
+
+            vec4 worldPosition = modelMatrix * vec4( position, 1.0 );
+            vWorldPosition = worldPosition.xyz;
+
+            gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+
+          }
+        "
+
+        fragmentShader = "
+          uniform vec3 topColor;
+          uniform vec3 bottomColor;
+          uniform float offset;
+          uniform float exponent;
+
+          varying vec3 vWorldPosition;
+
+          void main() {
+
+            float h = normalize( vWorldPosition + offset ).y;
+            gl_FragColor = vec4( mix( bottomColor, topColor, max( pow( max( h, 0.0 ), exponent ), 0.0 ) ), 1.0 );
+
+          }
+        "
+
+        uniforms = {
+          topColor:    { type: "c", value: new THREE.Color( finish ) },
+          bottomColor: { type: "c", value: new THREE.Color( start ) },
+          offset:    { type: "f", value: 0 },
+          exponent:  { type: "f", value: 0.6 }
+        }
+
+        # Fixme - random probably bad assumption
+        @client.scene.fog = new THREE.Fog( 0xffffff, 10, 50 )
+        @client.scene.fog.color.copy( uniforms.bottomColor.value )
+
+        material = new THREE.ShaderMaterial( {
+          uniforms: uniforms,
+          vertexShader: vertexShader,
+          fragmentShader: fragmentShader,
+          side: THREE.BackSide
+        } )
+      else
+        material = new THREE.MeshBasicMaterial( { color : color, side : THREE.BackSide })
     else
       material = new THREE.MeshBasicMaterial( { color : '#eeeeee', side : THREE.BackSide })
 

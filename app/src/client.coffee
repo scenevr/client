@@ -19,6 +19,7 @@ class Client extends EventEmitter
     @stats.setMode(0)
 
     @stats.domElement.style.position = 'absolute';
+    @stats.domElement.style.zIndex = 110;
     @stats.domElement.style.right = '10px';
     @stats.domElement.style.bottom = '10px';
     @container.append(@stats.domElement)
@@ -55,8 +56,9 @@ class Client extends EventEmitter
     @camera = new THREE.PerspectiveCamera( VIEW_ANGLE, ASPECT, NEAR, FAR)
     @addControls()
 
-    @connector = new Connector(this, @getHostFromLocation(), @getPathFromLocation())
+    @connector = new Connector(this, @scene, @world, @getHostFromLocation(), @getPathFromLocation())
     @connector.connect()
+    
     @addConnecting()
 
     @connector.on 'connected', =>
@@ -380,8 +382,17 @@ class Client extends EventEmitter
       @camera.quaternion.set(state.orientation.x, state.orientation.y, state.orientation.z, state.orientation.w)
       @vrrenderer.render(@scene, @camera, @controls )
     else
+      @i ||= 0
+
+      @i += 1
+
       # Render webGL
-      @renderer.render( @scene, @camera  )
+      if @i % 2 == 0
+        @renderer.render( @scene, @camera  )
+        @renderer.render( @connector.portal.scene, @camera  )
+      else
+        @renderer.render( @connector.portal.scene, @camera  )
+        @renderer.render( @scene, @camera  )
 
     # Controls
     @controls.update( Date.now() - @time )

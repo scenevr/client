@@ -4,21 +4,29 @@ EventEmitter = require('wolfy87-eventemitter');
 Color = require("color")
 
 class Connector extends EventEmitter
-  constructor: (@client, host, path) ->
+  constructor: (@client, @scene, @physicsWorld, host, path, isPortal) ->
     @host = host || window.location.host.split(":")[0] + ":8080"
     @path = path || "/index.xml"
+    @isPortal = isPortal || false
     @protocol = "scenevr"
-    @scene = @client.scene
     @uuid = null
     @spawned = false
     @manager = new THREE.LoadingManager()
 
+    @portal = {}
+    @portal.scene = new THREE.Scene
+    @portal.world = new CANNON.World
+    
+    if @client
+      @portal.connector = new Connector(null, @portal.scene, @portal.world, @host, "/challenge.xml", true)
+      @portal.connector.connect()
+
   setPosition: (v) ->
-    # Fixme - if the controls aren't active, the player body isn't copied to the camera
-    @client.playerBody.position.copy(v)
-    @client.playerBody.position.y += 1.5
-    @client.playerBody.velocity.set(0,0,0)
-    @client.controls.getObject().position.copy(@client.playerBody.position)
+    if @client
+      @client.playerBody.position.copy(v)
+      @client.playerBody.position.y += 1.5
+      @client.playerBody.velocity.set(0,0,0)
+      @client.controls.getObject().position.copy(@client.playerBody.position)
 
   isConnected: ->
     @ws and @ws.readyState == 1
@@ -39,19 +47,24 @@ class Connector extends EventEmitter
   restartConnection: ->
     @disconnect()
     @trigger 'restarting'
-    @client.removeReflectedObjects()
+
+    if @client
+      @client.removeReflectedObjects()
+
     clearInterval @interval
     setTimeout(@reconnect, 500)
 
   connect: ->
+    console.log "Connecting"
     @ws = new WebSocket("ws://#{@host}#{@path}", @protocol);
     @ws.binaryType = 'arraybuffer'
     @ws.onopen = =>
-      console.log "Opened socket"
-      @interval = setInterval @tick, 1000 / 5
+      console.log "Socket connected"
+      if @client
+        @interval = setInterval @tick, 1000 / 5
       @trigger 'connected'
     @ws.onclose = =>
-      console.log "Closed socket"
+      console.log "Socket opened"
       clearInterval @interval
       @trigger 'disconnected'
     @ws.onmessage = (e) =>
@@ -88,7 +101,6 @@ class Connector extends EventEmitter
         .easing(TWEEN.Easing.Linear.None)
         .start()
 
-
   tick: =>
     if @spawned and @isConnected()
       # send location..
@@ -108,7 +120,7 @@ class Connector extends EventEmitter
 
     canvas = $("<canvas width='#{SIZE}' height='#{SIZE}' />")[0]
 
-    div = $("<div />").html(el.html()).css({ position : 'absolute', left : 0, top : 0, background : 'white', width : SIZE, height : SIZE, padding : '10px', border : '1px solid #ccc' })
+    div = $("<div />").html(el.html()).css({ position : 'absolute', left : 0, top : 0, background : 'white', width : SIZE, height : SIZE, padding : '10px', border : '1px solid #ccc', zIndex : 10 })
 
     div.find("img").each (index, img) =>
       img.src =  "//" + @getAssetHost() + img.getAttribute("src")
@@ -130,7 +142,8 @@ class Connector extends EventEmitter
         texture.needsUpdate = true;
         material = new THREE.MeshBasicMaterial( {map: texture, side:THREE.DoubleSide } )
         material.transparent = false;
-        mesh.material = material
+        unless @isPortal
+          mesh.material = material
         div.remove()
     }
 
@@ -148,7 +161,7 @@ class Connector extends EventEmitter
     boxShape = new CANNON.Box(new CANNON.Vec3().copy(newScale.multiplyScalar(0.5)))
     boxBody = new CANNON.Body({ mass: 0 })
     boxBody.addShape(boxShape)
-    @client.world.add(boxBody)
+    @physicsWorld.add(boxBody)
     obj.body = boxBody
 
     obj
@@ -186,6 +199,23 @@ class Connector extends EventEmitter
 
     obj.scale.copy(newScale)
 
+    glowTexture = new THREE.ImageUtils.loadTexture( '/images/portal.png' )
+    glowTexture.wrapS = glowTexture.wrapT = THREE.RepeatWrapping;
+    glowTexture.repeat.set( 1, 1 )
+
+    glowMaterial = new THREE.MeshBasicMaterial( { map: glowTexture, transparent : true } );
+    glowGeometry = new THREE.PlaneBufferGeometry(2, 2, 1, 1)
+    glow = new THREE.Mesh(glowGeometry, glowMaterial)
+
+    portalMaterial = new THREE.MeshBasicMaterial { color : '#000000' }
+    portalGeometry = new THREE.CircleGeometry(1 * 0.75, 40)
+    portal = new THREE.Mesh(portalGeometry, portalMaterial)
+    portal.position.z = 0.001
+
+    obj = new THREE.Object3D
+    obj.add(glow)
+    obj.add(portal)
+
     obj
 
   createBox: (el) ->
@@ -204,7 +234,7 @@ class Connector extends EventEmitter
     boxShape = new CANNON.Box(new CANNON.Vec3().copy(newScale.multiplyScalar(0.5)))
     boxBody = new CANNON.Body({ mass: 0 })
     boxBody.addShape(boxShape)
-    @client.world.add(boxBody)
+    @physicsWorld.add(boxBody)
     obj.body = boxBody
 
     obj
@@ -322,8 +352,8 @@ class Connector extends EventEmitter
         }
 
         # Fixme - random probably bad assumption
-        @client.scene.fog = new THREE.Fog( 0xffffff, 10, 50 )
-        @client.scene.fog.color.copy( uniforms.bottomColor.value )
+        @scene.fog = new THREE.Fog( 0xffffff, 10, 50 )
+        @scene.fog.color.copy( uniforms.bottomColor.value )
 
         material = new THREE.ShaderMaterial( {
           uniforms: uniforms,
@@ -375,7 +405,7 @@ class Connector extends EventEmitter
         if el.is("dead") 
           if obj = @scene.getObjectByName(uuid)
             if obj.body
-              @client.world.remove(obj.body)
+              @physicsWorld.remove(obj.body)
             @scene.remove(obj)
           return
 
@@ -420,6 +450,10 @@ class Connector extends EventEmitter
 
           obj.name = uuid
           obj.userData = el
+
+          if @isPortal
+            obj.traverse (child) -> 
+              child.material = new THREE.MeshBasicMaterial { wireframe : true, color : '#000000' }
 
           unless el.is("skybox")
             # skyboxes dont have a position
@@ -480,6 +514,7 @@ class Connector extends EventEmitter
               .start()
 
         if el.is("box") 
-          obj.material.setValues { color : el.attr('color'), ambient : Color(el.attr('color')).hexString() }
+          unless @isPortal
+            obj.material.setValues { color : el.attr('color'), ambient : Color(el.attr('color')).hexString() }
   
 module.exports = Connector

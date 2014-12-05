@@ -37,10 +37,11 @@ class Client extends EventEmitter
     @world.gravity.set(0,-20,0); # m/s²
     @world.broadphase = new CANNON.NaiveBroadphase()
 
-    @renderer = new THREE.WebGLRenderer( {antialias:false} )
+    @renderer = new THREE.WebGLRenderer( {antialias:true} )
     @renderer.setSize(@width / DOWN_SAMPLE, @height / DOWN_SAMPLE)
-    @renderer.shadowMapEnabled = false
-    @renderer.setClearColor( 0xeeeeee, 1)
+    @renderer.setClearColor( 0x000000)
+    @renderer.autoClear = false
+
 
     @initVR()
 
@@ -382,17 +383,17 @@ class Client extends EventEmitter
       @camera.quaternion.set(state.orientation.x, state.orientation.y, state.orientation.z, state.orientation.w)
       @vrrenderer.render(@scene, @camera, @controls )
     else
-      @i ||= 0
-
-      @i += 1
-
       # Render webGL
-      if @i % 2 == 0
-        @renderer.render( @scene, @camera  )
-        @renderer.render( @connector.portal.scene, @camera  )
-      else
-        @renderer.render( @connector.portal.scene, @camera  )
-        @renderer.render( @scene, @camera  )
+      # @renderer.render( @connector.portal.scene, @camera  )
+      @renderPortals()      
+      # @renderer.render( @scene, @camera  )
+
+      # if @i % 2 == 0
+      #   @renderer.render( @scene, @camera  )
+      #   @renderer.render( @connector.portal.scene, @camera  )
+      # else
+      #   @renderer.render( @connector.portal.scene, @camera  )
+      #   @renderer.render( @scene, @camera  )
 
     # Controls
     @controls.update( Date.now() - @time )
@@ -404,5 +405,71 @@ class Client extends EventEmitter
     # Airplane mode
     # setTimeout(@tick, 1000 / 25)
     requestAnimationFrame @tick
+
+  renderPortals: ->
+    gl = @renderer.context;
+
+    originalCameraMatrixWorld = new THREE.Matrix4()
+    originalCameraProjectionMatrix = new THREE.Matrix4()
+    
+    # cameraObject.updateMatrix();
+    # cameraObject.updateMatrixWorld();
+
+    originalCameraMatrixWorld.copy(@camera.matrixWorld);
+    originalCameraProjectionMatrix.copy(@camera.projectionMatrix);
+    
+    # 1: clear scene (autoClear is disabled)
+    @renderer.clear(true, true, true);
+    
+    # 2: draw portal mesh into stencil buffer
+    gl.colorMask(false, false, false, false);
+    gl.depthMask(false);
+    gl.enable(gl.STENCIL_TEST);
+    gl.stencilMask(0xFF);
+    gl.stencilFunc(gl.NEVER, 0, 0xFF);
+    gl.stencilOp(gl.INCR, gl.KEEP, gl.KEEP);
+    
+    @renderer.render(@connector.stencilScene, @camera);
+    
+    gl.colorMask(true, true, true, true);
+    gl.depthMask(true);
+    gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
+
+    # 3: draw toScene on scencil
+    @renderer.clear(false, true, false);
+
+    gl.stencilFunc(gl.LESS, 0, 0xff);
+
+    # camera.matrixWorld.copy(getPortalViewMatrix(camera, currentPortal, otherPortal));
+    # camera.matrixWorldInverse.getInverse(camera.matrixWorld);
+
+    #getPortalProjectionMatrix(camera, otherPortal);
+    
+    @renderer.render(@connector.portal.scene, @camera);
+
+    gl.disable(gl.STENCIL_TEST);
+    
+    @renderer.clear(false, false, true);
+
+    # 4: draw fromScene.
+    @camera.matrixWorld.copy(originalCameraMatrixWorld);
+    @camera.projectionMatrix.copy(originalCameraProjectionMatrix);
+
+    # clear the depth buffer and draw the fromPortal mesh into it
+    @renderer.clear(false, true, false);
+
+    gl.colorMask(false, false, false, false);
+    gl.depthMask(true);
+    
+    @renderer.render(@connector.stencilScene, @camera);
+
+    # draw the actual scene
+    gl.colorMask(true, true, true, true);
+    gl.depthMask(true); 
+    gl.enable(gl.DEPTH_TEST)
+    
+    @renderer.render(@scene, @camera);
+
+    @camera.projectionMatrix.copy(originalCameraProjectionMatrix);
 
 module.exports = Client

@@ -1,7 +1,7 @@
-Utils = require "./utils.coffee"
 TWEEN = require("tween.js")
 EventEmitter = require('wolfy87-eventemitter');
 Color = require("color")
+Utils = require("./utils.coffee")
 
 class Connector extends EventEmitter
   constructor: (@client, @scene, @physicsWorld, host, path, isPortal) ->
@@ -13,13 +13,21 @@ class Connector extends EventEmitter
     @spawned = false
     @manager = new THREE.LoadingManager()
 
-    @portal = {}
-    @portal.scene = new THREE.Scene
-    @portal.world = new CANNON.World
-    
-    if @client
+    grid = new THREE.GridHelper(100, 1);
+    grid.setColors(0xffffff, 0xffffff);
+    @scene.add(grid);
+
+    if !@isPortal
+      @portal = {}
+      @portal.scene = new THREE.Scene
+      @portal.world = new CANNON.World
+
+      @portal.scene.fog = new THREE.Fog( 0x000000, 10, 50 )
+
       @portal.connector = new Connector(null, @portal.scene, @portal.world, @host, "/challenge.xml", true)
       @portal.connector.connect()
+
+      @stencilScene = new THREE.Scene
 
   setPosition: (v) ->
     if @client
@@ -199,6 +207,8 @@ class Connector extends EventEmitter
 
     obj.scale.copy(newScale)
 
+    newPosition = el.attr("position") && Utils.parseVector(el.attr("position"))
+
     glowTexture = new THREE.ImageUtils.loadTexture( '/images/portal.png' )
     glowTexture.wrapS = glowTexture.wrapT = THREE.RepeatWrapping;
     glowTexture.repeat.set( 1, 1 )
@@ -215,6 +225,20 @@ class Connector extends EventEmitter
     obj = new THREE.Object3D
     obj.add(glow)
     obj.add(portal)
+
+    if !@isPortal
+      console.log newPosition
+
+      portalClone = portal.clone()
+      portalClone.position.copy(newPosition)
+      portalClone.position.z += 0.1
+      portalClone.visible = true
+      portalClone.updateMatrix()
+      portalClone.updateMatrixWorld(true)
+      portalClone.matrixAutoUpdate = false
+      portalClone.frustumCulled = false
+
+      @stencilScene.add(portalClone)
 
     obj
 
@@ -262,11 +286,11 @@ class Connector extends EventEmitter
           texture.needsUpdate = true
           material.needsUpdate = true
 
-    console.log(material)
+    # console.log(material)
 
     loader = new THREE.OBJLoader( @manager )
     loader.load "//" + @getAssetHost() + el.attr("src"), ( object ) ->
-      console.log(material)
+      # console.log(material)
       object.traverse ( child ) ->
         if child instanceof THREE.Mesh
           child.material = material
@@ -453,7 +477,7 @@ class Connector extends EventEmitter
 
           if @isPortal
             obj.traverse (child) -> 
-              child.material = new THREE.MeshBasicMaterial { wireframe : true, color : '#000000' }
+              child.material = new THREE.MeshBasicMaterial { wireframe : true, color : '#ffffff' }
 
           unless el.is("skybox")
             # skyboxes dont have a position

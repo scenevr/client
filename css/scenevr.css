@@ -25,6 +25,11 @@ canvas, canvas *, .overlay, .overlay *{
   -webkit-user-select: none;
 }
 
+canvas{
+  position: relative;
+  z-index: 90;
+}
+
 header{
   position: absolute;
   right: 10px;

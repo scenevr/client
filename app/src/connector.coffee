@@ -304,11 +304,8 @@ class Connector extends EventEmitter
           texture.needsUpdate = true
           material.needsUpdate = true
 
-    # console.log(material)
-
     loader = new THREE.OBJLoader( @manager )
     loader.load "//" + @getAssetHost() + el.attr("src"), ( object ) ->
-      # console.log(material)
       object.traverse ( child ) ->
         if child instanceof THREE.Mesh
           child.material = material
@@ -429,7 +426,9 @@ class Connector extends EventEmitter
   onMessage: (e) =>
     # console.log e.data
 
-    $(e.data).children().each (index, el) =>
+    # console.log e.data
+
+    $($.parseXML(e.data).firstChild).children().each (index, el) =>
       el = $(el)
 
       if el.is("event")
@@ -520,14 +519,12 @@ class Connector extends EventEmitter
               .start()
 
         if el.attr("style")
-          if el.css("visibility") == "hidden"
+          styles = @parseStyleAttribute(el.attr("style"))
+
+          if styles["visibility"] == "hidden"
             obj.visible = false
           else
             obj.visible = true
-            window.el = el
-
-          # if el.css("lightmap")
-          #   window.el = el
 
         if el.is("spawn")
           # Don't tween spawn

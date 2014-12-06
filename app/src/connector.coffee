@@ -17,17 +17,65 @@ class Connector extends EventEmitter
     grid.setColors(0xffffff, 0xffffff);
     @scene.add(grid);
 
-    if !@isPortal
-      @portal = {}
-      @portal.scene = new THREE.Scene
-      @portal.world = new CANNON.World
+  isPortalOpen: ->
+    !!@portal
 
-      @portal.scene.fog = new THREE.Fog( 0x000000, 10, 50 )
+  loadPortal: (el, obj) ->
+    if @isPortal
+      console.error "Portal tried to #loadPortal"
+      return
 
-      @portal.connector = new Connector(null, @portal.scene, @portal.world, @host, "/challenge.xml", true)
-      @portal.connector.connect()
+    @portal = {}
+    @portal.el = el
+    @portal.obj = obj
+    @portal.scene = new THREE.Scene
+    @portal.world = new CANNON.World
+    @portal.scene.fog = new THREE.Fog( 0x000000, 10, 50 )
+    @portal.connector = new Connector(null, @portal.scene, @portal.world, @host, el.attr('href'), true)
+    @portal.connector.connect()
+    @stencilScene = new THREE.Scene
 
-      @stencilScene = new THREE.Scene
+  closePortal: ->
+    @scene.remove(@portal.obj)
+    delete @portal
+    delete @stencilScene
+
+  createPortal: (el, obj) ->
+    @loadPortal(el, obj)
+
+    while obj.children[0]
+      obj.remove(obj.children[0])
+      
+    newPosition = el.attr("position") && Utils.parseVector(el.attr("position"))
+
+    glowTexture = new THREE.ImageUtils.loadTexture( '/images/portal.png' )
+    glowTexture.wrapS = glowTexture.wrapT = THREE.RepeatWrapping;
+    glowTexture.repeat.set( 1, 1 )
+
+    glowMaterial = new THREE.MeshBasicMaterial( { map: glowTexture, transparent : true } );
+    glowGeometry = new THREE.PlaneBufferGeometry(2, 2, 1, 1)
+    glow = new THREE.Mesh(glowGeometry, glowMaterial)
+
+    portalMaterial = new THREE.MeshBasicMaterial { color : '#000000' }
+    portalGeometry = new THREE.CircleGeometry(1 * 0.75, 40)
+    portal = new THREE.Mesh(portalGeometry, portalMaterial)
+    portal.position.z = 0.001
+
+    obj.add(glow)
+    obj.add(portal)
+
+    portalClone = portal.clone()
+    portalClone.position.copy(newPosition)
+    portalClone.position.z += 0.1
+    portalClone.visible = true
+    portalClone.updateMatrix()
+    portalClone.updateMatrixWorld(true)
+    portalClone.matrixAutoUpdate = false
+    portalClone.frustumCulled = false
+
+    @stencilScene.add(portalClone)
+
+    obj
 
   setPosition: (v) ->
     if @client
@@ -200,45 +248,15 @@ class Connector extends EventEmitter
     material = new THREE.MeshPhongMaterial( {color: '#ff7700', emissive : '#aa3300' } )
     obj.add(new THREE.Mesh( geometry, material ))
 
-    newScale = if el.attr("scale")
-      Utils.parseVector(el.attr("scale"))
-    else
-      new THREE.Vector3(1,1,1)
-
-    obj.scale.copy(newScale)
-
-    newPosition = el.attr("position") && Utils.parseVector(el.attr("position"))
-
-    glowTexture = new THREE.ImageUtils.loadTexture( '/images/portal.png' )
-    glowTexture.wrapS = glowTexture.wrapT = THREE.RepeatWrapping;
-    glowTexture.repeat.set( 1, 1 )
-
-    glowMaterial = new THREE.MeshBasicMaterial( { map: glowTexture, transparent : true } );
-    glowGeometry = new THREE.PlaneBufferGeometry(2, 2, 1, 1)
-    glow = new THREE.Mesh(glowGeometry, glowMaterial)
-
-    portalMaterial = new THREE.MeshBasicMaterial { color : '#000000' }
-    portalGeometry = new THREE.CircleGeometry(1 * 0.75, 40)
-    portal = new THREE.Mesh(portalGeometry, portalMaterial)
-    portal.position.z = 0.001
-
-    obj = new THREE.Object3D
-    obj.add(glow)
-    obj.add(portal)
-
-    if !@isPortal
-      console.log newPosition
-
-      portalClone = portal.clone()
-      portalClone.position.copy(newPosition)
-      portalClone.position.z += 0.1
-      portalClone.visible = true
-      portalClone.updateMatrix()
-      portalClone.updateMatrixWorld(true)
-      portalClone.matrixAutoUpdate = false
-      portalClone.frustumCulled = false
-
-      @stencilScene.add(portalClone)
+    obj.onClick = =>
+      console.log "eh?"
+      if @portal && @portal.obj == obj
+        @closePortal()
+      else if @portal
+        @closePortal()
+        @createPortal(el, obj)
+      else
+        @createPortal(el, obj)
 
     obj
 

@@ -185,7 +185,8 @@ class Client extends EventEmitter
     for intersection in @raycaster.intersectObjects( @getAllClickableObjects() ) 
       # For links
       if intersection.object && intersection.object.parent && intersection.object.parent.userData.is && intersection.object.parent.userData.is("link")
-        @loadNewScene(intersection.object.parent.userData.attr("href"))
+        intersection.object.parent.onClick()
+        # @loadNewScene(intersection.object.parent.userData.attr("href"))
 
       # Boxes
       if intersection.object.name
@@ -385,8 +386,11 @@ class Client extends EventEmitter
     else
       # Render webGL
       # @renderer.render( @connector.portal.scene, @camera  )
-      @renderPortals()      
-      # @renderer.render( @scene, @camera  )
+
+      if @connector.isPortalOpen()
+        @renderPortals()        
+      else
+        @renderer.render( @scene, @camera  )
 
       # if @i % 2 == 0
       #   @renderer.render( @scene, @camera  )

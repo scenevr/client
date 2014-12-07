@@ -463,8 +463,17 @@ class Connector extends EventEmitter
 
           # Todo - tween rotations
           if el.attr("rotation")
-            newRotation = Utils.parseEuler(el.attr("rotation"))
-            obj.rotation.copy(newRotation)
+            newEuler = Utils.parseEuler(el.attr("rotation"))
+            newQuaternion = new THREE.Quaternion().setFromEuler(newEuler)
+
+            # obj.quaternion.copy(newQuaternion)
+
+            if !obj.quaternion.equals(newQuaternion)
+              tween = new TWEEN.Tween(obj.quaternion)
+              tween.to(newQuaternion, 200)
+                .onUpdate(-> obj.quaternion.set(@x, @y, @z, @w))
+                .easing(TWEEN.Easing.Linear.None)
+                .start()
 
             if obj.body
               obj.body.quaternion.copy(new THREE.Quaternion().setFromEuler(newRotation))

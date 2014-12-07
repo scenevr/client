@@ -20,6 +20,7 @@ class Client extends EventEmitter
 
     @stats.domElement.style.position = 'absolute';
     @stats.domElement.style.right = '10px';
+    @stats.domElement.style.zIndex = 100;
     @stats.domElement.style.bottom = '10px';
     @container.append(@stats.domElement)
 

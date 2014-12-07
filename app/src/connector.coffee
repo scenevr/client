@@ -2,6 +2,7 @@ Utils = require "./utils.coffee"
 TWEEN = require("tween.js")
 EventEmitter = require('wolfy87-eventemitter');
 Color = require("color")
+Howl = require("howler").Howl
 
 class Connector extends EventEmitter
   constructor: (@client, host, path) ->
@@ -250,6 +251,27 @@ class Connector extends EventEmitter
 
     obj 
 
+  createAudio: (el) ->
+    obj = new THREE.Object3D
+
+    if (src = el.attr("src")) and el.attr("ambient").toLowerCase() == "true"
+      path = "//" + @getAssetHost() + src
+
+      volume = if el.attr("volume")
+          parseFloat(el.attr("volume"))
+        else
+          1.0
+
+      obj.userSound = new Howl({
+        urls: [path]
+        loop: true
+        volume: volume
+      }).play();
+
+    obj.position = new THREE.Vector3(0,0,0)
+
+    obj
+
   createSkyBox: (el) ->
     material = null
 
@@ -402,6 +424,9 @@ class Connector extends EventEmitter
           else if el.is("skybox")
             obj = @createSkyBox(el)
 
+          else if el.is("audio")
+            obj = @createAudio(el)
+
           else if el.is("player")
             if uuid == @uuid
               # That's me!
@@ -420,7 +445,7 @@ class Connector extends EventEmitter
           obj.name = uuid
           obj.userData = el
 
-          unless el.is("skybox")
+          if !el.is("skybox") and newPosition
             # skyboxes dont have a position
             obj.position.copy(newPosition)
 

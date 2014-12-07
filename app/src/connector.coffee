@@ -13,9 +13,10 @@ class Connector extends EventEmitter
     @spawned = false
     @manager = new THREE.LoadingManager()
 
-    grid = new THREE.GridHelper(100, 1);
-    grid.setColors(0xffffff, 0xffffff);
-    @scene.add(grid);
+    if @isPortal
+      grid = new THREE.GridHelper(100, 1);
+      grid.setColors(0xffffff, 0xffffff);
+      @scene.add(grid);
 
   isPortalOpen: ->
     !!@portal
@@ -240,11 +241,11 @@ class Connector extends EventEmitter
   createLink: (el) ->
     obj = new THREE.Object3D
 
-    geometry2 = new THREE.SphereGeometry( 1, 16, 16 )
+    geometry2 = new THREE.SphereGeometry( 0.25, 16, 16 )
     material2 = new THREE.MeshPhongMaterial( {color: '#ff7700', emissive : '#aa3300', transparent : true, opacity: 0.5 } )
     obj.add(new THREE.Mesh( geometry2, material2 ))
 
-    geometry = new THREE.SphereGeometry( 0.5, 16, 16 )
+    geometry = new THREE.SphereGeometry( 0.12, 16, 16 )
     material = new THREE.MeshPhongMaterial( {color: '#ff7700', emissive : '#aa3300' } )
     obj.add(new THREE.Mesh( geometry, material ))
 

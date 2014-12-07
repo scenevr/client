@@ -476,7 +476,7 @@ class Connector extends EventEmitter
                 .start()
 
             if obj.body
-              obj.body.quaternion.copy(new THREE.Quaternion().setFromEuler(newRotation))
+              obj.body.quaternion.copy(new THREE.Quaternion().setFromEuler(newEuler))
 
           if !startPosition.equals(newPosition)
             tween = new TWEEN.Tween(startPosition)

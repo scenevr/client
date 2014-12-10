@@ -389,6 +389,8 @@ class Connector extends EventEmitter
         else if name == "restart"
           console.log "Got restart message"
           @restartConnection()
+        else if name is 'chat'
+          @client.addChatMessage { name : el.attr('from') }, el.attr('message')
         else
           console.log "Unrecognized event #{el.attr('name')}"
 

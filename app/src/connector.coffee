@@ -220,7 +220,6 @@ class Connector extends EventEmitter
         new THREE.MeshLambertMaterial({ color : '#ff0000' })
       else
         new THREE.MeshBasicMaterial({ color : '#eeeeee' })
-    material = new THREE.MeshLambertMaterial
 
     if el.attr("style")
       if styles['lightmap'] || styles['texturemap']
@@ -232,6 +231,8 @@ class Connector extends EventEmitter
           texture.magFilter = THREE.NearestFilter
           texture.needsUpdate = true
           material.needsUpdate = true
+      else if styles['color']
+        material = new THREE.MeshLambertMaterial({ color : styles['color'] })
 
     loader = new THREE.OBJLoader( @manager )
     loader.load "//" + @getAssetHost() + el.attr("src"), ( object ) ->
@@ -403,6 +404,7 @@ class Connector extends EventEmitter
           return
 
         newPosition = el.attr("position") && Utils.parseVector(el.attr("position"))
+        newQuaternion = el.attr("rotation") && new THREE.Quaternion().setFromEuler(Utils.parseEuler(el.attr("rotation")))
 
         if !(obj = @scene.getObjectByName(uuid))
           if el.is("spawn")
@@ -447,9 +449,16 @@ class Connector extends EventEmitter
           obj.name = uuid
           obj.userData = el
 
+          # skyboxes dont have a position
           if !el.is("skybox") and newPosition
-            # skyboxes dont have a position
             obj.position.copy(newPosition)
+            if obj.body
+              obj.body.position.copy(newPosition)
+
+          if !el.is("skybox") and newQuaternion
+            obj.quaternion.copy(newQuaternion)
+            if obj.body
+              obj.body.quaternion.copy(newQuaternion)
 
           if el.is("skybox")
             obj.castShadow = false
@@ -457,17 +466,6 @@ class Connector extends EventEmitter
             obj.castShadow = true
 
           @scene.add(obj)
-
-          # Fade in boxes
-          if obj.material and el.is("box")
-            obj.material.setValues { transparent : true, opacity: 0.5 }
-
-            tween = new TWEEN.Tween({ opacity : 0.0 })
-            tween.to({ opacity : 1.0 }, 200)
-              .onUpdate(-> obj.material.setValues { opacity : @opacity })
-              .onComplete(-> obj.material.setValues { transparent : false })
-              .easing(TWEEN.Easing.Linear.None)
-              .start()
 
         if el.attr("style")
           styles = @parseStyleAttribute(el.attr("style"))
@@ -484,11 +482,6 @@ class Connector extends EventEmitter
           # Tween away
           startPosition = obj.position.clone()
 
-          # Physics simulation isn't tweened
-          if obj.body
-            obj.body.position.copy(newPosition)
-
-          # Todo - tween rotations
           if el.attr("rotation")
             newEuler = Utils.parseEuler(el.attr("rotation"))
             newQuaternion = new THREE.Quaternion().setFromEuler(newEuler)
@@ -498,17 +491,22 @@ class Connector extends EventEmitter
             if !obj.quaternion.equals(newQuaternion)
               tween = new TWEEN.Tween(obj.quaternion)
               tween.to(newQuaternion, 200)
-                .onUpdate(-> obj.quaternion.set(@x, @y, @z, @w))
+                .onUpdate(-> 
+                  obj.quaternion.set(@x, @y, @z, @w)
+                  if obj.body
+                    obj.body.quaternion.set(@x, @y, @z, @w)
+                )
                 .easing(TWEEN.Easing.Linear.None)
                 .start()
-
-            if obj.body
-              obj.body.quaternion.copy(new THREE.Quaternion().setFromEuler(newEuler))
 
           if !startPosition.equals(newPosition)
             tween = new TWEEN.Tween(startPosition)
             tween.to(newPosition, 200)
-              .onUpdate(-> obj.position.set(@x, @y, @z))
+              .onUpdate(-> 
+                obj.position.set(@x, @y, @z)
+                if obj.body
+                  obj.body.position.set(@x, @y, @z)
+              )
               .easing(TWEEN.Easing.Linear.None)
               .start()
 

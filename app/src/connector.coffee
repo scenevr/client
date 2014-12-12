@@ -452,9 +452,13 @@ class Connector extends EventEmitter
           # skyboxes dont have a position
           if !el.is("skybox") and newPosition
             obj.position.copy(newPosition)
+            if obj.body
+              obj.body.position.copy(newPosition)
 
           if !el.is("skybox") and newQuaternion
             obj.quaternion.copy(newQuaternion)
+            if obj.body
+              obj.body.quaternion.copy(newQuaternion)
 
           if el.is("skybox")
             obj.castShadow = false
@@ -478,7 +482,6 @@ class Connector extends EventEmitter
           # Tween away
           startPosition = obj.position.clone()
 
-          # Todo - tween rotations
           if el.attr("rotation")
             newEuler = Utils.parseEuler(el.attr("rotation"))
             newQuaternion = new THREE.Quaternion().setFromEuler(newEuler)
@@ -488,12 +491,13 @@ class Connector extends EventEmitter
             if !obj.quaternion.equals(newQuaternion)
               tween = new TWEEN.Tween(obj.quaternion)
               tween.to(newQuaternion, 200)
-                .onUpdate(-> obj.quaternion.set(@x, @y, @z, @w))
+                .onUpdate(-> 
+                  obj.quaternion.set(@x, @y, @z, @w)
+                  if obj.body
+                    obj.body.quaternion.set(@x, @y, @z, @w)
+                )
                 .easing(TWEEN.Easing.Linear.None)
                 .start()
-
-            if obj.body
-              obj.body.quaternion.copy(new THREE.Quaternion().setFromEuler(newEuler))
 
           if !startPosition.equals(newPosition)
             tween = new TWEEN.Tween(startPosition)

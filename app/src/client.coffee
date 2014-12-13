@@ -1,5 +1,11 @@
 Connector = require("./connector.coffee")
 
+Templates = {
+  inQueue : require("../templates/in_queue.jade")
+  unableToConnect : require("../templates/unable_to_connect.jade")
+  instructions : require("../templates/instructions.jade")
+}
+
 # fixme - do we have to export to window? bit gross.
 window.CANNON = require("cannon")
 
@@ -52,6 +58,7 @@ class Client extends EventEmitter
     @addPlayerBody()
     @addDot()
     @addMessageInput()
+    @addPointLockGrab()
 
     @camera = new THREE.PerspectiveCamera( VIEW_ANGLE, ASPECT, NEAR, FAR)
     @addControls()
@@ -107,13 +114,11 @@ class Client extends EventEmitter
 
   enableControls: ->
     @controls.enabled = true
-    @showBlocker()
     @hideInstructions()
 
   disableControls: ->
     @controls.enabled = false
     @showInstructions()
-    @hideBlocker()
 
   getHostFromLocation: ->
     if window.location.pathname.match /connect.+/
@@ -242,9 +247,18 @@ class Client extends EventEmitter
   addConnectionError: ->
     $(".overlay").remove()
 
-    @overlay = $("<div id='connecting' class='overlay'>
-      <h1>Unable to connect to #{@connector.host}</h1>
-    </div>").appendTo(@container)
+    @renderOverlay(Templates.unableToConnect({
+      server : @connector.host.split(":")[0]
+      port : @connector.host.split(":")[1]
+    }))
+
+  renderOverlay: (html) ->
+    @overlay = $("<div class='overlay'>").html(html).appendTo @container
+
+    @overlay.css {
+      left : ($(window).width() - @overlay.width()) / 2
+      top : ($(window).height() - @overlay.height()) / 2
+    }
 
   addConnecting: ->
     $(".overlay").remove()
@@ -256,25 +270,15 @@ class Client extends EventEmitter
   addInstructions: ->
     $(".overlay").remove()
 
-    @overlay = $('<div id="instructions" class="overlay">
-      <h1>Click to join</h1>
+    @renderOverlay(Templates.instructions)
 
-      <!--div class="keys">
-        <span class="key w">W</span>
-        <span class="key a">A</span>
-        <span class="key s">S</span>
-        <span class="key d">D</span>
-      </div-->
+    unless element.requestPointerLock || element.mozRequestPointerLock || element.webkitRequestPointerLock
+      alert "[FAIL] Your browser doesn't seem to support pointerlock. Please use ie, chrome or firefox."
+      return
 
-      <small>
-        (W, A, S, D = Move, MOUSE = Look around)
-      </small>
-    </div>').appendTo(@container)
-
-    @overlay.show().click =>
-      # if !@hasPointerLock()
-      #   alert "[FAIL] Your browser doesn't seem to support pointerlock. You will not be able to use sceneserver."
-      # else
+  addPointLockGrab: ->
+    $('body').click =>
+      return if @controls.enabled
 
       element = document.body
 
@@ -289,23 +293,25 @@ class Client extends EventEmitter
       element.requestPointerLock = element.requestPointerLock || element.mozRequestPointerLock || element.webkitRequestPointerLock;
       element.requestPointerLock()
 
-  showBlocker: ->
-    @blockerElement ||= $("<div />").addClass("blocker").appendTo 'body'
-    @blockerElement.show()
-
-  hideBlocker: ->
-    if @blockerElement
-      @blockerElement.hide()
-
   # Fixme - make some kind of overlay class
   showMessage: (message) ->
-    $("#instructions").show().html(message)
+    @renderOverlay(message)
 
   showInstructions: ->
     @addInstructions()
 
   hideInstructions: ->
-    $("#instructions").hide()
+    $(".overlay").remove()
+
+  addLoadingScene: ->
+    geometry = new THREE.IcosahedronGeometry(500, 3)
+    material = new THREE.MeshBasicMaterial {
+      color: '#999999',
+      wireframe: true,
+      wireframeLinewidth: 1
+    }
+    @loadingDome = new THREE.Mesh(geometry, material)
+    @scene.add(@loadingDome)
 
   addFloor: ->
     floorTexture = new THREE.ImageUtils.loadTexture( '/images/grid.png' )

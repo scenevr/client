@@ -334,7 +334,7 @@ class Client extends EventEmitter
     sphereShape = new CANNON.Sphere(0.5)
     @playerBody.addShape(sphereShape)
     @playerBody.position.set(0,0,0)
-    @playerBody.linearDamping = 0.2
+    @playerBody.linearDamping = 0
     @world.add(@playerBody)
 
   addDot: ->
@@ -367,9 +367,10 @@ class Client extends EventEmitter
   tick: =>
     @stats.begin()
 
-    # Simulate physics
     timeStep = 1.0/60.0 # seconds
-    @world.step(timeStep)
+    # Simulate physics
+    if @controls.enabled
+      @world.step(timeStep)
     # console.log("Sphere z position: " + @sphereBody.position.z)
 
     # Animate

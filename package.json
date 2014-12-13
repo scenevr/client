@@ -11,7 +11,8 @@
     "three": "0.66.2",
     "tween.js": "~0.14.0",
     "wolfy87-eventemitter": "~4.2.9",
-    "browserify-jade": "~0.1.2"
+    "browserify-jade": "~0.1.2",
+    "express-less": "0.0.6"
   },
   "scripts": {
     "start": "coffee server.coffee"

@@ -97,10 +97,10 @@ class Connector extends EventEmitter
       @sendMessage $("<player />").attr("position", position.toArray().join(" "))
 
   getHost: ->
-    window.location.host.split(":")[0]
+    @client.getHostFromLocation()
 
   getAssetHost: ->
-    @getHost() + ":8080"
+    @getHost()
 
   createBillboard: (el) ->
     SIZE = 512

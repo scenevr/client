@@ -4,6 +4,7 @@ Templates = {
   inQueue : require("../templates/in_queue.jade")
   unableToConnect : require("../templates/unable_to_connect.jade")
   instructions : require("../templates/instructions.jade")
+  connecting : require("../templates/connecting.jade")
 }
 
 # fixme - do we have to export to window? bit gross.
@@ -266,6 +267,8 @@ class Client extends EventEmitter
     }))
 
   renderOverlay: (html) ->
+    $(".overlay").remove()
+
     @overlay = $("<div class='overlay'>").html(html).appendTo @container
 
     @overlay.css {
@@ -274,11 +277,10 @@ class Client extends EventEmitter
     }
 
   addConnecting: ->
-    $(".overlay").remove()
-
-    @overlay = $("<div id='connecting' class='overlay'>
-      <h1>Connecting to #{@connector.host}...</h1>
-    </div>").appendTo(@container)
+    @renderOverlay(Templates.connecting {
+      server : @connector.host.split(":")[0]
+      port : @connector.host.split(":")[1]
+    })  
 
   addInstructions: ->
     $(".overlay").remove()

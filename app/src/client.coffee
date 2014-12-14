@@ -43,7 +43,7 @@ class Client extends EventEmitter
     @world.gravity.set(0,-20,0); # m/s²
     @world.broadphase = new CANNON.NaiveBroadphase()
 
-    @renderer = new THREE.WebGLRenderer( {antialias:true} )
+    @renderer = new THREE.WebGLRenderer( {antialias:false} )
     @renderer.setSize(@width / DOWN_SAMPLE, @height / DOWN_SAMPLE)
     @renderer.shadowMapEnabled = false
     @renderer.setClearColor( 0xeeeeee, 1)

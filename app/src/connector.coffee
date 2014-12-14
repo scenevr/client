@@ -100,7 +100,7 @@ class Connector extends EventEmitter
     window.location.host.split(":")[0]
 
   getAssetHost: ->
-    @getHost() + ":8090"
+    @getHost() + ":8080"
 
   createBillboard: (el) ->
     SIZE = 512

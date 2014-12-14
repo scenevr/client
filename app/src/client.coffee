@@ -86,6 +86,8 @@ class Client extends EventEmitter
 
     @tick()
 
+    window.addEventListener( 'resize', @onWindowResize, false )
+
     window.addEventListener "keypress", (e) =>
       if (e.charCode == 'r'.charCodeAt(0)) and @vrrenderer and @controls.enabled
         @vrrenderer.resetOrientation(@controls, @vrHMDSensor)
@@ -99,6 +101,17 @@ class Client extends EventEmitter
           @renderer.domElement.webkitRequestFullscreen {
             vrDisplay : @vrHMD
           } 
+
+  onWindowResize: =>
+    @width = @container.width()
+    @height = @container.height()
+    
+    $(@renderer.domElement).css { width : @width, height : @height }
+
+    @camera.aspect = @width / @height
+    @camera.updateProjectionMatrix()
+
+    @renderer.setSize(@width / DOWN_SAMPLE, @height / DOWN_SAMPLE)
 
   hasPointerLock: ->
     document.pointerLockElement || document.mozPointerLockElement || document.webkitPointerLockElement

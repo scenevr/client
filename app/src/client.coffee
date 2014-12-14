@@ -12,6 +12,7 @@ window.CANNON = require("cannon")
 
 TWEEN = require("tween.js")
 EventEmitter = require('wolfy87-eventemitter');
+DOWN_SAMPLE = 1
 
 class Client extends EventEmitter
   constructor: ->
@@ -36,7 +37,6 @@ class Client extends EventEmitter
     ASPECT = @width / @height
     NEAR = 0.1
     FAR = 700
-    DOWN_SAMPLE = 1
 
     @scene = new THREE.Scene()
     @scene.fog = new THREE.Fog( 0xffffff, 500, 700 );
@@ -84,6 +84,8 @@ class Client extends EventEmitter
 
     axes = new THREE.AxisHelper(2)
     @scene.add(axes)
+
+    @raycaster = new THREE.Raycaster
 
     @container.append( @renderer.domElement );
     $(@renderer.domElement).css { width : @width, height : @height }
@@ -193,10 +195,44 @@ class Client extends EventEmitter
     if @vrHMD
       @vrrenderer = new THREE.VRRenderer(@renderer, @vrHMD)
 
+  checkForPortalCollision: ->
+    position = @controls.getObject().position
+    direction = @controls.getDirection(new THREE.Vector3)
+
+    @raycaster.set( position, direction )
+    @raycaster.far = 0.5
+    
+    ints = @raycaster.intersectObject(@connector.stencilScene.children[0], false)
+
+    if (ints.length > 0)
+      @promotePortal()
+
+  promotePortal: ->
+    # Promote the portal scene to the primary scene
+
+    @scene.remove(@controls.getObject())
+    @world.remove(@playerBody)
+
+    @portal = @connector.portal
+    @world = @portal.world
+    @connector = @portal.connector
+    @scene = @portal.scene
+    
+    @scene.add(@controls.getObject())
+    @world.add(@playerBody)
+
+    delete @portal
+
+    @world.gravity.set(0,-20,0); # m/s²
+    @world.broadphase = new CANNON.NaiveBroadphase()
+
+    @addLights()
+    @addFloor()
+    @addPlayerBody()
+
+
   # Fixme - the .parent tests are all a bit manky...
   onClick: =>
-    @raycaster = new THREE.Raycaster
-
     position = @controls.getObject().position
     direction = @controls.getDirection(new THREE.Vector3)
 
@@ -290,6 +326,8 @@ class Client extends EventEmitter
     $(".overlay").remove()
 
     @renderOverlay(Templates.instructions)
+
+    element = document.body
 
     unless element.requestPointerLock || element.mozRequestPointerLock || element.webkitRequestPointerLock
       alert "[FAIL] Your browser doesn't seem to support pointerlock. Please use ie, chrome or firefox."
@@ -393,10 +431,10 @@ class Client extends EventEmitter
     @stats.begin()
 
     timeStep = 1.0/60.0 # seconds
+    
     # Simulate physics
     if @controls.enabled
       @world.step(timeStep)
-    # console.log("Sphere z position: " + @sphereBody.position.z)
 
     # Animate
     TWEEN.update()
@@ -411,7 +449,8 @@ class Client extends EventEmitter
       # @renderer.render( @connector.portal.scene, @camera  )
 
       if @connector.isPortalOpen()
-        @renderPortals()        
+        @renderPortals()      
+        @checkForPortalCollision()  
       else
         @renderer.render( @scene, @camera  )
 

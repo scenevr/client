@@ -33,7 +33,7 @@ class Connector extends EventEmitter
     @portal.scene = new THREE.Scene
     @portal.world = new CANNON.World
     @portal.scene.fog = new THREE.Fog( 0x000000, 10, 50 )
-    @portal.connector = new Connector(null, @portal.scene, @portal.world, @host, el.attr('href'), true)
+    @portal.connector = new Connector(@client, @portal.scene, @portal.world, @host, el.attr('href'), true)
     @portal.connector.connect()
     @stencilScene = new THREE.Scene
 
@@ -80,7 +80,8 @@ class Connector extends EventEmitter
     obj
 
   setPosition: (v) ->
-    if @client
+    @spawnPosition =v 
+    if !@isPortal
       @client.playerBody.position.copy(v)
       @client.playerBody.position.y += 1.5
       @client.playerBody.velocity.set(0,0,0)
@@ -178,7 +179,7 @@ class Connector extends EventEmitter
 
     canvas = $("<canvas width='#{SIZE}' height='#{SIZE}' />")[0]
 
-    div = $("<div />").html(el.html()).css({ position : 'absolute', left : 0, top : 0, background : 'white', width : SIZE, height : SIZE, padding : '10px', border : '1px solid #ccc', zIndex : 10 })
+    div = $("<div />").html(el.text()).css({ position : 'absolute', left : 0, top : 0, background : 'white', width : SIZE, height : SIZE, padding : '10px', border : '1px solid #ccc', zIndex : 10 })
 
     div.find("img").each (index, img) =>
       img.src =  "//" + @getAssetHost() + img.getAttribute("src")

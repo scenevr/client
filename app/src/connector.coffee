@@ -2,6 +2,7 @@ TWEEN = require("tween.js")
 EventEmitter = require('wolfy87-eventemitter');
 Color = require("color")
 Utils = require("./utils.coffee")
+Howl = require("howler").Howl
 
 class Connector extends EventEmitter
   constructor: (@client, @scene, @physicsWorld, host, path, isPortal) ->
@@ -165,10 +166,10 @@ class Connector extends EventEmitter
       @sendMessage $("<player />").attr("position", position.toArray().join(" "))
 
   getHost: ->
-    window.location.host.split(":")[0]
+    @client.getHostFromLocation()
 
   getAssetHost: ->
-    @getHost() + ":8090"
+    @getHost()
 
   createBillboard: (el) ->
     SIZE = 512
@@ -292,7 +293,6 @@ class Connector extends EventEmitter
         new THREE.MeshLambertMaterial({ color : '#ff0000' })
       else
         new THREE.MeshBasicMaterial({ color : '#eeeeee' })
-    material = new THREE.MeshLambertMaterial
 
     if el.attr("style")
       if styles['lightmap'] || styles['texturemap']
@@ -304,6 +304,8 @@ class Connector extends EventEmitter
           texture.magFilter = THREE.NearestFilter
           texture.needsUpdate = true
           material.needsUpdate = true
+      else if styles['color']
+        material = new THREE.MeshLambertMaterial({ color : styles['color'] })
 
     loader = new THREE.OBJLoader( @manager )
     loader.load "//" + @getAssetHost() + el.attr("src"), ( object ) ->
@@ -322,6 +324,27 @@ class Connector extends EventEmitter
     obj.scale.copy(newScale)
 
     obj 
+
+  createAudio: (el) ->
+    obj = new THREE.Object3D
+
+    if (src = el.attr("src")) and el.attr("ambient").toLowerCase() == "true"
+      path = "//" + @getAssetHost() + src
+
+      volume = if el.attr("volume")
+          parseFloat(el.attr("volume"))
+        else
+          1.0
+
+      obj.userSound = new Howl({
+        urls: [path]
+        loop: true
+        volume: volume
+      }).play();
+
+    obj.position = new THREE.Vector3(0,0,0)
+
+    obj
 
   createSkyBox: (el) ->
     material = null
@@ -440,6 +463,8 @@ class Connector extends EventEmitter
         else if name == "restart"
           console.log "Got restart message"
           @restartConnection()
+        else if name is 'chat'
+          @client.addChatMessage { name : el.attr('from') }, el.attr('message')
         else
           console.log "Unrecognized event #{el.attr('name')}"
 
@@ -452,6 +477,7 @@ class Connector extends EventEmitter
           return
 
         newPosition = el.attr("position") && Utils.parseVector(el.attr("position"))
+        newQuaternion = el.attr("rotation") && new THREE.Quaternion().setFromEuler(Utils.parseEuler(el.attr("rotation")))
 
         if !(obj = @scene.getObjectByName(uuid))
           if el.is("spawn")
@@ -475,6 +501,9 @@ class Connector extends EventEmitter
           else if el.is("skybox")
             obj = @createSkyBox(el)
 
+          else if el.is("audio")
+            obj = @createAudio(el)
+
           else if el.is("player")
             if uuid == @uuid
               # That's me!
@@ -497,9 +526,15 @@ class Connector extends EventEmitter
             obj.traverse (child) -> 
               child.material = new THREE.MeshBasicMaterial { wireframe : true, color : '#ffffff' }
 
-          unless el.is("skybox")
-            # skyboxes dont have a position
+          if !el.is("skybox") and newPosition
             obj.position.copy(newPosition)
+            if obj.body
+              obj.body.position.copy(newPosition)
+
+          if !el.is("skybox") and newQuaternion
+            obj.quaternion.copy(newQuaternion)
+            if obj.body
+              obj.body.quaternion.copy(newQuaternion)
 
           if el.is("skybox")
             obj.castShadow = false
@@ -507,17 +542,6 @@ class Connector extends EventEmitter
             obj.castShadow = true
 
           @scene.add(obj)
-
-          # Fade in boxes
-          if obj.material and el.is("box")
-            obj.material.setValues { transparent : true, opacity: 0.5 }
-
-            tween = new TWEEN.Tween({ opacity : 0.0 })
-            tween.to({ opacity : 1.0 }, 200)
-              .onUpdate(-> obj.material.setValues { opacity : @opacity })
-              .onComplete(-> obj.material.setValues { transparent : false })
-              .easing(TWEEN.Easing.Linear.None)
-              .start()
 
         if el.attr("style")
           styles = @parseStyleAttribute(el.attr("style"))
@@ -534,22 +558,31 @@ class Connector extends EventEmitter
           # Tween away
           startPosition = obj.position.clone()
 
-          # Physics simulation isn't tweened
-          if obj.body
-            obj.body.position.copy(newPosition)
-
-          # Todo - tween rotations
           if el.attr("rotation")
-            newRotation = Utils.parseEuler(el.attr("rotation"))
-            obj.rotation.copy(newRotation)
+            newEuler = Utils.parseEuler(el.attr("rotation"))
+            newQuaternion = new THREE.Quaternion().setFromEuler(newEuler)
 
-            if obj.body
-              obj.body.quaternion.copy(new THREE.Quaternion().setFromEuler(newRotation))
+            # obj.quaternion.copy(newQuaternion)
+
+            if !obj.quaternion.equals(newQuaternion)
+              tween = new TWEEN.Tween(obj.quaternion)
+              tween.to(newQuaternion, 200)
+                .onUpdate(-> 
+                  obj.quaternion.set(@x, @y, @z, @w)
+                  if obj.body
+                    obj.body.quaternion.set(@x, @y, @z, @w)
+                )
+                .easing(TWEEN.Easing.Linear.None)
+                .start()
 
           if !startPosition.equals(newPosition)
             tween = new TWEEN.Tween(startPosition)
             tween.to(newPosition, 200)
-              .onUpdate(-> obj.position.set(@x, @y, @z))
+              .onUpdate(-> 
+                obj.position.set(@x, @y, @z)
+                if obj.body
+                  obj.body.position.set(@x, @y, @z)
+              )
               .easing(TWEEN.Easing.Linear.None)
               .start()
 

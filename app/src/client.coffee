@@ -1,5 +1,12 @@
 Connector = require("./connector.coffee")
 
+Templates = {
+  inQueue : require("../templates/in_queue.jade")
+  unableToConnect : require("../templates/unable_to_connect.jade")
+  instructions : require("../templates/instructions.jade")
+  connecting : require("../templates/connecting.jade")
+}
+
 # fixme - do we have to export to window? bit gross.
 window.CANNON = require("cannon")
 
@@ -21,6 +28,7 @@ class Client extends EventEmitter
     @stats.domElement.style.position = 'absolute';
     @stats.domElement.style.zIndex = 110;
     @stats.domElement.style.right = '10px';
+    @stats.domElement.style.zIndex = 100;
     @stats.domElement.style.bottom = '10px';
     @container.append(@stats.domElement)
 
@@ -53,6 +61,7 @@ class Client extends EventEmitter
     @addPlayerBody()
     @addDot()
     @addMessageInput()
+    @addPointLockGrab()
 
     @camera = new THREE.PerspectiveCamera( VIEW_ANGLE, ASPECT, NEAR, FAR)
     @addControls()
@@ -81,6 +90,8 @@ class Client extends EventEmitter
 
     @tick()
 
+    window.addEventListener( 'resize', @onWindowResize, false )
+
     window.addEventListener "keypress", (e) =>
       if (e.charCode == 'r'.charCodeAt(0)) and @vrrenderer and @controls.enabled
         @vrrenderer.resetOrientation(@controls, @vrHMDSensor)
@@ -94,6 +105,17 @@ class Client extends EventEmitter
           @renderer.domElement.webkitRequestFullscreen {
             vrDisplay : @vrHMD
           } 
+
+  onWindowResize: =>
+    @width = @container.width()
+    @height = @container.height()
+    
+    $(@renderer.domElement).css { width : @width, height : @height }
+
+    @camera.aspect = @width / @height
+    @camera.updateProjectionMatrix()
+
+    @renderer.setSize(@width / DOWN_SAMPLE, @height / DOWN_SAMPLE)
 
   hasPointerLock: ->
     document.pointerLockElement || document.mozPointerLockElement || document.webkitPointerLockElement
@@ -109,13 +131,11 @@ class Client extends EventEmitter
 
   enableControls: ->
     @controls.enabled = true
-    @showBlocker()
     @hideInstructions()
 
   disableControls: ->
     @controls.enabled = false
     @showInstructions()
-    @hideBlocker()
 
   getHostFromLocation: ->
     if window.location.pathname.match /connect.+/
@@ -245,39 +265,39 @@ class Client extends EventEmitter
   addConnectionError: ->
     $(".overlay").remove()
 
-    @overlay = $("<div id='connecting' class='overlay'>
-      <h1>Unable to connect to #{@connector.host}</h1>
-    </div>").appendTo(@container)
+    @renderOverlay(Templates.unableToConnect({
+      server : @connector.host.split(":")[0]
+      port : @connector.host.split(":")[1]
+    }))
 
-  addConnecting: ->
+  renderOverlay: (html) ->
     $(".overlay").remove()
 
-    @overlay = $("<div id='connecting' class='overlay'>
-      <h1>Connecting to #{@connector.host}...</h1>
-    </div>").appendTo(@container)
+    @overlay = $("<div class='overlay'>").html(html).appendTo @container
+
+    @overlay.css {
+      left : ($(window).width() - @overlay.width()) / 2
+      top : ($(window).height() - @overlay.height()) / 2
+    }
+
+  addConnecting: ->
+    @renderOverlay(Templates.connecting {
+      server : @connector.host.split(":")[0]
+      port : @connector.host.split(":")[1]
+    })  
 
   addInstructions: ->
     $(".overlay").remove()
 
-    @overlay = $('<div id="instructions" class="overlay">
-      <h1>Click to join</h1>
+    @renderOverlay(Templates.instructions)
 
-      <!--div class="keys">
-        <span class="key w">W</span>
-        <span class="key a">A</span>
-        <span class="key s">S</span>
-        <span class="key d">D</span>
-      </div-->
+    unless element.requestPointerLock || element.mozRequestPointerLock || element.webkitRequestPointerLock
+      alert "[FAIL] Your browser doesn't seem to support pointerlock. Please use ie, chrome or firefox."
+      return
 
-      <small>
-        (W, A, S, D = Move, MOUSE = Look around)
-      </small>
-    </div>').appendTo(@container)
-
-    @overlay.show().click =>
-      # if !@hasPointerLock()
-      #   alert "[FAIL] Your browser doesn't seem to support pointerlock. You will not be able to use sceneserver."
-      # else
+  addPointLockGrab: ->
+    $('body').click =>
+      return if @controls.enabled
 
       element = document.body
 
@@ -292,23 +312,25 @@ class Client extends EventEmitter
       element.requestPointerLock = element.requestPointerLock || element.mozRequestPointerLock || element.webkitRequestPointerLock;
       element.requestPointerLock()
 
-  showBlocker: ->
-    @blockerElement ||= $("<div />").addClass("blocker").appendTo 'body'
-    @blockerElement.show()
-
-  hideBlocker: ->
-    if @blockerElement
-      @blockerElement.hide()
-
   # Fixme - make some kind of overlay class
   showMessage: (message) ->
-    $("#instructions").show().html(message)
+    @renderOverlay(message)
 
   showInstructions: ->
     @addInstructions()
 
   hideInstructions: ->
-    $("#instructions").hide()
+    $(".overlay").remove()
+
+  addLoadingScene: ->
+    geometry = new THREE.IcosahedronGeometry(500, 3)
+    material = new THREE.MeshBasicMaterial {
+      color: '#999999',
+      wireframe: true,
+      wireframeLinewidth: 1
+    }
+    @loadingDome = new THREE.Mesh(geometry, material)
+    @scene.add(@loadingDome)
 
   addFloor: ->
     floorTexture = new THREE.ImageUtils.loadTexture( '/images/grid.png' )
@@ -337,7 +359,7 @@ class Client extends EventEmitter
     sphereShape = new CANNON.Sphere(0.5)
     @playerBody.addShape(sphereShape)
     @playerBody.position.set(0,0,0)
-    @playerBody.linearDamping = 0.2
+    @playerBody.linearDamping = 0
     @world.add(@playerBody)
 
   addDot: ->
@@ -370,9 +392,10 @@ class Client extends EventEmitter
   tick: =>
     @stats.begin()
 
-    # Simulate physics
     timeStep = 1.0/60.0 # seconds
-    @world.step(timeStep)
+    # Simulate physics
+    if @controls.enabled
+      @world.step(timeStep)
     # console.log("Sphere z position: " + @sphereBody.position.z)
 
     # Animate

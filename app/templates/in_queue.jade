@@ -1,0 +1,20 @@
+.queue-message
+
+  h1 You are in the queue!
+
+  p.
+    This server is full. You are in the queue
+    and will be connected as soon as <b>#{queuePosition}</b>
+    people have left the server. Leave this browser tab
+    open and we will send you a desktop notification
+    when you have reached the front of the queue.
+
+  table
+    tr
+      td People in front of you in the queue
+      td
+        b= queuePosition
+    tr
+      td Maximum number of people in this server
+      td
+        b= serverLimit

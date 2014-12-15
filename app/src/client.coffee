@@ -56,8 +56,6 @@ class Client extends EventEmitter
     # @projector = new THREE.Projector()
     @time = Date.now()
 
-    @addLights()
-    @addFloor()
     @addPlayerBody()
     @addDot()
     @addMessageInput()
@@ -209,11 +207,13 @@ class Client extends EventEmitter
 
   promotePortal: ->
     # Promote the portal scene to the primary scene
+    @portal = @connector.portal
+
+    window.history.pushState {}, "SceneVR", "/connect/#{@portal.connector.host}#{@portal.connector.path}"
 
     @scene.remove(@controls.getObject())
     @world.remove(@playerBody)
 
-    @portal = @connector.portal
     @world = @portal.world
     @connector = @portal.connector
     @scene = @portal.scene
@@ -226,8 +226,6 @@ class Client extends EventEmitter
     @world.gravity.set(0,-20,0); # m/s²
     @world.broadphase = new CANNON.NaiveBroadphase()
 
-    @addLights()
-    @addFloor()
     @addPlayerBody()
 
 
@@ -370,28 +368,6 @@ class Client extends EventEmitter
     @loadingDome = new THREE.Mesh(geometry, material)
     @scene.add(@loadingDome)
 
-  addFloor: ->
-    floorTexture = new THREE.ImageUtils.loadTexture( '/images/grid.png' )
-    floorTexture.wrapS = floorTexture.wrapT = THREE.RepeatWrapping;
-    floorTexture.repeat.set( 1000, 1000 )
-
-    floorMaterial = new THREE.MeshBasicMaterial( { map: floorTexture } );
-    floorGeometry = new THREE.PlaneBufferGeometry(1000, 1000, 1, 1)
-    
-    @floor = new THREE.Mesh(floorGeometry, floorMaterial)
-    @floor.position.y = 0
-    @floor.rotation.x = -Math.PI / 2
-    @floor.receiveShadow = true
-
-    @scene.add(@floor)
-
-    groundBody = new CANNON.Body { mass: 0 } # static
-    groundShape = new CANNON.Plane()
-    groundBody.addShape(groundShape)
-    groundBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1,0,0),-Math.PI/2);
-    
-    @world.add(groundBody)
-
   addPlayerBody: ->
     @playerBody = new CANNON.Body { mass : 100 }
     sphereShape = new CANNON.Sphere(0.5)
@@ -410,15 +386,6 @@ class Client extends EventEmitter
 
   getPlayerObject: ->
     @controls.getObject()
-
-  addLights: ->
-    dirLight = new THREE.DirectionalLight( 0xffffff, 1.1)
-    dirLight.position.set( -1, 0.75, 0.92 )
-
-    @scene.add( dirLight )
-
-    ambientLight = new THREE.AmbientLight(0x404040)
-    @scene.add(ambientLight)
 
   getPlayerDropPoint: ->
     v = new THREE.Vector3(0,0,-20)

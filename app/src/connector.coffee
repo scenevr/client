@@ -14,10 +14,39 @@ class Connector extends EventEmitter
     @spawned = false
     @manager = new THREE.LoadingManager()
 
-    if @isPortal
-      grid = new THREE.GridHelper(100, 1);
-      grid.setColors(0xffffff, 0xffffff);
-      @scene.add(grid);
+    @addLights()
+    @addFloor()
+
+  addFloor: ->
+    floorTexture = new THREE.ImageUtils.loadTexture( '/images/grid.png' )
+    floorTexture.wrapS = floorTexture.wrapT = THREE.RepeatWrapping;
+    floorTexture.repeat.set( 1000, 1000 )
+
+    floorMaterial = new THREE.MeshBasicMaterial( { map: floorTexture } );
+    floorGeometry = new THREE.PlaneBufferGeometry(1000, 1000, 1, 1)
+    
+    @floor = new THREE.Mesh(floorGeometry, floorMaterial)
+    @floor.position.y = 0
+    @floor.rotation.x = -Math.PI / 2
+    @floor.receiveShadow = true
+
+    @scene.add(@floor)
+
+    groundBody = new CANNON.Body { mass: 0 } # static
+    groundShape = new CANNON.Plane()
+    groundBody.addShape(groundShape)
+    groundBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1,0,0),-Math.PI/2);
+    
+    @physicsWorld.add(groundBody)
+
+  addLights: ->
+    dirLight = new THREE.DirectionalLight( 0xffffff, 1.1)
+    dirLight.position.set( -1, 0.75, 0.92 )
+
+    @scene.add( dirLight )
+
+    ambientLight = new THREE.AmbientLight(0x404040)
+    @scene.add(ambientLight)
 
   isPortalOpen: ->
     !!@portal
@@ -32,7 +61,6 @@ class Connector extends EventEmitter
     @portal.obj = obj
     @portal.scene = new THREE.Scene
     @portal.world = new CANNON.World
-    @portal.scene.fog = new THREE.Fog( 0x000000, 10, 50 )
     @portal.connector = new Connector(@client, @portal.scene, @portal.world, @host, el.attr('href'), true)
     @portal.connector.connect()
     @stencilScene = new THREE.Scene
@@ -201,8 +229,7 @@ class Connector extends EventEmitter
         texture.needsUpdate = true;
         material = new THREE.MeshBasicMaterial( {map: texture, side:THREE.DoubleSide } )
         material.transparent = false;
-        unless @isPortal
-          mesh.material = material
+        mesh.material = material
         div.remove()
     }
 
@@ -523,10 +550,6 @@ class Connector extends EventEmitter
           obj.name = uuid
           obj.userData = el
 
-          if @isPortal
-            obj.traverse (child) -> 
-              child.material = new THREE.MeshBasicMaterial { wireframe : true, color : '#ffffff' }
-
           if !el.is("skybox") and newPosition
             obj.position.copy(newPosition)
             if obj.body
@@ -588,7 +611,6 @@ class Connector extends EventEmitter
               .start()
 
         if el.is("box") 
-          unless @isPortal
-            obj.material.setValues { color : el.attr('color'), ambient : Color(el.attr('color')).hexString() }
+          obj.material.setValues { color : el.attr('color'), ambient : Color(el.attr('color')).hexString() }
   
 module.exports = Connector

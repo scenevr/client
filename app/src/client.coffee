@@ -235,10 +235,14 @@ class Client extends EventEmitter
     direction = @controls.getDirection(new THREE.Vector3)
 
     @raycaster.set( position, direction )
+    @raycaster.far = 5.0
 
     for intersection in @raycaster.intersectObjects( @getAllClickableObjects() ) 
       # For links
+      console.log intersection.object
+
       if intersection.object && intersection.object.parent && intersection.object.parent.userData.is && intersection.object.parent.userData.is("link")
+        console.log 'link click...'
         intersection.object.parent.onClick()
         # @loadNewScene(intersection.object.parent.userData.attr("href"))
 

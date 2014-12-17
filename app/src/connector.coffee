@@ -5,10 +5,11 @@ Utils = require("./utils.coffee")
 Howl = require("howler").Howl
 
 class Connector extends EventEmitter
-  constructor: (@client, @scene, @physicsWorld, host, path, isPortal) ->
+  constructor: (@client, @scene, @physicsWorld, host, path, isPortal, referrer) ->
     @host = host || window.location.host.split(":")[0] + ":8080"
     @path = path || "/index.xml"
     @isPortal = isPortal || false
+    @referrer = referrer || null
     @protocol = "scenevr"
     @uuid = null
     @spawned = false
@@ -51,6 +52,9 @@ class Connector extends EventEmitter
   isPortalOpen: ->
     !!@portal
 
+  getUrl: ->
+    "#{@host}#{@path}"
+
   loadPortal: (el, obj) ->
     if @isPortal
       console.error "Portal tried to #loadPortal"
@@ -61,7 +65,7 @@ class Connector extends EventEmitter
     @portal.obj = obj
     @portal.scene = new THREE.Scene
     @portal.world = new CANNON.World
-    @portal.connector = new Connector(@client, @portal.scene, @portal.world, @host, el.attr('href'), true)
+    @portal.connector = new Connector(@client, @portal.scene, @portal.world, @host, el.attr('href'), true, @getUrl())
     @portal.connector.connect()
     @stencilScene = new THREE.Scene
 
@@ -109,7 +113,11 @@ class Connector extends EventEmitter
 
   setPosition: (v) ->
     @spawnPosition =v 
-    if !@isPortal
+
+    if @isPortal
+      el = $("<link />").attr("position", @spawnPosition.toArray().join(' ')).attr("href", @referrer)
+      @scene.add(@createBackLink(el))
+    else
       @client.playerBody.position.copy(v)
       @client.playerBody.position.y += 1.5
       @client.playerBody.velocity.set(0,0,0)
@@ -266,7 +274,34 @@ class Connector extends EventEmitter
     material = new THREE.MeshPhongMaterial( {color: '#999999' } )
     new THREE.Mesh( combined, material )
 
-  # Todo - do something special to indicate links....
+  # Fix me - so much gross duplication and hacks...
+  createBackLink: (el) ->
+    obj = new THREE.Object3D
+
+    newPosition = el.attr("position") && Utils.parseVector(el.attr("position"))
+    obj.position.copy(newPosition)
+
+    geometry2 = new THREE.SphereGeometry( 0.25, 16, 16 )
+    material2 = new THREE.MeshPhongMaterial( {color: '#0033ff', emissive : '#0011aa', transparent : true, opacity: 0.5 } )
+    obj.add(new THREE.Mesh( geometry2, material2 ))
+
+    geometry = new THREE.SphereGeometry( 0.12, 16, 16 )
+    material = new THREE.MeshPhongMaterial( {color: '#0033ff', emissive : '#0011aa' } )
+    obj.add(new THREE.Mesh( geometry, material ))
+
+    obj.userData = el
+    
+    obj.onClick = =>
+      if @portal && @portal.obj == obj
+        @closePortal()
+      else if @portal
+        @closePortal()
+        @createPortal(el, obj)
+      else
+        @createPortal(el, obj)
+
+    obj
+
   createLink: (el) ->
     obj = new THREE.Object3D
 

@@ -263,11 +263,13 @@ class Connector extends EventEmitter
         else
           1.0
 
-      obj.userSound = new Howl({
-        urls: [path]
-        loop: true
-        volume: volume
-      }).play();
+      # Disabled until we have a control panel
+      
+      # obj.userSound = new Howl({
+      #   urls: [path]
+      #   loop: true
+      #   volume: volume
+      # }).play();
 
     obj.position = new THREE.Vector3(0,0,0)
 

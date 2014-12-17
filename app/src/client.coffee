@@ -135,14 +135,14 @@ class Client extends EventEmitter
     @showInstructions()
 
   getHostFromLocation: ->
-    if window.location.pathname.match /connect.+/
-      window.location.pathname.split('/')[2]
+    if window.location.search.match /connect.+/
+      window.location.search.split(/[\/=]/)[1]
     else
-      window.location.host.split(":")[0] + ":8080"
+      "scenevr-demo.herokuapp.com"
 
   getPathFromLocation: ->
-    if window.location.pathname.match /connect.+/
-      "/" + window.location.pathname.split('/')[3]
+    if window.location.search.match /connect.+/
+      "/" + window.location.search.split(/[\/=]/)[2]
     else
       null
 
@@ -151,7 +151,7 @@ class Client extends EventEmitter
       alert '// hrefs not supported yet...'
     else
       # history.replaceState {}, "SceneVR", 
-      window.location = "/connect/#{@getHostFromLocation()}#{path}"
+      window.location = "?connect=#{@getHostFromLocation()}#{path}"
 
   removeReflectedObjects: ->
     list = for obj in @scene.children when obj.name
@@ -286,6 +286,8 @@ class Client extends EventEmitter
     $(".overlay").remove()
 
     @renderOverlay(Templates.instructions)
+
+    element = document.body
 
     unless element.requestPointerLock || element.mozRequestPointerLock || element.webkitRequestPointerLock
       alert "[FAIL] Your browser doesn't seem to support pointerlock. Please use ie, chrome or firefox."

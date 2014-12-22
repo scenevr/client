@@ -68,6 +68,12 @@ class Connector extends EventEmitter
       attr("name", "chat").
       attr("message", message.slice(0,200))
 
+  onCollide: (e) ->
+    @sendMessage $("<event />").
+      attr("name", "collide").
+      attr("uuid", e.uuid).
+      attr("point", e.normal.toArray().join(" "))
+
   onClick: (e) ->
     @flashObject(@scene.getObjectByName(e.uuid))
 

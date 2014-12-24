@@ -287,6 +287,8 @@ class Client extends EventEmitter
 
     @renderOverlay(Templates.instructions)
 
+    element = document.body
+    
     unless element.requestPointerLock || element.mozRequestPointerLock || element.webkitRequestPointerLock
       alert "[FAIL] Your browser doesn't seem to support pointerlock. Please use ie, chrome or firefox."
       return
@@ -368,10 +370,11 @@ class Client extends EventEmitter
         else
           contact.bi
 
-      @connector.onCollide {
-        uuid : other.uuid
-        normal : contact.ni
-      }
+      if other.uuid
+        @connector.onCollide {
+          uuid : other.uuid
+          normal : contact.ni
+        }
 
   addDot: ->
     $("<div />").addClass('aiming-point').appendTo 'body'

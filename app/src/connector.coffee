@@ -68,6 +68,12 @@ class Connector extends EventEmitter
       attr("name", "chat").
       attr("message", message.slice(0,200))
 
+  onCollide: (e) ->
+    @sendMessage $("<event />").
+      attr("name", "collide").
+      attr("uuid", e.uuid).
+      attr("normal", e.normal.toArray().join(" "))
+
   onClick: (e) ->
     @flashObject(@scene.getObjectByName(e.uuid))
 
@@ -450,6 +456,9 @@ class Connector extends EventEmitter
 
           obj.name = uuid
           obj.userData = el
+
+          if obj.body
+            obj.body.uuid = uuid
 
           # skyboxes dont have a position
           if !el.is("skybox") and newPosition

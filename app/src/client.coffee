@@ -44,7 +44,7 @@ class Client extends EventEmitter
     @world.gravity.set(0,-20,0); # m/s²
     @world.broadphase = new CANNON.NaiveBroadphase()
 
-    @renderer = new THREE.WebGLRenderer( {antialias:false} )
+    @renderer = new THREE.WebGLRenderer( { antialias : false } )
     @renderer.setSize(@width / DOWN_SAMPLE, @height / DOWN_SAMPLE)
     @renderer.shadowMapEnabled = false
     @renderer.setClearColor( 0xeeeeee, 1)
@@ -360,6 +360,22 @@ class Client extends EventEmitter
     @playerBody.linearDamping = 0
     @world.add(@playerBody)
 
+    @playerBody.addEventListener "collide", (e) =>
+      contact = e.contact
+
+      # contact.bi and contact.bj are the colliding bodies, and contact.ni is the collision normal.
+      # We do not yet know which one is which! Let's check.
+      other = if contact.bi.id == @playerBody.id
+          contact.bj
+        else
+          contact.bi
+
+      if other.uuid
+        @connector.onCollide {
+          uuid : other.uuid
+          normal : contact.ni
+        }
+
   addDot: ->
     $("<div />").addClass('aiming-point').appendTo 'body'
 
@@ -391,6 +407,7 @@ class Client extends EventEmitter
     @stats.begin()
 
     timeStep = 1.0/60.0 # seconds
+
     # Simulate physics
     if @controls.enabled
       @world.step(timeStep)

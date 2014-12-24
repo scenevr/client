@@ -76,7 +76,10 @@ class Client extends EventEmitter
     @addConnecting()
 
     @connector.on 'connected', =>
-      @addInstructions()
+      if MOBILE
+        @enableControls()
+      else
+        @addInstructions()
 
     @connector.on 'disconnected', =>
       @addConnectionError()

@@ -146,7 +146,7 @@
 
     };
 
-    // document.addEventListener( 'click', onMouseClick, false );
+    document.addEventListener( 'click', onMouseClick, false );
     document.addEventListener( 'mousedown', onMouseDown, false );
     document.addEventListener( 'mouseup', onMouseUp, false );
     document.addEventListener( 'mousemove', onMouseMove, false );
@@ -162,6 +162,16 @@
 
     var direction = new THREE.Vector2(0,0);
 
+    document.addEventListener("touchstart", function(e){
+        for(i=0;i<e.touches.length;i++){
+            var touch = e.touches[i];
+
+            if(touch.clientY < window.innerHeight * 0.75){
+                client.trigger('click');
+            }
+        }
+    });
+    
     document.addEventListener("touchend", function(e){
         movementX = 0;
         movementY = 0;
@@ -175,6 +185,10 @@
 
         for(i=0;i<e.touches.length;i++){
             var touch = e.touches[i];
+
+            if(touch.clientY < window.innerHeight * 0.75){
+                continue;
+            }
 
             if(touch.clientX > window.innerWidth / 2){
                 movementX = touch.clientX - (window.innerWidth - 60);

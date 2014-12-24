@@ -2,7 +2,7 @@ Utils = require "./utils.coffee"
 TWEEN = require("tween.js")
 EventEmitter = require('wolfy87-eventemitter');
 Color = require("color")
-Howl = require("howler").Howl
+#Howl = require("howler").Howl
 
 class Connector extends EventEmitter
   constructor: (@client, host, path) ->
@@ -261,19 +261,19 @@ class Connector extends EventEmitter
   createAudio: (el) ->
     obj = new THREE.Object3D
 
-    if (src = el.attr("src")) and el.attr("ambient").toLowerCase() == "true"
-      path = "//" + @getAssetHost() + src
+    # if (src = el.attr("src")) and el.attr("ambient").toLowerCase() == "true"
+    #   path = "//" + @getAssetHost() + src
 
-      volume = if el.attr("volume")
-          parseFloat(el.attr("volume"))
-        else
-          1.0
+    #   volume = if el.attr("volume")
+    #       parseFloat(el.attr("volume"))
+    #     else
+    #       1.0
 
-      obj.userSound = new Howl({
-        urls: [path]
-        loop: true
-        volume: volume
-      }).play();
+    #   obj.userSound = new Howl({
+    #     urls: [path]
+    #     loop: true
+    #     volume: volume
+    #   }).play();
 
     obj.position = new THREE.Vector3(0,0,0)
 

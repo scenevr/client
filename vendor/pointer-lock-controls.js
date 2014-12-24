@@ -2,7 +2,7 @@
  * @author mrdoob / http://mrdoob.com/
  * @author schteppe / https://github.com/schteppe
  */
- var PointerLockControls = function ( camera, client, cannonBody ) {
+ var PointerLockControls = function ( camera, client, cannonBody, MOBILE ) {
 
     var eyeYPos = 2; // eyes are 2 meters above the ground
     var velocityFactor = 0.2;
@@ -46,6 +46,10 @@
 
     var PI_2 = Math.PI / 2;
 
+    if(MOBILE){
+        var direction = $("<div />").addClass('direction dpad').appendTo('body'),
+            movement = $("<div />").addClass('movement dpad').appendTo('body');
+    }
 	var onMouseClick = function( event) {
 		if ( scope.enabled === false ) return;
 		event.preventDefault();
@@ -142,12 +146,57 @@
 
     };
 
-    document.addEventListener( 'click', onMouseClick, false );
+    // document.addEventListener( 'click', onMouseClick, false );
     document.addEventListener( 'mousedown', onMouseDown, false );
     document.addEventListener( 'mouseup', onMouseUp, false );
     document.addEventListener( 'mousemove', onMouseMove, false );
     document.addEventListener( 'keydown', onKeyDown, false );
     document.addEventListener( 'keyup', onKeyUp, false );
+
+    document.addEventListener("touchstart", function(e){
+        e.preventDefault();
+    }, false);
+
+    var movementX = 0,
+        movementY = 0;
+
+    var direction = new THREE.Vector2(0,0);
+
+    document.addEventListener("touchend", function(e){
+        movementX = 0;
+        movementY = 0;
+        direction.set(0,0);
+    });
+
+    document.addEventListener("touchmove", function(e){
+        if ( scope.enabled === false ) return;
+
+        var i;
+
+        for(i=0;i<e.touches.length;i++){
+            var touch = e.touches[i];
+
+            if(touch.clientX > window.innerWidth / 2){
+                movementX = touch.clientX - (window.innerWidth - 60);
+                movementY = touch.clientY - (window.innerHeight - 60);
+
+                movementX *= 0.4;
+                movementY *= 0.4;
+            }
+
+            if(touch.clientX < window.innerWidth / 2){
+                direction.set(
+                    touch.clientX - (60),
+                    touch.clientY - (window.innerHeight - 60)
+                );
+
+                direction.multiplyScalar(0.1);
+                direction.clampscalar(-1,1);
+            }
+        }
+
+        e.preventDefault();
+    });
 
     document.addEventListener("contextmenu",function(e){
         if ( scope.enabled === false ) return;
@@ -186,9 +235,19 @@
     var euler = new THREE.Euler();
     this.update = function ( delta ) {
 
+        yawObject.rotation.y -= movementX * 0.002;
+        pitchObject.rotation.x -= movementY * 0.002;
+
+        pitchObject.rotation.x = Math.max( - PI_2, Math.min( PI_2, pitchObject.rotation.x ) );
+
         delta *= 0.5;
 
         inputVelocity.set(0,0,0);
+
+        if(MOBILE){
+            inputVelocity.z = direction.y * velocityFactor * delta * 0.3;
+            inputVelocity.x = direction.x * velocityFactor * delta * 0.3;
+        }
 
         if ( moveForward ){
             inputVelocity.z = -velocityFactor * delta;

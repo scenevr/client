@@ -13,6 +13,12 @@ window.CANNON = require("cannon")
 TWEEN = require("tween.js")
 EventEmitter = require('wolfy87-eventemitter');
 
+MOBILE = false
+DOWN_SAMPLE = 1
+
+if /Android|iPhone|iPad|iPod|IEMobile/i.test(navigator.userAgent)
+  MOBILE = true
+
 class Client extends EventEmitter
   constructor: ->
     @container = $("#scene-view").css {
@@ -26,16 +32,17 @@ class Client extends EventEmitter
     @stats.setMode(0)
 
     @stats.domElement.style.position = 'absolute';
-    @stats.domElement.style.right = '10px';
+
+    @stats.domElement.style.top = '10px';
     @stats.domElement.style.zIndex = 100;
-    @stats.domElement.style.bottom = '10px';
+    @stats.domElement.style.left = '10px';
+
     @container.append(@stats.domElement)
 
     VIEW_ANGLE = 60
     ASPECT = @width / @height
     NEAR = 0.1
     FAR = 700
-    DOWN_SAMPLE = 1
 
     @scene = new THREE.Scene()
     @scene.fog = new THREE.Fog( 0xffffff, 500, 700 );
@@ -46,20 +53,20 @@ class Client extends EventEmitter
 
     @renderer = new THREE.WebGLRenderer( { antialias : false } )
     @renderer.setSize(@width / DOWN_SAMPLE, @height / DOWN_SAMPLE)
-    @renderer.shadowMapEnabled = false
     @renderer.setClearColor( 0xeeeeee, 1)
 
     @initVR()
 
-    # @projector = new THREE.Projector()
     @time = Date.now()
 
     @addLights()
     @addFloor()
     @addPlayerBody()
     @addDot()
-    @addMessageInput()
-    @addPointLockGrab()
+
+    if !MOBILE
+      @addMessageInput()
+      @addPointLockGrab()
 
     @camera = new THREE.PerspectiveCamera( VIEW_ANGLE, ASPECT, NEAR, FAR)
     @addControls()
@@ -113,6 +120,8 @@ class Client extends EventEmitter
     @camera.updateProjectionMatrix()
 
     @renderer.setSize(@width / DOWN_SAMPLE, @height / DOWN_SAMPLE)
+
+    @centerOverlay()
 
   hasPointerLock: ->
     document.pointerLockElement || document.mozPointerLockElement || document.webkitPointerLockElement
@@ -271,10 +280,14 @@ class Client extends EventEmitter
 
     @overlay = $("<div class='overlay'>").html(html).appendTo @container
 
-    @overlay.css {
-      left : ($(window).width() - @overlay.width()) / 2
-      top : ($(window).height() - @overlay.height()) / 2
-    }
+    @centerOverlay()
+
+  centerOverlay: ->
+    if @overlay
+      @overlay.css {
+        left : ($(window).width() - @overlay.width()) / 2 - 20
+        top : ($(window).height() - @overlay.height()) / 2
+      }
 
   addConnecting: ->
     @renderOverlay(Templates.connecting {
@@ -288,16 +301,14 @@ class Client extends EventEmitter
     @renderOverlay(Templates.instructions)
 
     element = document.body
-    
-    unless element.requestPointerLock || element.mozRequestPointerLock || element.webkitRequestPointerLock
+        
+    unless MOBILE || element.requestPointerLock || element.mozRequestPointerLock || element.webkitRequestPointerLock
       alert "[FAIL] Your browser doesn't seem to support pointerlock. Please use ie, chrome or firefox."
       return
 
   addPointLockGrab: ->
     $('body').click =>
       return if @controls.enabled
-
-      element = document.body
 
       document.addEventListener( 'pointerlockchange', @pointerlockchange, false )
       document.addEventListener( 'mozpointerlockchange', @pointerlockchange, false )
@@ -307,6 +318,7 @@ class Client extends EventEmitter
       document.addEventListener( 'mozpointerlockerror', @pointerlockerror, false )
       document.addEventListener( 'webkitpointerlockerror', @pointerlockerror, false )
 
+      element = document.body
       element.requestPointerLock = element.requestPointerLock || element.mozRequestPointerLock || element.webkitRequestPointerLock;
       element.requestPointerLock()
 
@@ -380,7 +392,7 @@ class Client extends EventEmitter
     $("<div />").addClass('aiming-point').appendTo 'body'
 
   addControls: ->
-    @controls = new PointerLockControls(@camera, this, @playerBody)
+    @controls = new PointerLockControls(@camera, this, @playerBody, MOBILE)
     @controls.enabled = false
     @scene.add(@controls.getObject())
 

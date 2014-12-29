@@ -258,7 +258,12 @@ class Client extends EventEmitter
 
   addChatMessage: (player, message) ->
     @chatMessages.show()
-    $("<div />").text("#{player.name}: #{message}").appendTo @chatMessages
+
+    if player.name == 'scene'
+      $("<div />").text("#{message}").addClass('scene-message').appendTo @chatMessages
+    else
+      $("<div />").text("#{player.name}: #{message}").appendTo @chatMessages
+
     @chatMessages.scrollTop(@chatMessages[0].scrollHeight)
 
   hideOverlays: ->

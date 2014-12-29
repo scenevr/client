@@ -216,21 +216,18 @@ class Client extends EventEmitter
       if intersection.object && intersection.object.parent && intersection.object.parent.userData.is && intersection.object.parent.userData.is("link")
         @loadNewScene(intersection.object.parent.userData.attr("href"))
 
-      # Boxes
-      if intersection.object.name
-        @connector.onClick {
-          uuid : intersection.object.name
-          point : intersection.point
-        }
-        return
+      # Other types
+      obj = intersection.object
 
-      # Billboards, models
-      if intersection.object.parent && intersection.object.parent.name
-        @connector.onClick {
-          uuid : intersection.object.parent.name
-          point : intersection.point
-        }
-        return
+      while obj.parent
+        if obj.userData instanceof jQuery
+          @connector.onClick {
+            uuid : obj.name
+            point : intersection.point
+          }
+          return
+
+        obj = obj.parent
 
   addMessageInput: ->
     @chatForm = $("<div id='message-input'>

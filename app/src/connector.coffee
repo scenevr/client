@@ -1,4 +1,5 @@
 Utils = require "./utils.coffee"
+StyleMap = require("./style_map")
 TWEEN = require("tween.js")
 EventEmitter = require('wolfy87-eventemitter');
 Color = require("color")

@@ -315,7 +315,9 @@ THREE.OBJLoader.prototype = {
 
         // material
 
-        material.name = line.substring( 7 ).trim();
+        if(material){
+          material.name = line.substring( 7 ).trim();
+        }
 
       } else if ( /^mtllib /.test( line ) ) {
 

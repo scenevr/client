@@ -223,7 +223,7 @@ class Connector extends EventEmitter
     styles = @parseStyleAttribute(el.attr("style"))
 
     material = if styles['texturemap']
-        new THREE.MeshLambertMaterial({ color : '#ff0000' })
+        new THREE.MeshLambertMaterial({ color : '#ffffff' })
       else
         new THREE.MeshBasicMaterial({ color : '#eeeeee' })
 
@@ -241,12 +241,28 @@ class Connector extends EventEmitter
         material = new THREE.MeshLambertMaterial({ color : styles['color'] })
 
     loader = new THREE.OBJLoader( @manager )
-    loader.load "//" + @getAssetHost() + el.attr("src"), ( object ) ->
-      object.traverse ( child ) ->
+    loader.load "//" + @getAssetHost() + el.attr("src"), ( object ) =>
+      object.traverse ( child ) =>
         if child instanceof THREE.Mesh
           child.material = material
+          
           if texture
             child.material.map = texture
+
+          if true # if collidable:true (or undefined) in the styleMap
+            child.geometry.computeBoundingBox()
+            boundingBox = child.geometry.boundingBox.clone()
+            dimensions = boundingBox.max.sub(boundingBox.min)
+
+            # Add physics model
+            boxShape = new CANNON.Box(new CANNON.Vec3().copy(dimensions.multiplyScalar(0.5)))
+            boxBody = new CANNON.Body({ mass: 0 })
+            boxBody.addShape(boxShape)
+            boxBody.position.copy(obj.position)
+            boxBody.quaternion.copy(obj.quaternion)
+            @client.world.add(boxBody)
+            obj.body = boxBody
+
       obj.add(object)
 
     newScale = if el.attr("scale")

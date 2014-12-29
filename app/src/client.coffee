@@ -259,7 +259,7 @@ class Client extends EventEmitter
   addChatMessage: (player, message) ->
     @chatMessages.show()
 
-    if player.name == 'scene'
+    if player is null || player.name is 'scene'
       $("<div />").text("#{message}").addClass('scene-message').appendTo @chatMessages
     else
       $("<div />").text("#{player.name}: #{message}").appendTo @chatMessages
@@ -377,6 +377,11 @@ class Client extends EventEmitter
     @playerBody.linearDamping = 0
     @world.add(@playerBody)
 
+    lastContact = {
+      time : 0
+      uuid : null
+    }
+
     @playerBody.addEventListener "collide", (e) =>
       contact = e.contact
 
@@ -388,10 +393,16 @@ class Client extends EventEmitter
           contact.bi
 
       if other.uuid
-        @connector.onCollide {
-          uuid : other.uuid
-          normal : contact.ni
-        }
+        if ((new Date) - lastContact.time < 500) && (lastContact.uuid is other.uuid)
+          # We only send updates on the same element that aren't too close together, so skip this update
+          true
+        else
+          # Keep track of the last contact
+          lastContact = { time : new Date, uuid : other.uuid }
+
+          # Fixme - only send updates up to a maximum of x / second using a trailing
+          # average, to prevent weird physics bugs spamming the server.
+          @connector.onCollide { uuid : other.uuid, normal : contact.ni }
 
   addDot: ->
     $("<div />").addClass('aiming-point').appendTo 'body'

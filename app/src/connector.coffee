@@ -16,11 +16,22 @@ class Connector extends EventEmitter
     @manager = new THREE.LoadingManager()
 
   setPosition: (v) ->
-    # Fixme - if the controls aren't active, the player body isn't copied to the camera
     @client.playerBody.position.copy(v)
     @client.playerBody.position.y += 1.5
     @client.playerBody.velocity.set(0,0,0)
     @client.controls.getObject().position.copy(@client.playerBody.position)
+
+  respawn: (reason) ->
+    if !@spawned
+      console.error "Tried to respawn before spawning"
+      return
+
+    @setPosition(@spawnPosition)
+
+    if reason
+      @client.addChatMessage null, "You have been respawned because #{reason}"
+    else
+      @client.addChatMessage null, "You have been respawned"
 
   isConnected: ->
     @ws and @ws.readyState == 1
@@ -70,6 +81,8 @@ class Connector extends EventEmitter
       attr("message", message.slice(0,200))
 
   onCollide: (e) ->
+    console.log "collision #{e.uuid}"
+    
     @sendMessage $("<event />").
       attr("name", "collide").
       attr("uuid", e.uuid).
@@ -261,6 +274,7 @@ class Connector extends EventEmitter
             boxBody.addShape(boxShape)
             boxBody.position.copy(obj.position)
             boxBody.quaternion.copy(obj.quaternion)
+            boxBody.uuid = el.attr('uuid')
             @client.world.add(boxBody)
             obj.body = boxBody
 
@@ -400,10 +414,6 @@ class Connector extends EventEmitter
     result
 
   onMessage: (e) =>
-    # console.log e.data
-
-    # console.log e.data
-
     $($.parseXML(e.data).firstChild).children().each (index, el) =>
       el = $(el)
 
@@ -417,6 +427,8 @@ class Connector extends EventEmitter
           @restartConnection()
         else if name is 'chat'
           @client.addChatMessage { name : el.attr('from') }, el.attr('message')
+        else if name is 'respawn'
+          @respawn(el.attr('reason'))
         else
           console.log "Unrecognized event #{el.attr('name')}"
 
@@ -435,7 +447,8 @@ class Connector extends EventEmitter
           if el.is("spawn")
             obj = new THREE.Object3D()
             if !@spawned
-              @setPosition newPosition
+              @spawnPosition = newPosition
+              @setPosition(newPosition)
               @spawned = true
 
           else if el.is("billboard")

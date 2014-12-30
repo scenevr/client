@@ -234,19 +234,19 @@ class Connector extends EventEmitter
     obj = new THREE.Object3D
     texture = null
 
-    styles = @parseStyleAttribute(el.attr("style"))
+    styles = new StyleMap(el.attr("style"))
 
-    material = if styles['texturemap']
+    material = if styles.textureMap
         new THREE.MeshLambertMaterial({ color : '#ffffff' })
       else
         new THREE.MeshBasicMaterial({ color : '#eeeeee' })
 
     if el.attr("style")
-      if styles['lightmap'] || styles['texturemap']
+      if styles.lightMap || styles.textureMap
         texture = new THREE.Texture()
         loader = new THREE.ImageLoader( @manager )
         loader.crossOrigin = true
-        loader.load "//" + @getAssetHost() + @getUrlFromStyle(styles['lightmap'] || styles['texturemap']), ( image ) ->
+        loader.load "//" + @getAssetHost() + @getUrlFromStyle(styles.lightMap || styles.textureMap), ( image ) ->
           texture.image = image
           texture.magFilter = THREE.NearestFilter
           texture.needsUpdate = true
@@ -263,7 +263,7 @@ class Connector extends EventEmitter
           if texture
             child.material.map = texture
 
-          if true # if collidable:true (or undefined) in the styleMap
+          if styles.collision is null || styles.collision == 'bounding-box'
             child.geometry.computeBoundingBox()
             boundingBox = child.geometry.boundingBox.clone()
             dimensions = boundingBox.max.sub(boundingBox.min)
@@ -339,7 +339,7 @@ class Connector extends EventEmitter
         depthWrite: false,
         side: THREE.BackSide
       } )
-    else if color = @parseStyleAttribute(el.attr('style')).color
+    else if color = new StyleMap(el.attr('style')).color
       if color.match /linear-gradient/
 
         [start, finish] = color.match(/#.+?\b/g)
@@ -402,16 +402,6 @@ class Connector extends EventEmitter
       value.match(/\((.+?)\)/)[1]
     catch e
       null
-
-  parseStyleAttribute: (value) ->
-    result = {}
-
-    if value
-      for pair in value.split(";")
-        [name, value] = pair.split(":")
-        result[name.trim().toLowerCase()] = value.trim()
-
-    result
 
   onMessage: (e) =>
     $($.parseXML(e.data).firstChild).children().each (index, el) =>
@@ -509,7 +499,7 @@ class Connector extends EventEmitter
           @scene.add(obj)
 
         if el.attr("style")
-          styles = @parseStyleAttribute(el.attr("style"))
+          styles = new StyleMap(el.attr("style"))
 
           if styles["visibility"] == "hidden"
             obj.visible = false

@@ -85,8 +85,6 @@ class Connector extends EventEmitter
       attr("message", message.slice(0,200))
 
   onCollide: (e) ->
-    console.log "collision #{e.uuid}"
-    
     @sendMessage $("<event />").
       attr("name", "collide").
       attr("uuid", e.uuid).
@@ -388,7 +386,9 @@ class Connector extends EventEmitter
               .easing(TWEEN.Easing.Linear.None)
               .start()
 
-        if el.is("box") 
-          obj.material.setValues { color : el.attr('color'), ambient : Color(el.attr('color')).hexString() }
+        styles = new StyleMap(el.attr('style')) 
+
+        if el.is("box") && styles.color
+          obj.material.setValues { color : styles.color, ambient : styles.color }
   
 module.exports = Connector

@@ -1,4 +1,5 @@
 Utils = require "../utils.coffee"
+StyleMap = require("../style_map")
 
 class Skybox
   constructor: ->

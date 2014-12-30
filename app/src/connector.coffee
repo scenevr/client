@@ -288,19 +288,19 @@ class Connector extends EventEmitter
               @spawned = true
 
           else if el.is("billboard")
-            obj = Billboard.create(el)
+            obj = Billboard.create(this, el)
 
           else if el.is("box")
-            obj = Box.create(el)
+            obj = Box.create(this, el)
+
+          else if el.is("skybox")
+            obj = Skybox.create(this, el)
 
           else if el.is("model")
             obj = @createModel(el)
 
           else if el.is("link")
             obj = @createLink(el)
-
-          else if el.is("skybox")
-            obj = @createSkyBox(el)
 
           else if el.is("audio")
             obj = @createAudio(el)

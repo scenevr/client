@@ -6,7 +6,7 @@ class Billboard
 
 SIZE = 512
 
-Billboard.create = (el) ->
+Billboard.create = (connector, el) ->
   obj = new THREE.Object3D
 
   canvas = $("<canvas width='#{SIZE}' height='#{SIZE}' />")[0]

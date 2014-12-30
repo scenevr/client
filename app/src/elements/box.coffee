@@ -4,7 +4,7 @@ class Box
   constructor: ->
     true
 
-Box.create = (el) ->
+Box.create = (connector, el) ->
   geometry = new THREE.BoxGeometry( 1, 1, 1 )
   material = new THREE.MeshLambertMaterial( {color: '#eeeeee' } )
   obj = new THREE.Mesh( geometry, material )

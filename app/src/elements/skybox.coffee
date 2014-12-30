@@ -4,11 +4,11 @@ class Skybox
   constructor: ->
     true
 
-Skybox.create = (el) ->
+Skybox.create = (connector, el) ->
   material = null
 
   if src = el.attr("src")
-    path = "//" + @getAssetHost() + src.replace(/\..+?$/,'')
+    path = "//" + connector.getAssetHost() + src.replace(/\..+?$/,'')
     format = src.replace(/.+\./,'.')
 
     urls = [

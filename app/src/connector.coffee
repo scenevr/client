@@ -5,6 +5,10 @@ EventEmitter = require('wolfy87-eventemitter');
 Color = require("color")
 #Howl = require("howler").Howl
 
+Billboard = require("./elements/billboard.coffee")
+Box = require("./elements/box.coffee")
+Skybox = require("./elements/skybox.coffee")
+
 class Connector extends EventEmitter
   constructor: (@client, host, path) ->
     @host = host || window.location.host.split(":")[0] + ":8080"
@@ -122,58 +126,6 @@ class Connector extends EventEmitter
   getAssetHost: ->
     @getHost()
 
-  createBillboard: (el) ->
-    SIZE = 512
-
-    obj = new THREE.Object3D
-
-    canvas = $("<canvas width='#{SIZE}' height='#{SIZE}' />")[0]
-
-    div = $("<div />").html(el.text()).css({ zIndex : 50, position : 'absolute', left : 0, top : 0, background : 'white', width : SIZE, height : SIZE, padding : '10px', border : '1px solid #ccc' })
-
-    div.find("img").each (index, img) =>
-      img.src =  "//" + @getAssetHost() + img.getAttribute("src")
-
-    div.appendTo 'body'
-
-    geometry = new THREE.BoxGeometry( 1, 1, 1 )
-    material = new THREE.MeshLambertMaterial( {color: '#eeeeee', ambient: '#eeeeee' } )
-    box = new THREE.Mesh( geometry, material )
-
-    material = new THREE.MeshLambertMaterial( {color: '#ffffff' } )
-    mesh = new THREE.Mesh(new THREE.PlaneBufferGeometry(1, 1), material)
-    mesh.position.setZ(0.52)
-
-    html2canvas div[0], {
-      useCORS : true
-      onrendered: (canvas) =>
-        texture = new THREE.Texture(canvas) 
-        texture.needsUpdate = true;
-        material = new THREE.MeshBasicMaterial( {map: texture, side:THREE.DoubleSide } )
-        material.transparent = false;
-        mesh.material = material
-        div.remove()
-    }
-
-    obj.add(box)
-    obj.add(mesh)
-
-    newScale = if el.attr("scale")
-      Utils.parseVector(el.attr("scale"))
-    else
-      new THREE.Vector3(2,2,0.5)
-
-    obj.scale.copy(newScale)
-
-    # Add physics model
-    boxShape = new CANNON.Box(new CANNON.Vec3().copy(newScale.multiplyScalar(0.5)))
-    boxBody = new CANNON.Body({ mass: 0 })
-    boxBody.addShape(boxShape)
-    @client.world.add(boxBody)
-    obj.body = boxBody
-
-    obj
-
   createPlayer: (el) ->
     geometry1 = new THREE.CylinderGeometry( 0.02, 0.5, 1.3, 10 )
     mesh1 = new THREE.Mesh( geometry1 )
@@ -206,27 +158,6 @@ class Connector extends EventEmitter
       new THREE.Vector3(1,1,1)
 
     obj.scale.copy(newScale)
-
-    obj
-
-  createBox: (el) ->
-    geometry = new THREE.BoxGeometry( 1, 1, 1 )
-    material = new THREE.MeshLambertMaterial( {color: '#eeeeee' } )
-    obj = new THREE.Mesh( geometry, material )
-
-    newScale = if el.attr("scale")
-      Utils.parseVector(el.attr("scale"))
-    else
-      new THREE.Vector3(1,1,1)
-
-    obj.scale.copy(newScale)
-    
-    # Add physics model
-    boxShape = new CANNON.Box(new CANNON.Vec3().copy(newScale.multiplyScalar(0.5)))
-    boxBody = new CANNON.Body({ mass: 0 })
-    boxBody.addShape(boxShape)
-    @client.world.add(boxBody)
-    obj.body = boxBody
 
     obj
 
@@ -312,91 +243,6 @@ class Connector extends EventEmitter
 
     obj
 
-  createSkyBox: (el) ->
-    material = null
-
-    if src = el.attr("src")
-      path = "//" + @getAssetHost() + src.replace(/\..+?$/,'')
-      format = src.replace(/.+\./,'.')
-
-      urls = [
-        path + 'right' + format, path + 'left' + format,
-        path + 'top' + format, path + 'bottom' + format,
-        path + 'front' + format, path + 'back' + format
-      ]
-
-      THREE.ImageUtils.crossOrigin = true
-      reflectionCube = THREE.ImageUtils.loadTextureCube( urls )
-      reflectionCube.format = THREE.RGBFormat
-
-      shader = THREE.ShaderLib[ "cube" ];
-      shader.uniforms[ "tCube" ].value = reflectionCube
-
-      material = new THREE.ShaderMaterial( {
-        fragmentShader: shader.fragmentShader,
-        vertexShader: shader.vertexShader,
-        uniforms: shader.uniforms,
-        depthWrite: false,
-        side: THREE.BackSide
-      } )
-    else if color = new StyleMap(el.attr('style')).color
-      if color.match /linear-gradient/
-
-        [start, finish] = color.match(/#.+?\b/g)
-
-        vertexShader = "
-          varying vec3 vWorldPosition;
-
-          void main() {
-
-            vec4 worldPosition = modelMatrix * vec4( position, 1.0 );
-            vWorldPosition = worldPosition.xyz;
-
-            gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
-
-          }
-        "
-
-        fragmentShader = "
-          uniform vec3 topColor;
-          uniform vec3 bottomColor;
-          uniform float offset;
-          uniform float exponent;
-
-          varying vec3 vWorldPosition;
-
-          void main() {
-
-            float h = normalize( vWorldPosition + offset ).y;
-            gl_FragColor = vec4( mix( bottomColor, topColor, max( pow( max( h, 0.0 ), exponent ), 0.0 ) ), 1.0 );
-
-          }
-        "
-
-        uniforms = {
-          topColor:    { type: "c", value: new THREE.Color( finish ) },
-          bottomColor: { type: "c", value: new THREE.Color( start ) },
-          offset:    { type: "f", value: 0 },
-          exponent:  { type: "f", value: 0.6 }
-        }
-
-        # Fixme - random probably bad assumption
-        @client.scene.fog = new THREE.Fog( 0xffffff, 10, 50 )
-        @client.scene.fog.color.copy( uniforms.bottomColor.value )
-
-        material = new THREE.ShaderMaterial( {
-          uniforms: uniforms,
-          vertexShader: vertexShader,
-          fragmentShader: fragmentShader,
-          side: THREE.BackSide
-        } )
-      else
-        material = new THREE.MeshBasicMaterial( { color : color, side : THREE.BackSide })
-    else
-      material = new THREE.MeshBasicMaterial( { color : '#eeeeee', side : THREE.BackSide })
-
-    new THREE.Mesh( new THREE.BoxGeometry( 200, 200, 200 ), material );
-
   getUrlFromStyle: (value) ->
     try
       value.match(/\((.+?)\)/)[1]
@@ -442,10 +288,10 @@ class Connector extends EventEmitter
               @spawned = true
 
           else if el.is("billboard")
-            obj = @createBillboard(el)
+            obj = Billboard.create(el)
 
           else if el.is("box")
-            obj = @createBox(el)
+            obj = Box.create(el)
 
           else if el.is("model")
             obj = @createModel(el)
@@ -478,6 +324,7 @@ class Connector extends EventEmitter
           obj.userData = el
 
           if obj.body
+            @client.world.add(obj.body)
             obj.body.uuid = uuid
 
           # skyboxes dont have a position

@@ -446,6 +446,14 @@ class Client extends EventEmitter
 
     if @vrrenderer
       # VR
+
+      # maybe reset orientation from gamepad
+      `
+      if (this.controls.getObject().reorient) {
+        this.vrrenderer.resetOrientation(this.controls, this.vrHMDSensor)
+      }
+      `
+
       state = @vrHMDSensor.getState()
       @camera.quaternion.set(state.orientation.x, state.orientation.y, state.orientation.z, state.orientation.w)
       @vrrenderer.render(@scene, @camera, @controls )
@@ -454,6 +462,11 @@ class Client extends EventEmitter
       @renderer.render( @scene, @camera  )
 
     # Controls
+    `
+    if (this.controls.getObject().click) {
+      this.onClick();
+    }
+    `
     @controls.update( Date.now() - @time )
 
     @stats.end()
@@ -462,6 +475,7 @@ class Client extends EventEmitter
 
     # Airplane mode
     # setTimeout(@tick, 1000 / 25)
+
     requestAnimationFrame @tick
 
 module.exports = Client

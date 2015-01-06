@@ -25,6 +25,8 @@ class Connector extends EventEmitter
     @client.playerBody.velocity.set(0,0,0)
     @client.controls.getObject().position.copy(@client.playerBody.position)
 
+    @client.controls.getObject().rotation.y = 0
+
   respawn: (reason) ->
     if !@spawned
       console.error "Tried to respawn before spawning"
@@ -192,7 +194,7 @@ class Connector extends EventEmitter
           if texture
             child.material.map = texture
 
-          if styles.collision is null || styles.collision == 'bounding-box'
+          if !styles.collision || styles.collision is 'bounding-box'
             child.geometry.computeBoundingBox()
             boundingBox = child.geometry.boundingBox.clone()
             dimensions = boundingBox.max.sub(boundingBox.min)

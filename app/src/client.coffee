@@ -1,4 +1,5 @@
 Connector = require("./connector.coffee")
+URI = require("uri-js")
 
 Templates = {
   inQueue : require("../templates/in_queue.jade")
@@ -12,6 +13,7 @@ window.CANNON = require("cannon")
 
 TWEEN = require("tween.js")
 EventEmitter = require('wolfy87-eventemitter');
+DOWN_SAMPLE = 1
 
 MOBILE = false
 DOWN_SAMPLE = 1
@@ -32,9 +34,8 @@ class Client extends EventEmitter
     @stats.setMode(0)
 
     @stats.domElement.style.position = 'absolute';
-
     @stats.domElement.style.top = '10px';
-    @stats.domElement.style.zIndex = 100;
+    @stats.domElement.style.zIndex = 110;
     @stats.domElement.style.left = '10px';
 
     @container.append(@stats.domElement)
@@ -53,16 +54,12 @@ class Client extends EventEmitter
 
     @renderer = new THREE.WebGLRenderer( { antialias : false } )
     @renderer.setSize(@width / DOWN_SAMPLE, @height / DOWN_SAMPLE)
-    @renderer.setClearColor( 0xeeeeee, 1)
+    @renderer.setClearColor( 0x000000)
+    @renderer.autoClear = false
 
     @initVR()
 
     @time = Date.now()
-
-    @addLights()
-    @addFloor()
-    @addPlayerBody()
-    @addDot()
 
     if !MOBILE
       @addMessageInput()
@@ -70,9 +67,12 @@ class Client extends EventEmitter
 
     @camera = new THREE.PerspectiveCamera( VIEW_ANGLE, ASPECT, NEAR, FAR)
     @addControls()
+    @addPlayerBody()
+    @addDot()
 
-    @connector = new Connector(this, @getHostFromLocation(), @getPathFromLocation())
+    @connector = new Connector(this, @scene, @world, @getUriFromLocation())
     @connector.connect()
+    
     @addConnecting()
 
     @connector.on 'connected', =>
@@ -89,8 +89,7 @@ class Client extends EventEmitter
 
     this.on 'click', @onClick
 
-    axes = new THREE.AxisHelper(2)
-    @scene.add(axes)
+    @raycaster = new THREE.Raycaster
 
     @container.append( @renderer.domElement );
     $(@renderer.domElement).css { width : @width, height : @height }
@@ -146,24 +145,11 @@ class Client extends EventEmitter
     @controls.enabled = false
     @showInstructions()
 
-  getHostFromLocation: ->
+  getUriFromLocation: ->
     if window.location.search.match /connect.+/
-      window.location.search.split(/[\/=]/)[1]
+      "//" + window.location.search.split(/[=]/)[1]
     else
-      "scenevr-demo.herokuapp.com"
-
-  getPathFromLocation: ->
-    if window.location.search.match /connect.+/
-      "/" + window.location.search.split(/[\/=]/)[2]
-    else
-      null
-
-  loadNewScene: (path) ->
-    if path.match /^\/\//
-      alert '// hrefs not supported yet...'
-    else
-      # history.replaceState {}, "SceneVR", 
-      window.location = "?connect=#{@getHostFromLocation()}#{path}"
+      "//scenevr-demo.herokuapp.com/index.xml"
 
   removeReflectedObjects: ->
     list = for obj in @scene.children when obj.name
@@ -202,19 +188,65 @@ class Client extends EventEmitter
     if @vrHMD
       @vrrenderer = new THREE.VRRenderer(@renderer, @vrHMD)
 
-  # Fixme - the .parent tests are all a bit manky...
-  onClick: =>
-    @raycaster = new THREE.Raycaster
-
+  checkForPortalCollision: ->
     position = @controls.getObject().position
     direction = @controls.getDirection(new THREE.Vector3)
 
     @raycaster.set( position, direction )
+    @raycaster.far = 0.5
+    
+    ints = @raycaster.intersectObject(@connector.stencilScene.children[0], false)
+
+    if (ints.length > 0)
+      @promotePortal()
+
+  promotePortal: ->
+    # Promote the portal scene to the primary scene
+    @portal = @connector.portal
+
+    window.history.pushState {}, "SceneVR", "?connect=" + @portal.connector.uri.replace(/^\/\//,'')
+
+    controlObject = @controls.getObject()
+
+    @scene.remove(controlObject)
+    @world.remove(@playerBody)
+
+    @world = @portal.world
+    @scene = @portal.scene
+    
+    @scene.add(controlObject)
+
+    @connector.disconnect()
+    delete @connector
+
+    @connector = @portal.connector
+    @connector.isPortal = false
+
+    delete @portal
+    delete @playerBody
+
+    @world.gravity.set(0,-20,0); # m/s²
+    @world.broadphase = new CANNON.NaiveBroadphase()
+
+    @addPlayerBody()
+
+    # Spawn at the spawn point
+    @connector.setPosition(@connector.spawnPosition)
+
+
+
+  # Fixme - the .parent tests are all a bit manky...
+  onClick: =>
+    position = @controls.getObject().position
+    direction = @controls.getDirection(new THREE.Vector3)
+
+    @raycaster.set( position, direction )
+    @raycaster.far = 5.0
 
     for intersection in @raycaster.intersectObjects( @getAllClickableObjects() ) 
       # For links
       if intersection.object && intersection.object.parent && intersection.object.parent.userData.is && intersection.object.parent.userData.is("link")
-        @loadNewScene(intersection.object.parent.userData.attr("href"))
+        intersection.object.parent.onClick()
 
       # Other types
       obj = intersection.object
@@ -276,8 +308,7 @@ class Client extends EventEmitter
     $(".overlay").remove()
 
     @renderOverlay(Templates.unableToConnect({
-      server : @connector.host.split(":")[0]
-      port : @connector.host.split(":")[1]
+      host : URI.parse(@connector.uri).host
     }))
 
   renderOverlay: (html) ->
@@ -296,8 +327,7 @@ class Client extends EventEmitter
 
   addConnecting: ->
     @renderOverlay(Templates.connecting {
-      server : @connector.host.split(":")[0]
-      port : @connector.host.split(":")[1]
+      host : URI.parse(@connector.uri).host
     })  
 
   addInstructions: ->
@@ -347,28 +377,6 @@ class Client extends EventEmitter
     @loadingDome = new THREE.Mesh(geometry, material)
     @scene.add(@loadingDome)
 
-  addFloor: ->
-    floorTexture = new THREE.ImageUtils.loadTexture( '/images/grid.png' )
-    floorTexture.wrapS = floorTexture.wrapT = THREE.RepeatWrapping;
-    floorTexture.repeat.set( 1000, 1000 )
-
-    floorMaterial = new THREE.MeshBasicMaterial( { map: floorTexture } );
-    floorGeometry = new THREE.PlaneBufferGeometry(1000, 1000, 1, 1)
-    
-    @floor = new THREE.Mesh(floorGeometry, floorMaterial)
-    @floor.position.y = 0
-    @floor.rotation.x = -Math.PI / 2
-    @floor.receiveShadow = true
-
-    @scene.add(@floor)
-
-    groundBody = new CANNON.Body { mass: 0 } # static
-    groundShape = new CANNON.Plane()
-    groundBody.addShape(groundShape)
-    groundBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1,0,0),-Math.PI/2);
-    
-    @world.add(groundBody)
-
   addPlayerBody: ->
     @playerBody = new CANNON.Body { mass : 100 }
     sphereShape = new CANNON.Sphere(0.5)
@@ -376,6 +384,8 @@ class Client extends EventEmitter
     @playerBody.position.set(0,0,0)
     @playerBody.linearDamping = 0
     @world.add(@playerBody)
+
+    @controls.setCannonBody(@playerBody)
 
     lastContact = {
       time : 0
@@ -408,21 +418,12 @@ class Client extends EventEmitter
     $("<div />").addClass('aiming-point').appendTo 'body'
 
   addControls: ->
-    @controls = new PointerLockControls(@camera, this, @playerBody, MOBILE)
+    @controls = new PointerLockControls(@camera, this, MOBILE)
     @controls.enabled = false
     @scene.add(@controls.getObject())
 
   getPlayerObject: ->
     @controls.getObject()
-
-  addLights: ->
-    dirLight = new THREE.DirectionalLight( 0xffffff, 1.1)
-    dirLight.position.set( -1, 0.75, 0.92 )
-
-    @scene.add( dirLight )
-
-    ambientLight = new THREE.AmbientLight(0x404040)
-    @scene.add(ambientLight)
 
   getPlayerDropPoint: ->
     v = new THREE.Vector3(0,0,-20)
@@ -439,7 +440,6 @@ class Client extends EventEmitter
     # Simulate physics
     if @controls.enabled
       @world.step(timeStep)
-    # console.log("Sphere z position: " + @sphereBody.position.z)
 
     # Animate
     TWEEN.update()
@@ -451,6 +451,12 @@ class Client extends EventEmitter
       @vrrenderer.render(@scene, @camera, @controls )
     else
       # Render webGL
+      # @renderer.render( @connector.portal.scene, @camera  )
+
+      if @connector.isPortalOpen()
+        @checkForPortalCollision()  
+      #   @renderPortals()      
+
       @renderer.render( @scene, @camera  )
 
     # Controls
@@ -463,5 +469,71 @@ class Client extends EventEmitter
     # Airplane mode
     # setTimeout(@tick, 1000 / 25)
     requestAnimationFrame @tick
+
+  renderPortals: ->
+    gl = @renderer.context;
+
+    originalCameraMatrixWorld = new THREE.Matrix4()
+    originalCameraProjectionMatrix = new THREE.Matrix4()
+    
+    # cameraObject.updateMatrix();
+    # cameraObject.updateMatrixWorld();
+
+    originalCameraMatrixWorld.copy(@camera.matrixWorld);
+    originalCameraProjectionMatrix.copy(@camera.projectionMatrix);
+    
+    # 1: clear scene (autoClear is disabled)
+    @renderer.clear(true, true, true);
+    
+    # 2: draw portal mesh into stencil buffer
+    gl.colorMask(false, false, false, false);
+    gl.depthMask(false);
+    gl.enable(gl.STENCIL_TEST);
+    gl.stencilMask(0xFF);
+    gl.stencilFunc(gl.NEVER, 0, 0xFF);
+    gl.stencilOp(gl.INCR, gl.KEEP, gl.KEEP);
+    
+    @renderer.render(@connector.stencilScene, @camera);
+    
+    gl.colorMask(true, true, true, true);
+    gl.depthMask(true);
+    gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
+
+    # 3: draw toScene on scencil
+    @renderer.clear(false, true, false);
+
+    gl.stencilFunc(gl.LESS, 0, 0xff);
+
+    # camera.matrixWorld.copy(getPortalViewMatrix(camera, currentPortal, otherPortal));
+    # camera.matrixWorldInverse.getInverse(camera.matrixWorld);
+
+    #getPortalProjectionMatrix(camera, otherPortal);
+    
+    @renderer.render(@connector.portal.scene, @camera);
+
+    gl.disable(gl.STENCIL_TEST);
+    
+    @renderer.clear(false, false, true);
+
+    # 4: draw fromScene.
+    @camera.matrixWorld.copy(originalCameraMatrixWorld);
+    @camera.projectionMatrix.copy(originalCameraProjectionMatrix);
+
+    # clear the depth buffer and draw the fromPortal mesh into it
+    @renderer.clear(false, true, false);
+
+    gl.colorMask(false, false, false, false);
+    gl.depthMask(true);
+    
+    @renderer.render(@connector.stencilScene, @camera);
+
+    # draw the actual scene
+    gl.colorMask(true, true, true, true);
+    gl.depthMask(true); 
+    gl.enable(gl.DEPTH_TEST)
+    
+    @renderer.render(@scene, @camera);
+
+    @camera.projectionMatrix.copy(originalCameraProjectionMatrix);
 
 module.exports = Client

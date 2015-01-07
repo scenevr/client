@@ -2,8 +2,10 @@
  * @author mrdoob / http://mrdoob.com/
  * @author schteppe / https://github.com/schteppe
  */
- var PointerLockControls = function ( camera, client, cannonBody, MOBILE ) {
+ var PointerLockControls = function ( camera, client, MOBILE ) {
 
+    var cannonBody = null;
+    var velocity = new THREE.Vector3;
     var eyeYPos = 2; // eyes are 2 meters above the ground
     var velocityFactor = 0.2;
     var jumpVelocity = 8;
@@ -27,22 +29,27 @@
 
     var contactNormal = new CANNON.Vec3(); // Normal in the contact, pointing *out* of whatever the player touched
     var upAxis = new CANNON.Vec3(0,1,0);
-    cannonBody.addEventListener("collide",function(e){
-        var contact = e.contact;
 
-        // contact.bi and contact.bj are the colliding bodies, and contact.ni is the collision normal.
-        // We do not yet know which one is which! Let's check.
-        if(contact.bi.id == cannonBody.id)  // bi is the player body, flip the contact normal
-            contact.ni.negate(contactNormal);
-        else
-            contactNormal.copy(contact.ni); // bi is something else. Keep the normal as it is
+    this.setCannonBody = function(x){
+        cannonBody = x;
 
-        // If contactNormal.dot(upAxis) is between 0 and 1, we know that the contact normal is somewhat in the up direction.
-        if(contactNormal.dot(upAxis) > 0.5) // Use a "good" threshold value between 0 and 1 here!
-            canJump = true;
-    });
+        velocity = cannonBody.velocity;
 
-    var velocity = cannonBody.velocity;
+        cannonBody.addEventListener("collide",function(e){
+            var contact = e.contact;
+
+            // contact.bi and contact.bj are the colliding bodies, and contact.ni is the collision normal.
+            // We do not yet know which one is which! Let's check.
+            if(contact.bi.id == cannonBody.id)  // bi is the player body, flip the contact normal
+                contact.ni.negate(contactNormal);
+            else
+                contactNormal.copy(contact.ni); // bi is something else. Keep the normal as it is
+
+            // If contactNormal.dot(upAxis) is between 0 and 1, we know that the contact normal is somewhat in the up direction.
+            if(contactNormal.dot(upAxis) > 0.5) // Use a "good" threshold value between 0 and 1 here!
+                canJump = true;
+        });
+    };
 
     var PI_2 = Math.PI / 2;
 
@@ -248,6 +255,11 @@
     var inputVelocity = new THREE.Vector3();
     var euler = new THREE.Euler();
     this.update = function ( delta ) {
+
+        if(!cannonBody){
+            console.log("wtf?");
+            return;
+        }
 
         yawObject.rotation.y -= movementX * 0.002;
         pitchObject.rotation.x -= movementY * 0.002;

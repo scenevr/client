@@ -1,30 +1,138 @@
 Utils = require "./utils.coffee"
+URI = require("uri-js")
 StyleMap = require("./style_map")
 TWEEN = require("tween.js")
 EventEmitter = require('wolfy87-eventemitter');
 Color = require("color")
-#Howl = require("howler").Howl
 
 Billboard = require("./elements/billboard.coffee")
 Box = require("./elements/box.coffee")
 Skybox = require("./elements/skybox.coffee")
 
+Utils = require("./utils.coffee")
+
 class Connector extends EventEmitter
-  constructor: (@client, host, path) ->
-    @host = host || window.location.host.split(":")[0] + ":8080"
-    @path = path || "/index.xml"
+  constructor: (@client, @scene, @physicsWorld, @uri, isPortal, referrer) ->
+    @uri
+    @isPortal = isPortal || false
+    @referrer = referrer || null
     @protocol = "scenevr"
-    @scene = @client.scene
     @uuid = null
     @spawned = false
     @manager = new THREE.LoadingManager()
+
+    @spawnPosition = null
+
+    # Currently not supported in markup
+    @spawnRotation = new THREE.Euler(0,0,0)
+
+    @addLights()
+    @addFloor()
+
+  addFloor: ->
+    floorTexture = new THREE.ImageUtils.loadTexture( '/images/grid.png' )
+    floorTexture.wrapS = floorTexture.wrapT = THREE.RepeatWrapping;
+    floorTexture.repeat.set( 1000, 1000 )
+
+    floorMaterial = new THREE.MeshBasicMaterial( { map: floorTexture } );
+    floorGeometry = new THREE.PlaneBufferGeometry(1000, 1000, 1, 1)
+    
+    @floor = new THREE.Mesh(floorGeometry, floorMaterial)
+    @floor.position.y = 0
+    @floor.rotation.x = -Math.PI / 2
+    @floor.receiveShadow = true
+
+    @scene.add(@floor)
+
+    groundBody = new CANNON.Body { mass: 0 } # static
+    groundShape = new CANNON.Plane()
+    groundBody.addShape(groundShape)
+    groundBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1,0,0),-Math.PI/2);
+    
+    @physicsWorld.add(groundBody)
+
+  addLights: ->
+    dirLight = new THREE.DirectionalLight( 0xffffff, 1.1)
+    dirLight.position.set( -1, 0.75, 0.92 )
+
+    @scene.add( dirLight )
+
+    ambientLight = new THREE.AmbientLight(0x404040)
+    @scene.add(ambientLight)
+
+  isPortalOpen: ->
+    !!@portal
+
+  loadPortal: (el, obj) ->
+    if @isPortal
+      console.error "Portal tried to #loadPortal"
+      return
+
+    destinationUri = URI.resolve(@uri, el.attr('href'))
+
+    @portal = {}
+    @portal.el = el
+    @portal.obj = obj
+    @portal.scene = new THREE.Scene
+    @portal.world = new CANNON.World
+    @portal.connector = new Connector(@client, @portal.scene, @portal.world, destinationUri, true, @uri)
+    @portal.connector.connect()
+    @stencilScene = new THREE.Scene
+
+  closePortal: ->
+    @scene.remove(@portal.obj)
+
+    @portal.connector.disconnect()
+
+    delete @portal.scene
+    delete @portal.world
+    delete @portal.connector
+    delete @portal
+
+    delete @stencilScene
+
+  createPortal: (el, obj) ->
+    @loadPortal(el, obj)
+
+    while obj.children[0]
+      obj.remove(obj.children[0])
+      
+    glowTexture = new THREE.ImageUtils.loadTexture( '/images/portal.png' )
+    glowTexture.wrapS = glowTexture.wrapT = THREE.RepeatWrapping;
+    glowTexture.repeat.set( 1, 1 )
+
+    glowMaterial = new THREE.MeshBasicMaterial( { map: glowTexture, transparent : true, side : THREE.DoubleSide } );
+    glowGeometry = new THREE.PlaneBufferGeometry(2, 2, 1, 1)
+    glow = new THREE.Mesh(glowGeometry, glowMaterial)
+
+    portalMaterial = new THREE.MeshBasicMaterial { color : '#000000', side : THREE.DoubleSide }
+    portalGeometry = new THREE.CircleGeometry(1 * 0.75, 40)
+    portal = new THREE.Mesh(portalGeometry, portalMaterial)
+    portal.position.z = 0.001
+
+    obj.add(glow)
+    obj.add(portal)
+
+    newPosition = el.attr("position") && Utils.parseVector(el.attr("position"))
+
+    portalClone = portal.clone()
+    portalClone.position.copy(newPosition)
+    portalClone.position.z += 0.1
+    portalClone.visible = true
+    portalClone.updateMatrix()
+    portalClone.updateMatrixWorld(true)
+    portalClone.matrixAutoUpdate = false
+    portalClone.frustumCulled = false
+
+    @stencilScene.add(portalClone)
+
+    obj
 
   setPosition: (v) ->
     @client.playerBody.position.copy(v)
     @client.playerBody.position.y += 1.5
     @client.playerBody.velocity.set(0,0,0)
     @client.controls.getObject().position.copy(@client.playerBody.position)
-
     @client.controls.getObject().rotation.y = 0
 
   respawn: (reason) ->
@@ -43,7 +151,6 @@ class Connector extends EventEmitter
     @ws and @ws.readyState == 1
 
   disconnect: ->
-    console.log "Closing socket..."
     @ws.onopen = null
     @ws.onclose = null
     @ws.onmessage = null
@@ -58,19 +165,26 @@ class Connector extends EventEmitter
   restartConnection: ->
     @disconnect()
     @trigger 'restarting'
-    @client.removeReflectedObjects()
+
+    if @client
+      @client.removeReflectedObjects()
+
     clearInterval @interval
     setTimeout(@reconnect, 500)
 
   connect: ->
-    @ws = new WebSocket("ws://#{@host}#{@path}", @protocol);
+    components = URI.parse(@uri)
+
+    if !components.host or !components.path.match(/^\//)
+      throw "Invalid uri string #{@uri}"
+
+    @ws = new WebSocket("ws://#{components.host}:#{components.port || 80}#{components.path}", @protocol);
     @ws.binaryType = 'arraybuffer'
     @ws.onopen = =>
-      console.log "Opened socket"
-      @interval = setInterval @tick, 1000 / 5
+      if @client
+        @interval = setInterval @tick, 1000 / 5
       @trigger 'connected'
     @ws.onclose = =>
-      console.log "Closed socket"
       clearInterval @interval
       @trigger 'disconnected'
     @ws.onmessage = (e) =>
@@ -113,18 +227,15 @@ class Connector extends EventEmitter
         .easing(TWEEN.Easing.Linear.None)
         .start()
 
-
   tick: =>
     if @spawned and @isConnected()
       # send location..
       position = new THREE.Vector3(0,-0.75,0).add(@client.getPlayerObject().position)
       @sendMessage $("<player />").attr("position", position.toArray().join(" "))
 
-  getHost: ->
-    @client.getHostFromLocation()
-
   getAssetHost: ->
-    @getHost()
+    components = URI.parse(@uri)
+    "//" + components.host + ":" + (components.port || 80)
 
   createPlayer: (el) ->
     geometry1 = new THREE.CylinderGeometry( 0.02, 0.5, 1.3, 10 )
@@ -140,25 +251,31 @@ class Connector extends EventEmitter
     material = new THREE.MeshPhongMaterial( {color: '#999999' } )
     new THREE.Mesh( combined, material )
 
-  # Todo - do something special to indicate links....
   createLink: (el) ->
     obj = new THREE.Object3D
 
-    geometry2 = new THREE.SphereGeometry( 1, 16, 16 )
-    material2 = new THREE.MeshPhongMaterial( {color: '#ff7700', emissive : '#aa3300', transparent : true, opacity: 0.5 } )
+    styles = new StyleMap(el.attr("style"))
+    color = styles.color || "#ff7700"
+
+    geometry2 = new THREE.SphereGeometry( 0.25, 16, 16 )
+    material2 = new THREE.MeshPhongMaterial( {color: color, emissive : color, transparent : true, opacity: 0.5 } )
     obj.add(new THREE.Mesh( geometry2, material2 ))
 
-    geometry = new THREE.SphereGeometry( 0.5, 16, 16 )
-    material = new THREE.MeshPhongMaterial( {color: '#ff7700', emissive : '#aa3300' } )
+    geometry = new THREE.SphereGeometry( 0.12, 16, 16 )
+    material = new THREE.MeshPhongMaterial( {color: color, emissive : color } )
     obj.add(new THREE.Mesh( geometry, material ))
 
-    newScale = if el.attr("scale")
-      Utils.parseVector(el.attr("scale"))
-    else
-      new THREE.Vector3(1,1,1)
+    obj.onClick = =>
+      if @portal && @portal.obj == obj
+        @closePortal()
+      else if @portal
+        @closePortal()
+        @createPortal(el, obj)
+      else
+        @createPortal(el, obj)
 
-    obj.scale.copy(newScale)
-
+    obj.body = null
+    
     obj
 
   createModel: (el) ->
@@ -249,6 +366,96 @@ class Connector extends EventEmitter
     catch e
       null
 
+  addElement: (el) ->
+    uuid = el.attr('uuid')
+
+    newPosition = el.attr("position") && Utils.parseVector(el.attr("position"))
+    newQuaternion = el.attr("rotation") && new THREE.Quaternion().setFromEuler(Utils.parseEuler(el.attr("rotation")))
+
+    if el.is("spawn")
+      obj = new THREE.Object3D()
+
+      if !@spawned
+        @spawnPosition = newPosition
+
+        if @isPortal
+          rotation = @spawnRotation.clone()
+          rotation.y += 3.141
+
+          position = @spawnPosition.clone()
+          position.add(new THREE.Vector3(0,1.28,0))
+
+          @addElement(
+            $("<link />").
+              attr("position", position.toArray().join(' ')).
+              attr("rotation", [rotation.x, rotation.y, rotation.z].join(' ')).
+              attr("href", @referrer).
+              attr("style", "color : #0033ff")
+          )
+        else
+          @setPosition(newPosition)
+
+        @spawned = true
+
+    else if el.is("billboard")
+      obj = Billboard.create(this, el)
+
+    else if el.is("box")
+      obj = Box.create(this, el)
+
+    else if el.is("skybox")
+      obj = Skybox.create(this, el)
+
+    else if el.is("model")
+      obj = @createModel(el)
+
+    else if el.is("link")
+      obj = @createLink(el)
+
+    else if el.is("audio")
+      obj = @createAudio(el)
+
+    else if el.is("player")
+      if uuid == @uuid
+        # That's me!
+        return
+
+      if !newPosition
+        # Don't add users who haven't spawned yet
+        return
+
+      obj = @createPlayer(el)
+
+    else
+      console.log "Unknown element... \n " + el[0].outerHTML
+      return
+
+    obj.name = uuid
+    obj.userData = el
+
+    if obj.body
+      @client.world.add(obj.body)
+      obj.body.uuid = uuid
+
+    if !el.is("skybox") and newPosition
+      obj.position.copy(newPosition)
+      if obj.body
+        obj.body.position.copy(newPosition)
+
+    if !el.is("skybox") and newQuaternion
+      obj.quaternion.copy(newQuaternion)
+      if obj.body
+        obj.body.quaternion.copy(newQuaternion)
+
+    if el.is("skybox")
+      obj.castShadow = false
+    else
+      obj.castShadow = true
+
+    @scene.add(obj)
+    
+    obj
+
   onMessage: (e) =>
     $($.parseXML(e.data).firstChild).children().each (index, el) =>
       el = $(el)
@@ -272,7 +479,7 @@ class Connector extends EventEmitter
         if el.is("dead") 
           if obj = @scene.getObjectByName(uuid)
             if obj.body
-              @client.world.remove(obj.body)
+              @physicsWorld.remove(obj.body)
             @scene.remove(obj)
           return
 
@@ -280,70 +487,7 @@ class Connector extends EventEmitter
         newQuaternion = el.attr("rotation") && new THREE.Quaternion().setFromEuler(Utils.parseEuler(el.attr("rotation")))
 
         if !(obj = @scene.getObjectByName(uuid))
-          if el.is("spawn")
-            obj = new THREE.Object3D()
-            if !@spawned
-              @spawnPosition = newPosition
-              @setPosition(newPosition)
-              @spawned = true
-
-          else if el.is("billboard")
-            obj = Billboard.create(this, el)
-
-          else if el.is("box")
-            obj = Box.create(this, el)
-
-          else if el.is("skybox")
-            obj = Skybox.create(this, el)
-
-          else if el.is("model")
-            obj = @createModel(el)
-
-          else if el.is("link")
-            obj = @createLink(el)
-
-          else if el.is("audio")
-            obj = @createAudio(el)
-
-          else if el.is("player")
-            if uuid == @uuid
-              # That's me!
-              return
-
-            if !newPosition
-              # Don't add users who haven't spawned yet
-              return
-
-            obj = @createPlayer(el)
-
-          else
-            console.log "Unknown element... \n " + el[0].outerHTML
-            return
-
-          obj.name = uuid
-          obj.userData = el
-
-          if obj.body
-            @client.world.add(obj.body)
-            obj.body.uuid = uuid
-
-          # skyboxes dont have a position
-          if !el.is("skybox") and newPosition
-            obj.position.copy(newPosition)
-            if obj.body
-              obj.body.position.copy(newPosition)
-
-          if !el.is("skybox") and newQuaternion
-            obj.quaternion.copy(newQuaternion)
-            if obj.body
-              obj.body.quaternion.copy(newQuaternion)
-
-          if el.is("skybox")
-            obj.castShadow = false
-          else
-            obj.castShadow = true
-
-          @scene.add(obj)
+          obj = @addElement(el)
 
         if el.attr("style")
           styles = new StyleMap(el.attr("style"))
@@ -356,15 +500,13 @@ class Connector extends EventEmitter
         if el.is("spawn")
           # Don't tween spawn
           obj.position.copy(newPosition)
-        else if el.is("box") or el.is("player") or el.is("billboard") or el.is("model") or el.is("link")
+        else if obj and (el.is("box") or el.is("player") or el.is("billboard") or el.is("model") or el.is("link"))
           # Tween away
           startPosition = obj.position.clone()
 
           if el.attr("rotation")
             newEuler = Utils.parseEuler(el.attr("rotation"))
             newQuaternion = new THREE.Quaternion().setFromEuler(newEuler)
-
-            # obj.quaternion.copy(newQuaternion)
 
             if !obj.quaternion.equals(newQuaternion)
               tween = new TWEEN.Tween(obj.quaternion)

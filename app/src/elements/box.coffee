@@ -1,28 +1,21 @@
-Utils = require "../utils.coffee"
+Element = require "./element.coffee"
 
-class Box
-  constructor: ->
-    true
+DEFAULT_COLOR = '#eeeeee'
 
-Box.create = (connector, el) ->
-  geometry = new THREE.BoxGeometry( 1, 1, 1 )
-  material = new THREE.MeshLambertMaterial( {color: '#eeeeee' } )
-  obj = new THREE.Mesh( geometry, material )
+class Box extends Element
+  create: ->
+    geometry = new THREE.BoxGeometry( 1, 1, 1 )
+    material = new THREE.MeshLambertMaterial( {color: DEFAULT_COLOR } )
+    @obj = new THREE.Mesh( geometry, material )
+    @obj.scale.copy(@getScale())
+    @createPhysicsModel()
+    @obj
 
-  newScale = if el.attr("scale")
-    Utils.parseVector(el.attr("scale"))
-  else
-    new THREE.Vector3(1,1,1)
-
-  obj.scale.copy(newScale)
-  
   # Add physics model
-  boxShape = new CANNON.Box(new CANNON.Vec3().copy(newScale.multiplyScalar(0.5)))
-  boxBody = new CANNON.Body({ mass: 0 })
-  boxBody.addShape(boxShape)
-  obj.body = boxBody
-
-  obj
-
+  createPhysicsModel: ->
+    boxShape = new CANNON.Box(new CANNON.Vec3().copy(@getScale().multiplyScalar(0.5)))
+    boxBody = new CANNON.Body({ mass: 0 })
+    boxBody.addShape(boxShape)
+    @obj.body = boxBody
     
 module.exports = Box

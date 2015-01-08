@@ -439,7 +439,7 @@ class Client extends EventEmitter
 
     # Simulate physics
     if @controls.enabled
-      @world.step(timeStep)
+      @connector.physicsWorld.step(timeStep)
 
     # Animate
     TWEEN.update()
@@ -457,7 +457,7 @@ class Client extends EventEmitter
         @checkForPortalCollision()  
       #   @renderPortals()      
 
-      @renderer.render( @scene, @camera  )
+      @renderer.render( @connector.scene, @camera  )
 
     # Controls
     @controls.update( Date.now() - @time )

@@ -75,58 +75,24 @@ class Connector extends EventEmitter
     @portal.obj = obj
     @portal.scene = new THREE.Scene
     @portal.world = new CANNON.World
+
     @portal.connector = new Connector(@client, @portal.scene, @portal.world, destinationUri, true, @uri)
     @portal.connector.connect()
+
+    # Treat portals that we are going back to differently from ones we are entering for the first time
+    if el.attr("backlink") is "true"
+      @portal.connector.isPreviousPortal = true
+
     @stencilScene = new THREE.Scene
 
   closePortal: ->
     @scene.remove(@portal.obj)
-
     @portal.connector.disconnect()
-
     delete @portal.scene
     delete @portal.world
     delete @portal.connector
     delete @portal
-
     delete @stencilScene
-
-  createPortal: (el, obj) ->
-    @loadPortal(el, obj)
-
-    while obj.children[0]
-      obj.remove(obj.children[0])
-      
-    glowTexture = new THREE.ImageUtils.loadTexture( '/images/portal.png' )
-    glowTexture.wrapS = glowTexture.wrapT = THREE.RepeatWrapping;
-    glowTexture.repeat.set( 1, 1 )
-
-    glowMaterial = new THREE.MeshBasicMaterial( { map: glowTexture, transparent : true, side : THREE.DoubleSide } );
-    glowGeometry = new THREE.PlaneBufferGeometry(2, 2, 1, 1)
-    glow = new THREE.Mesh(glowGeometry, glowMaterial)
-
-    portalMaterial = new THREE.MeshBasicMaterial { color : '#000000', side : THREE.DoubleSide }
-    portalGeometry = new THREE.CircleGeometry(1 * 0.75, 40)
-    portal = new THREE.Mesh(portalGeometry, portalMaterial)
-    portal.position.z = 0.001
-
-    obj.add(glow)
-    obj.add(portal)
-
-    newPosition = el.attr("position") && Utils.parseVector(el.attr("position"))
-
-    portalClone = portal.clone()
-    portalClone.position.copy(newPosition)
-    portalClone.position.z += 0.1
-    portalClone.visible = true
-    portalClone.updateMatrix()
-    portalClone.updateMatrixWorld(true)
-    portalClone.matrixAutoUpdate = false
-    portalClone.frustumCulled = false
-
-    @stencilScene.add(portalClone)
-
-    obj
 
   setPosition: (v) ->
     @client.playerBody.position.copy(v)
@@ -251,33 +217,6 @@ class Connector extends EventEmitter
     material = new THREE.MeshPhongMaterial( {color: '#999999' } )
     new THREE.Mesh( combined, material )
 
-  createLink: (el) ->
-    obj = new THREE.Object3D
-
-    styles = new StyleMap(el.attr("style"))
-    color = styles.color || "#ff7700"
-
-    geometry2 = new THREE.SphereGeometry( 0.25, 16, 16 )
-    material2 = new THREE.MeshPhongMaterial( {color: color, emissive : color, transparent : true, opacity: 0.5 } )
-    obj.add(new THREE.Mesh( geometry2, material2 ))
-
-    geometry = new THREE.SphereGeometry( 0.12, 16, 16 )
-    material = new THREE.MeshPhongMaterial( {color: color, emissive : color } )
-    obj.add(new THREE.Mesh( geometry, material ))
-
-    obj.onClick = =>
-      if @portal && @portal.obj == obj
-        @closePortal()
-      else if @portal
-        @closePortal()
-        @createPortal(el, obj)
-      else
-        @createPortal(el, obj)
-
-    obj.body = null
-    
-    obj
-
   createModel: (el) ->
     obj = new THREE.Object3D
     texture = null
@@ -378,17 +317,20 @@ class Connector extends EventEmitter
       if !@spawned
         @spawnPosition = newPosition
 
-        if @isPortal
-          rotation = @spawnRotation.clone()
-          rotation.y += 3.141
-
+        if @isPortal && @isPreviousPortal
+          # do nothing..
+        else if @isPortal
           position = @spawnPosition.clone()
           position.add(new THREE.Vector3(0,1.28,0))
+
+          rotation = @spawnRotation.clone()
+          rotation.y += 3.141
 
           @addElement(
             $("<link />").
               attr("position", position.toArray().join(' ')).
               attr("rotation", [rotation.x, rotation.y, rotation.z].join(' ')).
+              attr("backlink", true).
               attr("href", @referrer).
               attr("style", "color : #0033ff")
           )
@@ -434,7 +376,7 @@ class Connector extends EventEmitter
     obj.userData = el
 
     if obj.body
-      @client.world.add(obj.body)
+      @physicsWorld.add(obj.body)
       obj.body.uuid = uuid
 
     if !el.is("skybox") and newPosition
@@ -484,6 +426,7 @@ class Connector extends EventEmitter
           return
 
         newPosition = el.attr("position") && Utils.parseVector(el.attr("position"))
+        newScale = el.attr("scale") && Utils.parseVector(el.attr("scale"))
         newQuaternion = el.attr("rotation") && new THREE.Quaternion().setFromEuler(Utils.parseEuler(el.attr("rotation")))
 
         if !(obj = @scene.getObjectByName(uuid))
@@ -526,6 +469,20 @@ class Connector extends EventEmitter
                 obj.position.set(@x, @y, @z)
                 if obj.body
                   obj.body.position.set(@x, @y, @z)
+              )
+              .easing(TWEEN.Easing.Linear.None)
+              .start()
+
+          if newScale && !newScale.equals(obj.scale)
+            tween = new TWEEN.Tween(obj.scale)
+            tween.to(newScale, 200)
+              .onUpdate(-> 
+                obj.scale.set(@x, @y, @z)
+
+                if obj.body and obj.body.shapes.length == 1 # and instanceof CANNON.Box
+                  # Fixme - this only works for boxes
+                  obj.body.shapes[0].halfExtents = new THREE.Vector3(@x, @y, @z).multiplyScalar(0.5)
+                  obj.body.shapes[0].updateConvexPolyhedronRepresentation()
               )
               .easing(TWEEN.Easing.Linear.None)
               .start()

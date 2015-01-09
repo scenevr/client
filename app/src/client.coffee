@@ -439,7 +439,7 @@ class Client extends EventEmitter
 
     # Simulate physics
     if @controls.enabled
-      @world.step(timeStep)
+      @connector.physicsWorld.step(timeStep)
 
     # Animate
     TWEEN.update()

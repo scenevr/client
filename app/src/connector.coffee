@@ -77,6 +77,11 @@ class Connector extends EventEmitter
     @portal.world = new CANNON.World
     @portal.connector = new Connector(@client, @portal.scene, @portal.world, destinationUri, true, @uri)
     @portal.connector.connect()
+
+    # Treat portals that we are going back to differently from ones we are entering for the first time
+    if el.attr("backlink") is "true"
+      @portal.connector.isPreviousPortal = true
+
     @stencilScene = new THREE.Scene
 
   closePortal: ->
@@ -378,7 +383,9 @@ class Connector extends EventEmitter
       if !@spawned
         @spawnPosition = newPosition
 
-        if @isPortal
+        if @isPortal && @isPreviousPortal
+          # do nothing..
+        else if @isPortal
           rotation = @spawnRotation.clone()
           rotation.y += 3.141
 
@@ -389,6 +396,7 @@ class Connector extends EventEmitter
             $("<link />").
               attr("position", position.toArray().join(' ')).
               attr("rotation", [rotation.x, rotation.y, rotation.z].join(' ')).
+              attr("backlink", true).
               attr("href", @referrer).
               attr("style", "color : #0033ff")
           )
@@ -434,7 +442,7 @@ class Connector extends EventEmitter
     obj.userData = el
 
     if obj.body
-      @client.world.add(obj.body)
+      @physicsWorld.add(obj.body)
       obj.body.uuid = uuid
 
     if !el.is("skybox") and newPosition

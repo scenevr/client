@@ -14,6 +14,7 @@ window.CANNON = require("cannon")
 TWEEN = require("tween.js")
 EventEmitter = require('wolfy87-eventemitter');
 DOWN_SAMPLE = 1
+PHYSICS_HZ = 60.0 # Physics hertz
 
 MOBILE = false
 DOWN_SAMPLE = 1
@@ -95,6 +96,8 @@ class Client extends EventEmitter
     $(@renderer.domElement).css { width : @width, height : @height }
 
     @tick()
+
+    setInterval(@tickPhysics, 1000 / PHYSICS_HZ)
 
     window.addEventListener( 'resize', @onWindowResize, false )
 
@@ -432,17 +435,22 @@ class Client extends EventEmitter
       v.applyEuler(@getAvatarObject().rotation)
     )
 
-  tick: =>
-    @stats.begin()
-
-    timeStep = 1.0/60.0 # seconds
+  tickPhysics: =>
+    timeStep = 1.0 / PHYSICS_HZ # seconds
 
     # Simulate physics
     if @controls.enabled
       @connector.physicsWorld.step(timeStep)
 
-    # Animate
+    # Animate and tween physics models
     TWEEN.update()
+
+    # Controls
+    @controls.update( Date.now() - @time )
+    @time = Date.now()
+
+  tick: =>
+    @stats.begin()
 
     if @vrrenderer
       # VR
@@ -459,12 +467,7 @@ class Client extends EventEmitter
 
       @renderer.render( @scene, @camera  )
 
-    # Controls
-    @controls.update( Date.now() - @time )
-
     @stats.end()
-
-    @time = Date.now()
 
     # Airplane mode
     setTimeout(@tick, 1000 / 25)

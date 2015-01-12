@@ -123,6 +123,7 @@ class Connector extends EventEmitter
     portalClone = portal.clone()
     portalClone.position.copy(newPosition)
     portalClone.position.z += 0.1
+    portalClone.quaternion.copy(obj.quaternion)
     portalClone.visible = true
     portalClone.updateMatrix()
     portalClone.updateMatrixWorld(true)

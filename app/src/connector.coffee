@@ -8,6 +8,7 @@ Color = require("color")
 Billboard = require("./elements/billboard.coffee")
 Box = require("./elements/box.coffee")
 Skybox = require("./elements/skybox.coffee")
+Fog = require("./elements/fog.coffee")
 
 Utils = require("./utils.coffee")
 
@@ -34,13 +35,12 @@ class Connector extends EventEmitter
     floorTexture.wrapS = floorTexture.wrapT = THREE.RepeatWrapping;
     floorTexture.repeat.set( 1000, 1000 )
 
-    floorMaterial = new THREE.MeshBasicMaterial( { map: floorTexture } );
+    floorMaterial = new THREE.MeshBasicMaterial( { fog: true, map: floorTexture } );
     floorGeometry = new THREE.PlaneBufferGeometry(1000, 1000, 1, 1)
     
     @floor = new THREE.Mesh(floorGeometry, floorMaterial)
     @floor.position.y = 0
     @floor.rotation.x = -Math.PI / 2
-    @floor.receiveShadow = true
 
     @scene.add(@floor)
 
@@ -415,6 +415,10 @@ class Connector extends EventEmitter
     else if el.is("skybox")
       obj = Skybox.create(this, el)
 
+    else if el.is("fog")
+      Fog.create(this, el)
+      return
+
     else if el.is("model")
       obj = @createModel(el)
 
@@ -446,12 +450,12 @@ class Connector extends EventEmitter
       @physicsWorld.add(obj.body)
       obj.body.uuid = uuid
 
-    if !el.is("skybox") and newPosition
+    if !el.is("skybox,fog") and newPosition
       obj.position.copy(newPosition)
       if obj.body
         obj.body.position.copy(newPosition)
 
-    if !el.is("skybox") and newQuaternion
+    if !el.is("skybox,fog") and newQuaternion
       obj.quaternion.copy(newQuaternion)
       if obj.body
         obj.body.quaternion.copy(newQuaternion)
@@ -497,6 +501,8 @@ class Connector extends EventEmitter
 
         if !(obj = @scene.getObjectByName(uuid))
           obj = @addElement(el)
+          if !obj
+            return
 
         if el.attr("style")
           styles = new StyleMap(el.attr("style"))
@@ -541,7 +547,12 @@ class Connector extends EventEmitter
 
         styles = new StyleMap(el.attr('style')) 
 
-        if el.is("box") && styles.color
+        if el.is("box") && styles.color 
           obj.material.setValues { color : styles.color, ambient : styles.color }
+
+        if el.is("model") && styles.color
+          obj.traverse ( child ) ->
+            if child instanceof THREE.Mesh
+              child.material.setValues { color : styles.color, ambient : styles.color }
   
 module.exports = Connector

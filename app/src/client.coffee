@@ -47,7 +47,6 @@ class Client extends EventEmitter
     FAR = 700
 
     @scene = new THREE.Scene()
-    @scene.fog = new THREE.Fog( 0xffffff, 500, 700 );
 
     @world = new CANNON.World()
     @world.gravity.set(0,-20,0); # m/s²
@@ -470,8 +469,8 @@ class Client extends EventEmitter
     @stats.end()
 
     # Airplane mode
-    setTimeout(@tick, 1000 / 25)
-    # requestAnimationFrame @tick
+    # setTimeout(@tick, 1000 / 25)
+    requestAnimationFrame @tick
 
   renderPortals: ->
     gl = @renderer.context;

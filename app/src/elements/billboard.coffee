@@ -11,7 +11,18 @@ Billboard.create = (connector, el) ->
 
   canvas = $("<canvas width='#{SIZE}' height='#{SIZE}' />")[0]
 
-  div = $("<div />").html(el.text()).css({ zIndex : 50, position : 'absolute', left : 0, top : 0, background : 'white', width : SIZE, height : SIZE, padding : '10px', border : '1px solid #ccc' })
+  div = $("<div />").html(el.text()).css({ 
+    zIndex : 50, 
+    position : 'absolute', 
+    left : 0, 
+    top : 0, 
+    background : 'white', 
+    width : SIZE, 
+    height : SIZE, 
+    padding : '10px', 
+    border : '1px solid #ccc',
+    fontSize : '22px'
+  })
 
   div.find("img").each (index, img) =>
     img.src = URI.resolve(connector.uri, img.getAttribute("src"))

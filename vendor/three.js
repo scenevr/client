@@ -26135,7 +26135,7 @@ THREE.ImageUtils = {
 	loadTexture: function ( url, mapping, onLoad, onError ) {
 
 		var loader = new THREE.ImageLoader();
-		loader.crossOrigin = this.crossOrigin;
+		loader.crossOrigin = true;
 
 		var texture = new THREE.Texture( undefined, mapping );
 

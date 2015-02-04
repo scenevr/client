@@ -550,6 +550,17 @@ class Connector extends EventEmitter
         if el.is("box") && styles.color 
           obj.material.setValues { color : styles.color, ambient : styles.color }
 
+        if el.is("box") && styles.textureMap && !obj.material.map
+          url = "//" + @getAssetHost() + @getUrlFromStyle(styles.textureMap )
+
+          THREE.ImageUtils.crossOrigin = true
+
+          texture = new THREE.ImageUtils.loadTexture( url )
+          texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+          texture.repeat.set( 1, 1 )
+
+          obj.material.setValues { map : texture }
+
         if el.is("model") && styles.color
           obj.traverse ( child ) ->
             if child instanceof THREE.Mesh

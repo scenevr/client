@@ -460,11 +460,13 @@ class Client extends EventEmitter
       # Render webGL
       # @renderer.render( @connector.portal.scene, @camera  )
 
-      if @connector.isPortalOpen()
-        @checkForPortalCollision()  
+      # if @connector.isPortalOpen()
       #   @renderPortals()      
 
       @renderer.render( @scene, @camera  )
+
+    if @connector.isPortalOpen()
+      @checkForPortalCollision()  
 
     @stats.end()
 

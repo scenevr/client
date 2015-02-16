@@ -199,7 +199,7 @@ class Client extends EventEmitter
     
     ints = @raycaster.intersectObject(@connector.stencilScene.children[0], false)
 
-    if (ints.length > 0)
+    if (ints.length > 0) and (@connector.portal.connector.hasSpawned())
       @promotePortal()
 
   promotePortal: ->

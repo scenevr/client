@@ -153,8 +153,11 @@ class Connector extends EventEmitter
     else
       @client.addChatMessage null, "You have been respawned"
 
+  hasSpawned: ->
+    @spawned is true
+
   isConnected: ->
-    @ws and @ws.readyState == 1
+    @ws and @ws.readyState is 1
 
   disconnect: ->
     @ws.onopen = null

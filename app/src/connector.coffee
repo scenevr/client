@@ -305,7 +305,7 @@ class Connector extends EventEmitter
         loader.crossOrigin = true
         loader.load "//" + @getAssetHost() + @getUrlFromStyle(styles.lightMap || styles.textureMap), ( image ) ->
           texture.image = image
-          texture.magFilter = THREE.NearestFilter
+          # texture.magFilter = THREE.NearestFilter
           texture.needsUpdate = true
           material.needsUpdate = true
       else if styles['color']

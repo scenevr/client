@@ -38,7 +38,13 @@
       this.spawnRotation = new THREE.Euler(0, 0, 0);
       this.addLights();
       this.addFloor();
-      this.webRTC();
+
+      //this.webRTC();
+    }
+
+    Connector.prototype.webRTC = function() {
+      var _this = this;
+
       $('body').keydown((function(_this) {
         return function(e) {
           if (e.keyCode === 84) {
@@ -46,6 +52,7 @@
           }
         };
       })(this));
+      
       $('body').keyup((function(_this) {
         return function(e) {
           if (e.keyCode === 84) {
@@ -53,9 +60,7 @@
           }
         };
       })(this));
-    }
 
-    Connector.prototype.webRTC = function() {
       var apiKey   , div, sessionId, token    ;
       apiKey    = "45164122";
       sessionId = "2_MX40NTE2NDEyMn5-MTQyNDgxNjg1ODM5NX5qNGFJMUpUOVdiNkdyeFRXRlZHeFZCVXR-fg";

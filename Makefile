@@ -1,6 +1,6 @@
 
 all:
-	browserify -t browserify-jade index.js > build/bundle.js
+	browserify -t browserify-jade index.js > build/js/bundle.js
 	cp index.html build
 	cp css/*.css build/css
 	cp vendor/* build/vendor

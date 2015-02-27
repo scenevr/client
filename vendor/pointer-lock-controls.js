@@ -241,14 +241,34 @@
         return yawObject.rotation.y;
     }
 
+    this.setYaw = function(d){
+        yawObject.rotation.y = d;
+    }
+
+    this.getPosition = function(){
+        return yawObject.position;
+    }
+
     this.getDirection = function(targetVec){
+        var m1 = new THREE.Matrix4();
+        var m2 = new THREE.Matrix4();
+
+        if(client.vrrenderer){
+            var orientation = client.vrrenderer.getOrientation(),
+                euler = new THREE.Euler().setFromQuaternion(orientation);
+
+            m1.makeRotationX(euler.x);
+            m2.makeRotationY(euler.y + this.getYaw() + client.vrrenderer.orientationOffset);
+        }else{
+            m1.makeRotationX(pitchObject.rotation.x);
+            m2.makeRotationY(yawObject.rotation.y);
+        }
+
+        m2.multiply(m1);
         targetVec.set(0,0,-1);
-        targetVec.applyQuaternion(quat);
+        targetVec.applyMatrix4(m2);
 
-        // Fixme - this is a gross hack, and I don't know why it's necessary
-        targetVec.y = pitchObject.rotation.x / (Math.PI / 2)
-
-        return targetVec;
+        return targetVec.normalize();
     }
 
     // Moves the camera to the Cannon.js object position and adds velocity to the object if the run key is down
@@ -263,7 +283,6 @@
 
         yawObject.rotation.y -= movementX * 0.002;
         pitchObject.rotation.x -= movementY * 0.002;
-
         pitchObject.rotation.x = Math.max( - PI_2, Math.min( PI_2, pitchObject.rotation.x ) );
 
         delta *= 0.5;

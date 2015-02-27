@@ -4,6 +4,8 @@
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
+  var DEBUG = false;
+
   Connector = require("./connector");
 
   URI = require("uri-js");
@@ -80,6 +82,11 @@
       this.camera = new THREE.PerspectiveCamera(VIEW_ANGLE, ASPECT, NEAR, FAR);
       this.addControls();
       this.addPlayerBody();
+      
+      if(DEBUG){
+        this.addDirectionArrow();
+      }
+
       this.addDot();
       this.connector = new Connector(this, this.scene, this.world, this.getUriFromLocation());
       this.connector.connect();
@@ -177,7 +184,7 @@
       if (window.location.search.match(/connect.+/)) {
         return "//" + window.location.search.split(/[=]/)[1];
       } else {
-        return "//scenevr-demo.herokuapp.com/index.xml";
+        return "//home.scenevr.hosting/home.xml";
       }
     };
 
@@ -242,7 +249,7 @@
         }
       }
       if (this.vrHMD) {
-        return this.vrrenderer = new THREE.VRRenderer(this.renderer, this.vrHMD);
+        return this.vrrenderer = new THREE.VRRenderer(this.renderer, this.vrHMD, this.vrHMDSensor);
       }
     };
 
@@ -287,6 +294,19 @@
       this.raycaster.set(position, direction);
       this.raycaster.far = 5.0;
       _ref = this.raycaster.intersectObjects(this.getAllClickableObjects());
+
+      if(DEBUG){
+        var material = new THREE.LineBasicMaterial({
+            color: 0x0000ff,
+            linewidth: 5
+        });
+        var geometry = new THREE.Geometry();
+        geometry.vertices.push(position.clone());
+        geometry.vertices.push(position.clone().add(direction.multiplyScalar(5.0)));
+        var line = new THREE.Line(geometry, material);
+        this.scene.add(line);
+      }
+
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         intersection = _ref[_i];
         if (intersection.object && intersection.object.parent && intersection.object.parent.userData.is && intersection.object.parent.userData.is("link")) {
@@ -438,6 +458,17 @@
       return this.scene.add(this.loadingDome);
     };
 
+    Client.prototype.addDirectionArrow = function(){
+      var material = new THREE.LineBasicMaterial({
+          color: 0x0ffff00,
+          linewidth: 10
+      });
+      var geometry = new THREE.Geometry();
+      geometry.vertices.push(new THREE.Vector3(0,0.2,0));
+      geometry.vertices.push(new THREE.Vector3(0,0.2,-5));
+      this.directionArrow = new THREE.Line(geometry, material);
+      this.scene.add(this.directionArrow);
+    }
     Client.prototype.addPlayerBody = function() {
       var lastContact, sphereShape;
       this.playerBody = new CANNON.Body({
@@ -510,6 +541,14 @@
     Client.prototype.tick = function() {
       var state;
       this.stats.begin();
+
+      if(DEBUG){
+        var q = new THREE.Quaternion;
+        q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), this.controls.getYaw());
+        this.directionArrow.quaternion.copy(q);
+        this.directionArrow.position.copy(this.controls.getPosition()).setY(0.1);
+      }
+
       if (this.vrrenderer) {
         state = this.vrHMDSensor.getState();
         this.camera.quaternion.set(state.orientation.x, state.orientation.y, state.orientation.z, state.orientation.w);

@@ -1,6 +1,6 @@
 "use strict";
 
-THREE.VRRenderer = function(renderer, hmd) {
+THREE.VRRenderer = function(renderer, hmd, hmdSensor) {
 
     var self = this;
 
@@ -66,12 +66,17 @@ THREE.VRRenderer = function(renderer, hmd) {
     self.orientationOffset = 0;
 
     self.resetOrientation = function(controls, hmdSensor){
-        var state = hmdSensor.getState(),
-            euler = new THREE.Euler().setFromQuaternion(state.orientation);
+        var euler = new THREE.Euler().setFromQuaternion(hmdSensor.getState().orientation);
 
         self.orientationOffset = -euler.y;
         //controls.getObject().rotation.y += euler.y;
     };
+
+    self.getOrientation = function(){
+        return hmdSensor.getState().orientation;
+    }
+
+    var Y_AXIS = new THREE.Vector3(0,1,0);
 
     self.render = function(scene, camera, controls) {
         var cameraLeft = camera.clone();
@@ -80,9 +85,9 @@ THREE.VRRenderer = function(renderer, hmd) {
         cameraLeft.position.copy(camera.parent.parent.position);
         cameraRight.position.copy(camera.parent.parent.position);
 
-        euler.y = controls.getYaw() + self.orientationOffset; // + Math.PI / 2;
-        euler.order = "XYZ";
-        quat.setFromEuler(euler);
+        // euler.y = controls.getYaw() + self.orientationOffset; // + Math.PI / 2;
+        // euler.order = "XYZ";
+        quat.setFromAxisAngle(Y_AXIS, controls.getYaw() + self.orientationOffset);
         //quat.inverse();
 
         cameraLeft.quaternion.multiplyQuaternions(quat, cameraLeft.quaternion);

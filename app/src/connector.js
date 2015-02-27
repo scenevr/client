@@ -16,6 +16,8 @@
   Fog = require("./elements/fog");
   Utils = require("./utils");
 
+  var Plane = require("./elements/plane");
+
   Connector = (function(_super) {
     __extends(Connector, _super);
 
@@ -374,22 +376,24 @@
       });
       obj = new THREE.Object3D;
       obj.add(new THREE.Mesh(combined, material));
-      loader = new THREE.OBJLoader(this.manager);
-      loader.load("//" + this.getAssetHost() + "/models/hardhat.obj", (function(_this) {
-        return function(object) {
-          object.traverse(function(child) {
-            material = new THREE.MeshPhongMaterial({
-              color: '#FFCC00'
-            });
-            if (child instanceof THREE.Mesh) {
-              return child.material = material;
-            }
-          });
-          object.scale.set(0.3, 0.3, 0.3);
-          object.position.y += 0.7;
-          return obj.add(object);
-        };
-      })(this));
+
+      // loader = new THREE.OBJLoader(this.manager);
+      // loader.load("//" + this.getAssetHost() + "/models/hardhat.obj", (function(_this) {
+      //   return function(object) {
+      //     object.traverse(function(child) {
+      //       material = new THREE.MeshPhongMaterial({
+      //         color: '#FFCC00'
+      //       });
+      //       if (child instanceof THREE.Mesh) {
+      //         return child.material = material;
+      //       }
+      //     });
+      //     object.scale.set(0.3, 0.3, 0.3);
+      //     object.position.y += 0.7;
+      //     return obj.add(object);
+      //   };
+      // })(this));
+
       return obj;
     };
 
@@ -532,6 +536,8 @@
         obj = Billboard.create(this, el);
       } else if (el.is("box")) {
         obj = Box.create(this, el);
+      } else if (el.is("plane")) {
+        obj = Plane.create(this, el);
       } else if (el.is("skybox")) {
         obj = Skybox.create(this, el);
       } else if (el.is("fog")) {
@@ -657,18 +663,39 @@
               }
             }
             styles = new StyleMap(el.attr('style'));
-            if (el.is("box") && styles.color) {
+            if (el.is("box,plane") && styles.color) {
               obj.material.setValues({
                 color: styles.color,
                 ambient: styles.color
               });
             }
-            if (el.is("box") && styles.textureMap && !obj.material.map) {
+            if (el.is("box,plane") && styles.textureMap && !obj.material.map) {
               url = "//" + _this.getAssetHost() + _this.getUrlFromStyle(styles.textureMap);
               THREE.ImageUtils.crossOrigin = true;
               texture = new THREE.ImageUtils.loadTexture(url);
               texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-              texture.repeat.set(1, 1);
+
+              var repeatX = 1,
+                repeatY = 1;
+
+              // should this be repeatU / repeatV? :/
+
+              if(styles.textureRepeat){
+                repeatX = parseFloat(styles.textureRepeat.split(" ")[0]);
+                repeatY = parseFloat(styles.textureRepeat.split(" ")[1]);
+              }
+
+              if(styles.textureRepeatX){
+                repeatX = parseFloat(styles.textureRepeatX);
+              }
+              if(styles.textureRepeatY){
+                repeatY = parseFloat(styles.textureRepeatY);
+              }
+
+              console.log(repeatX, repeatY);
+
+              texture.repeat.set(repeatX, repeatY);
+
               obj.material.setValues({
                 map: texture
               });

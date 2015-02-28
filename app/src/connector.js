@@ -692,8 +692,6 @@
                 repeatY = parseFloat(styles.textureRepeatY);
               }
 
-              console.log(repeatX, repeatY);
-
               texture.repeat.set(repeatX, repeatY);
 
               obj.material.setValues({

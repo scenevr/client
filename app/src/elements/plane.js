@@ -14,8 +14,8 @@ Plane.create = function(connector, el) {
   var obj = new THREE.Mesh(geometry, material);
   
   var newScale = el.attr("scale") ? Utils.parseVector(el.attr("scale")) : new THREE.Vector3(1, 1, 1);
-  obj.scale.copy(newScale);
   newScale.z = Z_AXIS_SCALE;
+  obj.scale.copy(newScale);
 
   // This is a bit dumb, planes are infinite in cannon, so we can't specify a size and have to emulate the 
   // plane with a thin box.

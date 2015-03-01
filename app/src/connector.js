@@ -18,6 +18,14 @@
 
   var Plane = require("./elements/plane");
 
+  // Constants
+  var PLAYER_MAX_HEAD_ANGLE = Math.PI / 4,
+    PLAYER_MIN_HEAD_ANGLE = -Math.PI / 4;
+
+  var X_AXIS = new THREE.Vector3(1,0,0),
+    Y_AXIS = new THREE.Vector3(0,1,0),
+    Z_AXIS = new THREE.Vector3(0,0,1);
+
   Connector = (function(_super) {
     __extends(Connector, _super);
 
@@ -348,10 +356,15 @@
     };
 
     Connector.prototype.tick = function() {
-      var position;
       if (this.spawned && this.isConnected()) {
-        position = new THREE.Vector3(0, -0.75, 0).add(this.client.getPlayerObject().position);
-        return this.sendMessage($("<player />").attr("position", position.toArray().join(" ")));
+        var position = new THREE.Vector3(0, -0.75, 0).add(this.client.getPlayerObject().position),
+          rotation = this.client.getRotation();
+
+        return this.sendMessage(
+          $("<player />").
+            attr("position", position.toArray().join(" ")).
+            attr("rotation", rotation.toArray().join(" "))
+        );
       }
     };
 
@@ -362,20 +375,27 @@
     };
 
     Connector.prototype.createPlayer = function(el) {
-      var combined, geometry1, geometry2, loader, material, mesh1, mesh2, obj;
-      geometry1 = new THREE.CylinderGeometry(0.02, 0.5, 1.3, 10);
-      mesh1 = new THREE.Mesh(geometry1);
-      geometry2 = new THREE.SphereGeometry(0.3, 10, 10);
-      mesh2 = new THREE.Mesh(geometry2);
-      mesh2.position.y = 0.6;
-      combined = new THREE.Geometry();
-      THREE.GeometryUtils.merge(combined, mesh1);
-      THREE.GeometryUtils.merge(combined, mesh2);
-      material = new THREE.MeshPhongMaterial({
+      var bodyMaterial = new THREE.MeshPhongMaterial({
         color: '#999999'
       });
+
+      var faceTexture = new THREE.ImageUtils.loadTexture('/images/face.png');
+      var headMaterial = new THREE.MeshLambertMaterial({
+        color: '#ffffaa',
+        map : faceTexture
+      });
+
+      var geometry1 = new THREE.CylinderGeometry(0.02, 0.5, 1.3, 10),
+        body = new THREE.Mesh(geometry1, bodyMaterial);
+    
+      var geometry2 = new THREE.SphereGeometry(0.3, 10, 10),
+        head = new THREE.Mesh(geometry2, headMaterial);
+      head.position.y = 0.6;
+      head.rotation.y = Math.PI / 2;
+
       obj = new THREE.Object3D;
-      obj.add(new THREE.Mesh(combined, material));
+      obj.add(head);
+      obj.add(body);
 
       // loader = new THREE.OBJLoader(this.manager);
       // loader.load("//" + this.getAssetHost() + "/models/hardhat.obj", (function(_this) {
@@ -450,7 +470,25 @@
           loader.load("//" + this.getAssetHost() + this.getUrlFromStyle(styles.lightMap || styles.textureMap), function(image) {
             texture.image = image;
             texture.needsUpdate = true;
-            return material.needsUpdate = true;
+            texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+
+            var repeatX = 1,
+              repeatY = 1;
+
+            if(styles.textureRepeat){
+              repeatX = parseFloat(styles.textureRepeat.split(" ")[0]);
+              repeatY = parseFloat(styles.textureRepeat.split(" ")[1]);
+            }
+            if(styles.textureRepeatX){
+              repeatX = parseFloat(styles.textureRepeatX);
+            }
+            if(styles.textureRepeatY){
+              repeatY = parseFloat(styles.textureRepeatY);
+            }
+
+            texture.repeat.set(repeatX, repeatY);
+
+            material.needsUpdate = true;
           });
         } else if (styles['color']) {
           material = new THREE.MeshLambertMaterial({
@@ -635,11 +673,27 @@
                 obj.visible = true;
               }
             }
+            
             if (el.is("spawn")) {
               obj.position.copy(newPosition);
-            } else if (obj && (el.is("box") || el.is("player") || el.is("billboard") || el.is("model") || el.is("link"))) {
+            }
+
+            if (obj && (el.is("box,player,billboard,model,link"))) {
               startPosition = obj.position.clone();
-              if (el.attr("rotation")) {
+
+              if (!startPosition.equals(newPosition)) {
+                tween = new TWEEN.Tween(startPosition);
+                tween.to(newPosition, 200).onUpdate(function() {
+                  obj.position.set(this.x, this.y, this.z);
+                  if (obj.body) {
+                    return obj.body.position.set(this.x, this.y, this.z);
+                  }
+                }).easing(TWEEN.Easing.Linear.None).start();
+              }
+            }
+
+            if (obj && el.attr("rotation")) {
+              if (el.is("box,billboard,model,link")){
                 newEuler = Utils.parseEuler(el.attr("rotation"));
                 newQuaternion = new THREE.Quaternion().setFromEuler(newEuler);
 
@@ -655,25 +709,40 @@
                     }
                   }).easing(TWEEN.Easing.Linear.None).start();
                 }
-
               }
-              if (!startPosition.equals(newPosition)) {
-                tween = new TWEEN.Tween(startPosition);
-                tween.to(newPosition, 200).onUpdate(function() {
-                  obj.position.set(this.x, this.y, this.z);
-                  if (obj.body) {
-                    return obj.body.position.set(this.x, this.y, this.z);
-                  }
-                }).easing(TWEEN.Easing.Linear.None).start();
+
+              // Player rotation is different because the head / body are decoupled
+              if (el.is("player")){
+                newEuler = Utils.parseEuler(el.attr("rotation"));
+                var bodyQuaternion = new THREE.Quaternion().setFromAxisAngle(Y_AXIS, newEuler.y + Math.PI / 2),
+                  headQuaternion = new THREE.Quaternion().setFromAxisAngle(Z_AXIS, THREE.Math.clamp(newEuler.x, PLAYER_MIN_HEAD_ANGLE, PLAYER_MAX_HEAD_ANGLE));
+
+                // todo - add rotation around the z axis (for rifters)
+
+                if (!obj.quaternion.equals(newQuaternion)) {
+                  var head = obj.children[0],
+                    startBodyQ = obj.quaternion.clone(),
+                    startHeadQ = head.quaternion.clone(),
+
+                  tween = new TWEEN.Tween({ i : 0});
+
+                  tween.to({ i : 1.0}, 200).onUpdate(function() {
+                    obj.quaternion.copy(startBodyQ.slerp(bodyQuaternion, this.i));
+                    head.quaternion.copy(startHeadQ.slerp(headQuaternion, this.i));
+                  }).easing(TWEEN.Easing.Linear.None).start();
+                }
               }
             }
+
             styles = new StyleMap(el.attr('style'));
+
             if (el.is("box,plane") && styles.color) {
               obj.material.setValues({
                 color: styles.color,
                 ambient: styles.color
               });
             }
+
             if (el.is("box,plane") && styles.textureMap && !obj.material.map) {
               url = "//" + _this.getAssetHost() + _this.getUrlFromStyle(styles.textureMap);
               THREE.ImageUtils.crossOrigin = true;

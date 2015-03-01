@@ -241,6 +241,10 @@
         return yawObject.rotation.y;
     }
 
+    this.getPitch = function(){
+        return pitchObject.rotation.x;
+    }
+
     this.setYaw = function(d){
         yawObject.rotation.y = d;
     }
@@ -249,6 +253,13 @@
         return yawObject.position;
     }
 
+    this.getRotation = function(){
+        var e = new THREE.Euler;
+        e.y = this.getYaw();
+        e.x = this.getPitch();
+        return e;
+    }
+    
     this.getDirection = function(targetVec){
         var m1 = new THREE.Matrix4();
         var m2 = new THREE.Matrix4();

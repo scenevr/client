@@ -1,35 +1,29 @@
 (function() {
-  var Client, Connector, DOWN_SAMPLE, EventEmitter, MOBILE, PHYSICS_HZ, TWEEN, Templates, URI,
+  var Client,
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  var DEBUG = false;
+  var DEBUG = false,
+    LOW_POWER_MODE = false;
+    DOWN_SAMPLE = 1,
+    PHYSICS_HZ = 60.0,
+    MOBILE = false;
 
-  Connector = require("./connector");
+  var Connector = require("./connector"),
+    URI = require("uri-js"),
+    TWEEN = require("tween.js"),
+    EventEmitter = require('wolfy87-eventemitter');
 
-  URI = require("uri-js");
-
-  Templates = {
+  var Templates = {
     inQueue: require("../templates/in_queue.jade"),
     unableToConnect: require("../templates/unable_to_connect.jade"),
     instructions: require("../templates/instructions.jade"),
     connecting: require("../templates/connecting.jade")
   };
 
+  // Not sure why this has to be global
   window.CANNON = require("cannon");
-
-  TWEEN = require("tween.js");
-
-  EventEmitter = require('wolfy87-eventemitter');
-
-  DOWN_SAMPLE = 1;
-
-  PHYSICS_HZ = 60.0;
-
-  MOBILE = false;
-
-  DOWN_SAMPLE = 1;
 
   if (/Android|iPhone|iPad|iPod|IEMobile/i.test(navigator.userAgent)) {
     MOBILE = true;
@@ -521,6 +515,10 @@
       return this.controls.getObject();
     };
 
+    Client.prototype.getRotation = function(){
+      return this.controls.getRotation();
+    }
+
     Client.prototype.getPlayerDropPoint = function() {
       var v;
       v = new THREE.Vector3(0, 0, -20);
@@ -560,7 +558,12 @@
         this.checkForPortalCollision();
       }
       this.stats.end();
-      return requestAnimationFrame(this.tick);
+
+      if(LOW_POWER_MODE){
+        setTimeout(this.tick, 1000 / 12);
+      }else{
+        requestAnimationFrame(this.tick);
+      }
     };
 
     Client.prototype.renderPortals = function() {

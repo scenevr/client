@@ -700,9 +700,9 @@
                 if (!obj.quaternion.equals(newQuaternion)) {
                   var startQ = obj.quaternion.clone();
 
-                  tween = new TWEEN.Tween({ i : 0});
+                  var tween = new TWEEN.Tween({ i : 0.0 });
                   tween.to({ i : 1.0}, 200).onUpdate(function() {
-                    obj.quaternion.copy(startQ.slerp(newQuaternion, this.i));
+                    obj.quaternion.copy(startQ).slerp(newQuaternion, this.i);
 
                     if (obj.body) {
                       obj.body.quaternion.copy(obj.quaternion);
@@ -722,13 +722,13 @@
                 if (!obj.quaternion.equals(newQuaternion)) {
                   var head = obj.children[0],
                     startBodyQ = obj.quaternion.clone(),
-                    startHeadQ = head.quaternion.clone(),
+                    startHeadQ = head.quaternion.clone();
 
-                  tween = new TWEEN.Tween({ i : 0});
+                  var tween = new TWEEN.Tween({ i : 0});
 
                   tween.to({ i : 1.0}, 200).onUpdate(function() {
-                    obj.quaternion.copy(startBodyQ.slerp(bodyQuaternion, this.i));
-                    head.quaternion.copy(startHeadQ.slerp(headQuaternion, this.i));
+                    obj.quaternion.copy(startBodyQ).slerp(bodyQuaternion, this.i);
+                    head.quaternion.copy(startHeadQ).slerp(headQuaternion, this.i);
                   }).easing(TWEEN.Easing.Linear.None).start();
                 }
               }

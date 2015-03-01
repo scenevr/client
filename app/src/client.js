@@ -532,7 +532,19 @@
         this.connector.physicsWorld.step(timeStep);
       }
       TWEEN.update();
+
+      // Get click event from the gamepad
+      if (this.controls.getObject().click) {
+        this.onClick();
+      }
+
+      // maybe reset orientation from gamepad
+      if ((this.vrrender) && (this.controls.getObject().reorient)) {
+        this.vrrenderer.resetOrientation(this.controls, this.vrHMDSensor)
+      }
+
       this.controls.update(Date.now() - this.time);
+
       return this.time = Date.now();
     };
 
@@ -554,9 +566,11 @@
       } else {
         this.renderer.render(this.scene, this.camera);
       }
+
       if (this.connector.isPortalOpen()) {
         this.checkForPortalCollision();
       }
+
       this.stats.end();
 
       if(LOW_POWER_MODE){

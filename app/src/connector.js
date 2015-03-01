@@ -719,18 +719,16 @@
 
                 // todo - add rotation around the z axis (for rifters)
 
-                if (!obj.quaternion.equals(newQuaternion)) {
-                  var head = obj.children[0],
-                    startBodyQ = obj.quaternion.clone(),
-                    startHeadQ = head.quaternion.clone();
+                var head = obj.children[0],
+                  startBodyQ = obj.quaternion.clone(),
+                  startHeadQ = head.quaternion.clone();
 
-                  var tween = new TWEEN.Tween({ i : 0});
+                var tween = new TWEEN.Tween({ i : 0.0 });
 
-                  tween.to({ i : 1.0}, 200).onUpdate(function() {
-                    obj.quaternion.copy(startBodyQ).slerp(bodyQuaternion, this.i);
-                    head.quaternion.copy(startHeadQ).slerp(headQuaternion, this.i);
-                  }).easing(TWEEN.Easing.Linear.None).start();
-                }
+                tween.to({ i : 1.0}, 200).onUpdate(function() {
+                  obj.quaternion.copy(startBodyQ).slerp(bodyQuaternion, this.i);
+                  head.quaternion.copy(startHeadQ).slerp(headQuaternion, this.i);
+                }).easing(TWEEN.Easing.Linear.None).start();
               }
             }
 

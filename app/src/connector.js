@@ -642,15 +642,20 @@
               if (el.attr("rotation")) {
                 newEuler = Utils.parseEuler(el.attr("rotation"));
                 newQuaternion = new THREE.Quaternion().setFromEuler(newEuler);
+
                 if (!obj.quaternion.equals(newQuaternion)) {
-                  tween = new TWEEN.Tween(obj.quaternion);
-                  tween.to(newQuaternion, 200).onUpdate(function() {
-                    obj.quaternion.set(this.x, this.y, this.z, this.w);
+                  var startQ = obj.quaternion.clone();
+
+                  tween = new TWEEN.Tween({ i : 0});
+                  tween.to({ i : 1.0}, 200).onUpdate(function() {
+                    obj.quaternion.copy(startQ.slerp(newQuaternion, this.i));
+
                     if (obj.body) {
-                      return obj.body.quaternion.set(this.x, this.y, this.z, this.w);
+                      obj.body.quaternion.copy(obj.quaternion);
                     }
                   }).easing(TWEEN.Easing.Linear.None).start();
                 }
+
               }
               if (!startPosition.equals(newPosition)) {
                 tween = new TWEEN.Tween(startPosition);

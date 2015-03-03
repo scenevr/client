@@ -1,5 +1,5 @@
 (function() {
-  var Billboard, Box, Color, Connector, EventEmitter, Fog, Skybox, StyleMap, TWEEN, URI, Utils,
+  var Billboard, Box, Connector, EventEmitter, Fog, Skybox, StyleMap, TWEEN, URI, Utils,
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
@@ -9,7 +9,6 @@
   StyleMap = require("./style_map");
   TWEEN = require("tween.js");
   EventEmitter = require('wolfy87-eventemitter');
-  Color = require("color");
   Billboard = require("./elements/billboard");
   Box = require("./elements/box");
   Skybox = require("./elements/skybox");

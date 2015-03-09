@@ -15,6 +15,8 @@
     TWEEN = require("tween.js"),
     EventEmitter = require('wolfy87-eventemitter');
 
+var Authentication = require("./authentication");
+
   var Templates = {
     inQueue: require("../templates/in_queue.jade"),
     unableToConnect: require("../templates/unable_to_connect.jade"),
@@ -68,7 +70,11 @@
       this.renderer.setClearColor(0x000000);
       this.renderer.autoClear = false;
       this.initVR();
+
       this.time = Date.now();
+
+      this.authentication = new Authentication(this);
+
       if (!MOBILE) {
         this.addMessageInput();
         this.addPointLockGrab();
@@ -372,7 +378,7 @@
 
     Client.prototype.addConnectionError = function() {
       $(".overlay").remove();
-      return this.renderOverlay(Templates.unableToConnect({
+      this.renderOverlay(Templates.unableToConnect({
         host: URI.parse(this.connector.uri).host
       }));
     };
@@ -380,12 +386,12 @@
     Client.prototype.renderOverlay = function(html) {
       $(".overlay").remove();
       this.overlay = $("<div class='overlay'>").html(html).appendTo(this.container);
-      return this.centerOverlay();
+      this.centerOverlay();
     };
 
     Client.prototype.centerOverlay = function() {
       if (this.overlay) {
-        return this.overlay.css({
+        this.overlay.css({
           left: ($(window).width() - this.overlay.width()) / 2 - 20,
           top: ($(window).height() - this.overlay.height()) / 2
         });
@@ -393,7 +399,7 @@
     };
 
     Client.prototype.addConnecting = function() {
-      return this.renderOverlay(Templates.connecting({
+      this.renderOverlay(Templates.connecting({
         host: URI.parse(this.connector.uri).host
       }));
     };

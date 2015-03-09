@@ -15,7 +15,8 @@
   Fog = require("./elements/fog");
   Utils = require("./utils");
 
-  var Plane = require("./elements/plane");
+  var Plane = require("./elements/plane"),
+    Player = require("./elements/player");
 
   // Constants
   var PLAYER_MAX_HEAD_ANGLE = Math.PI / 4,
@@ -33,14 +34,17 @@
       this.scene = scene;
       this.physicsWorld = physicsWorld;
       this.uri = uri;
+
       this.onMessage = __bind(this.onMessage, this);
       this.tick = __bind(this.tick, this);
       this.reconnect = __bind(this.reconnect, this);
-      this.uri;
+
       this.isPortal = isPortal || false;
       this.referrer = referrer || null;
       this.protocol = "scenevr";
+
       this.uuid = null;
+
       this.spawned = false;
       this.manager = new THREE.LoadingManager();
       this.spawnPosition = null;
@@ -48,7 +52,24 @@
       this.addLights();
       this.addFloor();
 
+      if(this.client.authentication.isLoggedIn()){
+        this.authenticate();
+      }
+
       //this.webRTC();
+    }
+
+    Connector.prototype.authenticate = function(){
+      var self = this;
+
+      this.client.authentication.getTokenFor(this.uri, function(ok, token){
+        if(!ok){
+          console.error("Unable to get token");
+        }else{
+          console.log("Authenticating....");
+          self.sendMessage($("<event />").attr("name", "authenticate").attr("token", token));
+        }
+      });
     }
 
     Connector.prototype.webRTC = function() {
@@ -264,11 +285,11 @@
       this.ws.onclose = null;
       this.ws.onmessage = null;
       this.ws.close();
-      return delete this.ws;
+      delete this.ws;
     };
 
     Connector.prototype.reconnect = function() {
-      return this.connect();
+      this.connect();
     };
 
     Connector.prototype.restartConnection = function() {
@@ -278,57 +299,66 @@
         this.client.removeReflectedObjects();
       }
       clearInterval(this.interval);
-      return setTimeout(this.reconnect, 500);
+      setTimeout(this.reconnect, 500);
     };
 
     Connector.prototype.connect = function() {
-      var components;
-      components = URI.parse(this.uri);
+      var components = URI.parse(this.uri);
+
       if (!components.host || !components.path.match(/^\//)) {
         throw "Invalid uri string " + this.uri;
       }
+
       this.ws = new WebSocket("ws://" + components.host + ":" + (components.port || 80) + components.path, this.protocol);
       this.ws.binaryType = 'arraybuffer';
-      this.ws.onopen = (function(_this) {
-        return function() {
-          if (_this.client) {
-            _this.interval = setInterval(_this.tick, 1000 / 5);
-          }
-          return _this.trigger('connected');
-        };
-      })(this);
-      this.ws.onclose = (function(_this) {
-        return function() {
-          clearInterval(_this.interval);
-          return _this.trigger('disconnected');
-        };
-      })(this);
-      return this.ws.onmessage = (function(_this) {
-        return function(e) {
-          return _this.onMessage(e);
-        };
-      })(this);
+      this.messageQueue = [];
+
+      var self = this;
+
+      this.ws.onopen = function(){
+        if (self.client) {
+          self.interval = setInterval(self.tick, 1000 / 5);
+        }
+
+        self.trigger('connected');
+
+        self.messageQueue.forEach(function(message){
+          self.sendMessage(message);
+        })
+      };
+
+      this.ws.onclose = function(){
+        clearInterval(self.interval);
+        self.trigger('disconnected');
+      };
+
+      this.ws.onmessage = function(e){
+        self.onMessage(e);
+      };
     };
 
     Connector.prototype.sendMessage = function(el) {
       var xml;
+
       if (this.isConnected()) {
         xml = "<packet>" + $("<packet />").append(el).html() + "</packet>";
-        return this.ws.send(xml);
+        this.ws.send(xml);
+      }else{
+        this.messageQueue.push(el);
       }
     };
 
     Connector.prototype.sendChat = function(message) {
-      return this.sendMessage($("<event />").attr("name", "chat").attr("message", message.slice(0, 200)));
+      this.sendMessage($("<event />").attr("name", "chat").attr("message", message.slice(0, 200)));
     };
 
     Connector.prototype.onCollide = function(e) {
-      return this.sendMessage($("<event />").attr("name", "collide").attr("uuid", e.uuid).attr("normal", e.normal.toArray().join(" ")));
+      this.sendMessage($("<event />").attr("name", "collide").attr("uuid", e.uuid).attr("normal", e.normal.toArray().join(" ")));
     };
 
     Connector.prototype.onClick = function(e) {
       this.flashObject(this.scene.getObjectByName(e.uuid));
-      return this.sendMessage($("<event />").attr("name", "click").attr("uuid", e.uuid).attr("point", e.point.toArray().join(" ")));
+      this.sendMessage($("<event />").attr("name", "click").attr("uuid", e.uuid).attr("point", e.point.toArray().join(" ")));
     };
 
     Connector.prototype.flashObject = function(obj) {
@@ -395,6 +425,10 @@
       obj = new THREE.Object3D;
       obj.add(head);
       obj.add(body);
+
+      if(el.attr('name')){
+        obj.add(Player.createLabel(el));
+      }
 
       // loader = new THREE.OBJLoader(this.manager);
       // loader.load("//" + this.getAssetHost() + "/models/hardhat.obj", (function(_this) {

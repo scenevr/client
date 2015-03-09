@@ -174,3 +174,56 @@ header a span{
 .dpad.movement{
   right: 30px;
 }
+
+#authentication{
+  position: absolute;
+  z-index: 1000;
+  top: 74px;
+  right: 10px;
+
+  button{
+    font: inherit;
+    padding: 6px 0;
+    width: 56px;
+    background: linear-gradient(#222, #333);
+    border-radius: 2px;
+    color: white;
+    border: 1px solid black;
+    box-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+    cursor: pointer;
+
+    &:hover{
+      background: #f70;
+      color: black;
+   }
+  }
+}
+
+iframe.authentication{
+  position: absolute;;
+}
+
+.login{
+  button{
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    border: 1px solid #ccc;
+    color: #777;
+    background: white;
+    border-radius: 3px;
+    box-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+    cursor: pointer;
+    
+    &:hover{
+      background: #333;
+      color: white;
+    }
+  }
+
+  iframe{
+    width: 540px;
+    height: 440px;
+    margin-top: 20px;
+  }
+}

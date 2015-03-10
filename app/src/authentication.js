@@ -1,5 +1,5 @@
 
-var SERVER = "http://localhost:3000",
+var SERVER = "http://login.scenevr.com",
   Template = require("../templates/login.jade"),
   URI = require("uri-js");
 

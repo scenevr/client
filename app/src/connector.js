@@ -169,19 +169,20 @@ Connector = (function(_super) {
     return this.physicsWorld.add(groundBody);
   };
 
+  // Fixme - make proper lights, not hardcoded ones.
   Connector.prototype.addLights = function() {
     var ambientLight, dirLight;
     
     dirLight = new THREE.DirectionalLight(0xffffff, 1.1);
-    dirLight.position.set(1, 0.75, -0.92);
+    dirLight.position.set(1, 0.75, -0.5);
     this.scene.add(dirLight);
     
-    // dirLight = new THREE.DirectionalLight(0xffffff, 0.3);
-    // dirLight.position.set(-1, -0.75, -0.92);
-    // this.scene.add(dirLight);
+    dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
+    dirLight.position.set(1, 0.75, 0.5);
+    this.scene.add(dirLight);
 
-    ambientLight = new THREE.AmbientLight(0x404040);
-    //this.scene.add(ambientLight);
+    ambientLight = new THREE.AmbientLight(0x101010);
+    this.scene.add(ambientLight);
   };
 
   Connector.prototype.isPortalOpen = function() {

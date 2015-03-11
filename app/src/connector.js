@@ -612,9 +612,10 @@ var Connector = (function(_super) {
       }
 
       if (el.is("box,plane") && styles.textureMap) {
-        url = "//" + this.getAssetHost() + this.getUrlFromStyle(styles.textureMap);
+        var url = "//" + this.getAssetHost() + this.getUrlFromStyle(styles.textureMap);
         THREE.ImageUtils.crossOrigin = true;
-        texture = new THREE.ImageUtils.loadTexture(url);
+        
+        var texture = new THREE.ImageUtils.loadTexture(url);
         texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
 
         var repeatX = 1,
@@ -692,8 +693,6 @@ var Connector = (function(_super) {
         }
         this.scene.remove(obj);
 
-        console.log("substantialDifference");
-        
         // todo - refactor this, the control flow isn't obvious
         obj = null;
     }

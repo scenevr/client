@@ -1,6 +1,7 @@
 
 all:
 	browserify -t browserify-jade index.js > build/js/bundle.js
+	lessc css/scenevr.less > css/scenevr.css
 	cp index.html build
 	cp css/*.css build/css
 	cp vendor/* build/vendor

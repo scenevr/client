@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "dependencies": {
     "browserify-middleware": "~4.1.0",
-    "cannon": "~0.6.1",
+    "cannon": "git://github.com/schteppe/cannon.js.git#master",
     "express": "~4.10.2",
     "howler": "^1.1.25",
     "three": "0.66.2",

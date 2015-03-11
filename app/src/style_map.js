@@ -23,4 +23,14 @@ StyleMap.prototype.valueOf = function() {
   }).join("; ")
 }
 
+StyleMap.parseUrl = function(value) {
+  var e;
+  try {
+    return value.match(/\((.+?)\)/)[1];
+  } catch (_error) {
+    e = _error;
+    return null;
+  }
+};
+
 module.exports = StyleMap;

@@ -603,8 +603,41 @@ var Connector = (function(_super) {
       } else {
         obj.visible = true;
       }
+
+      if (el.is("box,plane") && styles.color) {
+        obj.material.setValues({
+          color: styles.color,
+          ambient: styles.color
+        });
+      }
+
+      if (el.is("box,plane") && styles.textureMap) {
+        url = "//" + this.getAssetHost() + this.getUrlFromStyle(styles.textureMap);
+        THREE.ImageUtils.crossOrigin = true;
+        texture = new THREE.ImageUtils.loadTexture(url);
+        texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+
+        var repeatX = 1,
+          repeatY = 1;
+
+        if(styles.textureRepeat){
+          repeatX = parseFloat(styles.textureRepeat.split(" ")[0]);
+          repeatY = parseFloat(styles.textureRepeat.split(" ")[1]);
+        }
+
+        if(styles.textureRepeatX){
+          repeatX = parseFloat(styles.textureRepeatX);
+        }
+        if(styles.textureRepeatY){
+          repeatY = parseFloat(styles.textureRepeatY);
+        }
+
+        texture.repeat.set(repeatX, repeatY);
+
+        obj.material.setValues({ map: texture });
+      }
     }
-    
+
     return obj;
   };
 
@@ -658,6 +691,8 @@ var Connector = (function(_super) {
           this.physicsWorld.remove(obj.body);
         }
         this.scene.remove(obj);
+
+        console.log("substantialDifference");
         
         // todo - refactor this, the control flow isn't obvious
         obj = null;
@@ -749,61 +784,6 @@ var Connector = (function(_super) {
         start();
     }
   };
-
-
-        /*
-
-        styles = new StyleMap(el.attr('style'));
-
-        if (el.is("box,plane") && styles.color) {
-          obj.material.setValues({
-            color: styles.color,
-            ambient: styles.color
-          });
-        }
-
-        if (el.is("box,plane") && styles.textureMap && !obj.material.map) {
-          url = "//" + self.getAssetHost() + self.getUrlFromStyle(styles.textureMap);
-          THREE.ImageUtils.crossOrigin = true;
-          texture = new THREE.ImageUtils.loadTexture(url);
-          texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-
-          var repeatX = 1,
-            repeatY = 1;
-
-          // should this be repeatU / repeatV? :/
-
-          if(styles.textureRepeat){
-            repeatX = parseFloat(styles.textureRepeat.split(" ")[0]);
-            repeatY = parseFloat(styles.textureRepeat.split(" ")[1]);
-          }
-
-          if(styles.textureRepeatX){
-            repeatX = parseFloat(styles.textureRepeatX);
-          }
-          if(styles.textureRepeatY){
-            repeatY = parseFloat(styles.textureRepeatY);
-          }
-
-          texture.repeat.set(repeatX, repeatY);
-
-          obj.material.setValues({
-            map: texture
-          });
-        }
-        if (el.is("model") && styles.color) {
-          return obj.traverse(function(child) {
-            if (child instanceof THREE.Mesh) {
-              return child.material.setValues({
-                color: styles.color,
-                ambient: styles.color
-              });
-            }
-          });
-        }
-      }
-
-      */
 
   Connector.prototype.onMessage = function(e) {
     var self = this,

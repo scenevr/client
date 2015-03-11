@@ -69,6 +69,25 @@ Model.create = function(connector, el) {
 
         if (styles.collision === "mesh"){
           window.mesh = child;
+
+          var vertices = child.geometry.attributes.position.array,
+            indices = [],
+            i = 0;
+
+          // This is a bit gross, but it works
+          for(i=0;i<vertices.length;i++){
+            indices.push(i);
+          } 
+
+          var trimeshShape = new CANNON.Trimesh(vertices, indices);
+          trimeshBody = new CANNON.Body({ mass: 0 });
+          trimeshBody.addShape(trimeshShape);
+
+          trimeshBody.position.copy(obj.position);
+          trimeshBody.quaternion.copy(obj.quaternion);
+          trimeshBody.uuid = el.attr('uuid');
+          connector.client.world.add(trimeshBody);
+          obj.body = trimeshBody;
         } else if ((styles.collision == null) || (styles.collision === 'bounding-box')) {
           child.geometry.computeBoundingBox();
           boundingBox = child.geometry.boundingBox.clone();
@@ -83,9 +102,7 @@ Model.create = function(connector, el) {
           boxBody.position.copy(obj.position);
           boxBody.quaternion.copy(obj.quaternion);
           boxBody.uuid = el.attr('uuid');
-
           connector.client.world.add(boxBody);
-
           obj.body = boxBody;
         }
       }

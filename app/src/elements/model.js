@@ -86,8 +86,12 @@ Model.create = function(connector, el) {
           trimeshBody.position.copy(obj.position);
           trimeshBody.quaternion.copy(obj.quaternion);
           trimeshBody.uuid = el.attr('uuid');
-          connector.client.world.add(trimeshBody);
+
           obj.body = trimeshBody;
+
+          // Gross - too much coupling
+          connector.physicsWorld.add(obj.body);
+
         } else if ((styles.collision == null) || (styles.collision === 'bounding-box')) {
           child.geometry.computeBoundingBox();
           boundingBox = child.geometry.boundingBox.clone();
@@ -102,8 +106,11 @@ Model.create = function(connector, el) {
           boxBody.position.copy(obj.position);
           boxBody.quaternion.copy(obj.quaternion);
           boxBody.uuid = el.attr('uuid');
-          connector.client.world.add(boxBody);
+
           obj.body = boxBody;
+
+          // Gross - too much coupling
+          connector.physicsWorld.add(obj.body);
         }
       }
       

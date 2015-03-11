@@ -1,22 +1,24 @@
-var Billboard, Box, Connector, EventEmitter, Fog, Skybox, StyleMap, TWEEN, URI, Utils,
-  __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+'use strict';
+
+var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-Utils = require("./utils");
-URI = require("uri-js");
-StyleMap = require("./style_map");
-TWEEN = require("tween.js");
-EventEmitter = require('wolfy87-eventemitter');
-Billboard = require("./elements/billboard");
-Box = require("./elements/box");
-Skybox = require("./elements/skybox");
-Fog = require("./elements/fog");
-Utils = require("./utils");
 
-var Plane = require("./elements/plane"),
+var Utils = require("./utils"),
+  URI = require("uri-js"),
+  StyleMap = require("./style_map"),
+  TWEEN = require("tween.js"),
+  EventEmitter = require('wolfy87-eventemitter'),
+  Billboard = require("./elements/billboard"),
+  Box = require("./elements/box"),
+  Skybox = require("./elements/skybox"),
+  Fog = require("./elements/fog"),
+  Utils = require("./utils"),
+  Plane = require("./elements/plane"),
   Player = require("./elements/player"),
-  Model = require("./elements/model");
+  Model = require("./elements/model"),
+  Element = require("./elements/element");
 
 // Constants
 var PLAYER_MAX_HEAD_ANGLE = Math.PI / 4,
@@ -26,7 +28,7 @@ var X_AXIS = new THREE.Vector3(1,0,0),
   Y_AXIS = new THREE.Vector3(0,1,0),
   Z_AXIS = new THREE.Vector3(0,0,1);
 
-Connector = (function(_super) {
+var Connector = (function(_super) {
   __extends(Connector, _super);
 
   function Connector(client, scene, physicsWorld, uri, isPortal, referrer) {
@@ -73,20 +75,20 @@ Connector = (function(_super) {
   }
 
   Connector.prototype.webRTC = function() {
-    var _this = this;
+    var self = this;
 
-    $('body').keydown((function(_this) {
+    $('body').keydown((function(self) {
       return function(e) {
         if (e.keyCode === 84) {
-          return _this.startTalking();
+          return self.startTalking();
         }
       };
     })(this));
     
-    $('body').keyup((function(_this) {
+    $('body').keyup((function(self) {
       return function(e) {
         if (e.keyCode === 84) {
-          return _this.stopTalking();
+          return self.stopTalking();
         }
       };
     })(this));
@@ -99,13 +101,13 @@ Connector = (function(_super) {
     div.style.display = "none";
     document.body.appendChild(div);
     this.session = OT.initSession(apiKey, sessionId);
-    this.session.on("streamCreated", (function(_this) {
+    this.session.on("streamCreated", (function(self) {
       return function(event) {
-        _this.session.subscribe(event.stream, div);
+        self.session.subscribe(event.stream, div);
         return console.log("Someone is speaking...");
       };
     })(this));
-    return this.session.connect(token, (function(_this) {
+    return this.session.connect(token, (function(self) {
       return function(error) {
         return console.log("Listening in...");
       };
@@ -137,10 +139,10 @@ Connector = (function(_super) {
     if (this.publisher) {
       this.publisher.publishAudio(false);
       console.log("muting...");
-      return setTimeout((function(_this) {
+      return setTimeout((function(self) {
         return function() {
-          _this.session.unpublish(_this.publisher);
-          return _this.publisher = null;
+          self.session.unpublish(self.publisher);
+          return self.publisher = null;
         };
       })(this), 10000);
     }
@@ -429,7 +431,7 @@ Connector = (function(_super) {
     head.position.y = 0.6;
     head.rotation.y = Math.PI / 2;
 
-    obj = new THREE.Object3D;
+    var obj = new THREE.Object3D;
     obj.add(head);
     obj.add(body);
 
@@ -438,7 +440,7 @@ Connector = (function(_super) {
     }
 
     // loader = new THREE.OBJLoader(this.manager);
-    // loader.load("//" + this.getAssetHost() + "/models/hardhat.obj", (function(_this) {
+    // loader.load("//" + this.getAssetHost() + "/models/hardhat.obj", (function(self) {
     //   return function(object) {
     //     object.traverse(function(child) {
     //       material = new THREE.MeshPhongMaterial({
@@ -476,15 +478,15 @@ Connector = (function(_super) {
       emissive: color
     });
     obj.add(new THREE.Mesh(geometry, material));
-    obj.onClick = (function(_this) {
+    obj.onClick = (function(self) {
       return function() {
-        if (_this.portal && _this.portal.obj === obj) {
-          return _this.closePortal();
-        } else if (_this.portal) {
-          _this.closePortal();
-          return _this.createPortal(el, obj);
+        if (self.portal && self.portal.obj === obj) {
+          return self.closePortal();
+        } else if (self.portal) {
+          self.closePortal();
+          return self.createPortal(el, obj);
         } else {
-          return _this.createPortal(el, obj);
+          return self.createPortal(el, obj);
         }
       };
     })(this);
@@ -592,118 +594,162 @@ Connector = (function(_super) {
     }
 
     this.scene.add(obj);
+
+    if (el.attr("style")) {
+      var styles = new StyleMap(el.attr("style"));
+      
+      if (styles["visibility"] === "hidden") {
+        obj.visible = false;
+      } else {
+        obj.visible = true;
+      }
+    }
+    
     return obj;
   };
 
-  Connector.prototype.processElement = function(el){
-    var name, newEuler, newPosition, newQuaternion, obj, startPosition, styles, texture, tween, url, uuid,
-      _this = this;
-
+  Connector.prototype.processMessage = function(el){
     if (el.is("event")) {
-      name = el.attr("name");
+      var name = el.attr("name");
+
       if (name === "ready") {
-        _this.uuid = el.attr("uuid");
+        this.uuid = el.attr("uuid");
       } else if (name === "restart") {
         console.log("Got restart message");
-        _this.restartConnection();
+        this.restartConnection();
       } else if (name === 'chat') {
-        _this.client.addChatMessage({
+        this.client.addChatMessage({
           name: el.attr('from')
         }, el.attr('message'));
       } else if (name === 'respawn') {
-        _this.respawn(el.attr('reason'));
+        this.respawn(el.attr('reason'));
       } else {
         console.log("Unrecognized event " + (el.attr('name')));
       }
 
-    } else if (uuid = el.attr('uuid')) {
-      if (el.is("dead")) {
-        if (obj = _this.scene.getObjectByName(uuid)) {
+      return;
+    }
+
+    var uuid = el.attr('uuid');
+
+    if(!uuid){
+      console.error("No UUID in:\n" + el[0].outerHTML);
+      return;
+    }
+
+    if (el.is("dead")) {
+      var obj;
+
+      if (obj = this.scene.getObjectByName(uuid)) {
+        if (obj.body) {
+          this.physicsWorld.remove(obj.body);
+        }
+        this.scene.remove(obj);
+      }
+
+      return;
+    }
+    
+    var obj = this.scene.getObjectByName(uuid);
+
+    // The element has changed more than just position / rotation, destroy it
+    if (obj && (Element.substantialDifference(obj.el, el[0]))) {
+        if (obj.body) {
+          this.physicsWorld.remove(obj.body);
+        }
+        this.scene.remove(obj);
+        
+        // todo - refactor this, the control flow isn't obvious
+        obj = null;
+    }
+
+    if (!obj) {
+      obj = this.addElement(el);
+
+      // Not all elements are represented by an Object3D, so they don't return anything from #addElement
+      if(obj && obj.body){
+        this.physicsWorld.add(obj.body);
+      }
+
+      // Keep track of the creation element
+      if(obj){
+        obj.el = el[0];
+      }
+
+      return;
+    }
+
+    var position = el.attr("position") && Utils.parseVector(el.attr("position")),
+      rotation = el.attr("rotation") && new THREE.Quaternion().setFromEuler(Utils.parseEuler(el.attr("rotation")));
+
+    // We don't tween spawn
+    if (el.is("spawn")) {
+      obj.position.copy(position);
+      return;
+    }
+
+    // If we've got to here, only the position or rotation attributes changed, so tween...
+    if ((position) && (el.is("box,player,billboard,model,link"))) {
+      var start = obj.position.clone();
+
+      if (!start.equals(position)) {
+        var tween = new TWEEN.Tween(start);
+
+        tween.to(position, 200).onUpdate(function() {
+          obj.position.set(this.x, this.y, this.z);
+
           if (obj.body) {
-            _this.physicsWorld.remove(obj.body);
+            obj.body.position.set(this.x, this.y, this.z);
           }
-          _this.scene.remove(obj);
-        }
-        return;
-      }
-
-      newPosition = el.attr("position") && Utils.parseVector(el.attr("position"));
-      newQuaternion = el.attr("rotation") && new THREE.Quaternion().setFromEuler(Utils.parseEuler(el.attr("rotation")));
-      if (!(obj = _this.scene.getObjectByName(uuid))) {
-        obj = _this.addElement(el);
-        if (!obj) {
-          return;
-        }
-      }
-
-      if (el.attr("style")) {
-        styles = new StyleMap(el.attr("style"));
-        if (styles["visibility"] === "hidden") {
-          obj.visible = false;
-        } else {
-          obj.visible = true;
-        }
-      }
-      
-      if (el.is("spawn")) {
-        obj.position.copy(newPosition);
-      }
-
-      if (obj && (el.is("box,player,billboard,model,link"))) {
-        startPosition = obj.position.clone();
-
-        if (!startPosition.equals(newPosition)) {
-          tween = new TWEEN.Tween(startPosition);
-          tween.to(newPosition, 200).onUpdate(function() {
-            obj.position.set(this.x, this.y, this.z);
-            if (obj.body) {
-              return obj.body.position.set(this.x, this.y, this.z);
-            }
-          }).easing(TWEEN.Easing.Linear.None).start();
-        }
-      }
-
-      if (obj && el.attr("rotation")) {
-        if (el.is("box,billboard,model,link")){
-          newEuler = Utils.parseEuler(el.attr("rotation"));
-          newQuaternion = new THREE.Quaternion().setFromEuler(newEuler);
-
-          if (!obj.quaternion.equals(newQuaternion)) {
-            var startQ = obj.quaternion.clone();
-
-            var tween = new TWEEN.Tween({ i : 0.0 });
-            tween.to({ i : 1.0}, 200).onUpdate(function() {
-              obj.quaternion.copy(startQ).slerp(newQuaternion, this.i);
-
-              if (obj.body) {
-                obj.body.quaternion.copy(obj.quaternion);
-              }
-            }).easing(TWEEN.Easing.Linear.None).start();
-          }
-        }
-
-        // Player rotation is different because the head / body are decoupled
-        if (el.is("player")){
-          newEuler = Utils.parseEuler(el.attr("rotation"));
-          var bodyQuaternion = new THREE.Quaternion().setFromAxisAngle(Y_AXIS, newEuler.y + Math.PI / 2),
-            headQuaternion = new THREE.Quaternion().setFromAxisAngle(Z_AXIS, THREE.Math.clamp(newEuler.x, PLAYER_MIN_HEAD_ANGLE, PLAYER_MAX_HEAD_ANGLE));
-
-          // todo - add rotation around the z axis (for rifters)
-
-          var head = obj.children[0],
-            startBodyQ = obj.quaternion.clone(),
-            startHeadQ = head.quaternion.clone();
-
-          var tween = new TWEEN.Tween({ i : 0.0 });
-
-          tween.to({ i : 1.0}, 200).onUpdate(function() {
-            obj.quaternion.copy(startBodyQ).slerp(bodyQuaternion, this.i);
-            head.quaternion.copy(startHeadQ).slerp(headQuaternion, this.i);
-          }).easing(TWEEN.Easing.Linear.None).start();
-        }
+        }).
+          easing(TWEEN.Easing.Linear.None).
+          start();
       }
     }
+
+    // Tween anything but the player
+    if ((rotation) && (el.is("box,billboard,model,link"))) {
+      var start = obj.quaternion.clone();
+
+      if (!start.equals(rotation)) {
+        var tween = new TWEEN.Tween({ i : 0.0 });
+
+        tween.to({ i : 1.0}, 200).onUpdate(function() {
+          obj.quaternion.copy(start).slerp(rotation, this.i);
+
+          if (obj.body) {
+            obj.body.quaternion.copy(obj.quaternion);
+          }
+        }).
+          easing(TWEEN.Easing.Linear.None).
+          start();
+      }
+    }
+
+    if ((rotation) && (el.is("player"))) {
+      // Player rotation is different because the head / body are decoupled
+      var euler = Utils.parseEuler(el.attr("rotation")),
+        bodyQuaternion = new THREE.Quaternion().setFromAxisAngle(Y_AXIS, euler.y + Math.PI / 2),
+        headQuaternion = new THREE.Quaternion().setFromAxisAngle(Z_AXIS, THREE.Math.clamp(euler.x, PLAYER_MIN_HEAD_ANGLE, PLAYER_MAX_HEAD_ANGLE));
+
+      // todo - add rotation around the z axis (for rifters)
+      // todo - dont tween if the player hasn't moved...
+
+      var head = obj.children[0],
+        startBodyQ = obj.quaternion.clone(),
+        startHeadQ = head.quaternion.clone();
+
+      var tween = new TWEEN.Tween({ i : 0.0 });
+
+      tween.to({ i : 1.0}, 200).onUpdate(function() {
+        obj.quaternion.copy(startBodyQ).slerp(bodyQuaternion, this.i);
+        head.quaternion.copy(startHeadQ).slerp(headQuaternion, this.i);
+      }).
+        easing(TWEEN.Easing.Linear.None).
+        start();
+    }
   };
+
 
         /*
 
@@ -717,7 +763,7 @@ Connector = (function(_super) {
         }
 
         if (el.is("box,plane") && styles.textureMap && !obj.material.map) {
-          url = "//" + _this.getAssetHost() + _this.getUrlFromStyle(styles.textureMap);
+          url = "//" + self.getAssetHost() + self.getUrlFromStyle(styles.textureMap);
           THREE.ImageUtils.crossOrigin = true;
           texture = new THREE.ImageUtils.loadTexture(url);
           texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
@@ -764,7 +810,7 @@ Connector = (function(_super) {
       children = $($.parseXML(e.data).firstChild).children();
 
     children.each(function(index, el){
-      self.processElement($(el));
+      self.processMessage($(el));
     });
   };
 

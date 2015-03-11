@@ -497,7 +497,7 @@ var Connector = (function(_super) {
   Connector.prototype.createAudio = function(el) {
     var obj;
     obj = new THREE.Object3D;
-    obj.position = new THREE.Vector3(0, 0, 0);
+    //obj.position = new THREE.Vector3(0, 0, 0);
     return obj;
   };
 
@@ -614,7 +614,7 @@ var Connector = (function(_super) {
       if (el.is("box,plane") && styles.textureMap) {
         var url = "//" + this.getAssetHost() + this.getUrlFromStyle(styles.textureMap);
         THREE.ImageUtils.crossOrigin = true;
-        
+
         var texture = new THREE.ImageUtils.loadTexture(url);
         texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
 

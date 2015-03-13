@@ -1,3 +1,5 @@
+'use strict';
+
 (function() {
   var Client,
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
@@ -13,7 +15,8 @@
   var Connector = require("./connector"),
     URI = require("uri-js"),
     TWEEN = require("tween.js"),
-    EventEmitter = require('wolfy87-eventemitter');
+    EventEmitter = require('wolfy87-eventemitter'),
+    Editor = require("./editor");
 
 var Authentication = require("./authentication");
 
@@ -35,6 +38,8 @@ var Authentication = require("./authentication");
     __extends(Client, _super);
 
     function Client() {
+      var self = this;
+
       this.tick = __bind(this.tick, this);
       this.tickPhysics = __bind(this.tickPhysics, this);
       this.onClick = __bind(this.onClick, this);
@@ -91,28 +96,27 @@ var Authentication = require("./authentication");
       this.connector = new Connector(this, this.scene, this.world, this.getUriFromLocation());
       this.connector.connect();
       this.addConnecting();
-      this.connector.on('connected', (function(_this) {
-        return function() {
-          if (MOBILE) {
-            return _this.enableControls();
-          } else {
-            return _this.addInstructions();
-          }
-        };
-      })(this));
-      this.connector.on('disconnected', (function(_this) {
-        return function() {
-          return _this.addConnectionError();
-        };
-      })(this));
-      this.connector.on('restarting', (function(_this) {
-        return function() {
-          return _this.showMessage("Reconnecting...");
-        };
-      })(this));
+
+      this.connector.on('connected', function() {
+        if (MOBILE) {
+          self.enableControls();
+        } else {
+          self.addInstructions();
+        }
+      });
+
+      this.connector.on('disconnected', function(){
+        self.addConnectionError();
+      });
+
+      this.connector.on('restarting', function(){
+        _this.showMessage("Reconnecting...");
+      });
+
       this.on('click', this.onClick);
       this.raycaster = new THREE.Raycaster;
       this.container.append(this.renderer.domElement);
+
       $(this.renderer.domElement).css({
         width: this.width,
         height: this.height

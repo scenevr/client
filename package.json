@@ -2,16 +2,17 @@
   "name": "scenevr-web",
   "version": "0.0.1",
   "dependencies": {
+    "browserify-jade": "~0.1.2",
     "browserify-middleware": "~4.1.0",
     "cannon": "git://github.com/schteppe/cannon.js.git#master",
     "express": "~4.10.2",
+    "express-less": "0.0.6",
+    "heir": "^3.0.0",
     "howler": "^1.1.25",
     "three": "0.66.2",
     "tween.js": "~0.14.0",
-    "wolfy87-eventemitter": "~4.2.9",
-    "browserify-jade": "~0.1.2",
-    "express-less": "0.0.6",
-    "uri-js": "~1.4.2"
+    "uri-js": "~1.4.2",
+    "wolfy87-eventemitter": "~4.2.9"
   },
   "scripts": {
     "start": "node server.js"

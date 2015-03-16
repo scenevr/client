@@ -18,18 +18,20 @@ Box.create = function(connector, el) {
   var scale = el.attr("scale") ? Utils.parseVector(el.attr("scale")) : new THREE.Vector3(1, 1, 1);
   obj.scale.copy(scale);
 
-  var boxShape = new CANNON.Box(new CANNON.Vec3().copy(scale.multiplyScalar(0.5)));
-  var boxBody = new CANNON.Body({
-    mass: 0
-  });
-
   if(styles.collision === 'none'){
-    boxBody.collisionResponse = false;
+    // No collision at all
+  }else{
+    var boxShape = new CANNON.Box(new CANNON.Vec3().copy(scale.multiplyScalar(0.5))),
+      boxBody = new CANNON.Body({ mass: 0 });
+
+    if(styles.collisionResponse === 'false'){
+      boxBody.collisionResponse = false;
+    }
+
+    boxBody.addShape(boxShape);
+
+    obj.body = boxBody;
   }
-
-  boxBody.addShape(boxShape);
-
-  obj.body = boxBody;
 
   return obj;
 };

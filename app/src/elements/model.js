@@ -67,9 +67,9 @@ Model.create = function(connector, el) {
       if (child instanceof THREE.Mesh) {
         child.material = material;
 
-        if (styles.collision === "mesh"){
-          window.mesh = child;
-
+        if (styles.collision === 'none') {
+          // No collision at all
+        } else if (styles.collision === "mesh"){
           var vertices = child.geometry.attributes.position.array,
             indices = [],
             i = 0;
@@ -88,10 +88,6 @@ Model.create = function(connector, el) {
           trimeshBody.uuid = el.attr('uuid');
 
           obj.body = trimeshBody;
-
-          // Gross - too much coupling
-          connector.physicsWorld.add(obj.body);
-
         } else if ((styles.collision == null) || (styles.collision === 'bounding-box')) {
           child.geometry.computeBoundingBox();
           boundingBox = child.geometry.boundingBox.clone();
@@ -108,10 +104,17 @@ Model.create = function(connector, el) {
           boxBody.uuid = el.attr('uuid');
 
           obj.body = boxBody;
+        }
 
-          // Gross - too much coupling
+        if ((obj.body) && (styles.collisionResponse === 'false')) {
+          obj.body.collisionResponse = false;
+        }
+
+        // Gross - too much coupling
+        if (obj.body) {
           connector.physicsWorld.add(obj.body);
         }
+
       }
       
       obj.add(object);

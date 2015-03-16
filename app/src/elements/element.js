@@ -41,6 +41,10 @@ Element.substantialDifference = function(a, b){
     return true;
   }
 
+  if(a.innerHTML != b.innerHTML){
+    return true;
+  }
+
   var i;
 
   for(i=0;i<a.attributes.length;i++){

@@ -9,6 +9,7 @@
     "express-less": "0.0.6",
     "heir": "^3.0.0",
     "howler": "^1.1.25",
+    "html2canvas": "^0.5.0-alpha2",
     "three": "0.66.2",
     "tween.js": "~0.14.0",
     "uri-js": "~1.4.2",

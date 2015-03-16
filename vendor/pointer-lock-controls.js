@@ -60,19 +60,19 @@
 	var onMouseClick = function( event) {
 		if ( scope.enabled === false ) return;
 		event.preventDefault();
-		client.trigger('click');
+		client.trigger('click', [event]);
 	};
 
     var onMouseDown = function( event) {
         if ( scope.enabled === false ) return;
         event.preventDefault();
-        client.trigger('mousedown');
+        client.trigger('mousedown', [event]);
     };
 
     var onMouseUp = function( event) {
         if ( scope.enabled === false ) return;
         event.preventDefault();
-        client.trigger('mouseup');
+        client.trigger('mouseup', [event]);
     };
 
     var onMouseMove = function ( event ) {

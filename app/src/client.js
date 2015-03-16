@@ -10,13 +10,15 @@ var DEBUG = false,
   LOW_POWER_MODE = false,
   DOWN_SAMPLE = 1,
   PHYSICS_HZ = 60.0,
-  MOBILE = false;
+  MOBILE = false,
+  EDITING_ENABLED = false;
 
 var Connector = require("./connector"),
   URI = require("uri-js"),
   TWEEN = require("tween.js"),
   EventEmitter = require('wolfy87-eventemitter'),
-  Authentication = require("./authentication");
+  Authentication = require("./authentication"),
+  Editor = require("./editor");
 
 var Templates = {
   inQueue: require("../templates/in_queue.jade"),
@@ -43,15 +45,15 @@ Client.prototype.initialize = function(){
 
   this.tick = __bind(this.tick, this);
   this.tickPhysics = __bind(this.tickPhysics, this);
-  this.onClick = __bind(this.onClick, this);
   this.vrDeviceCallback = __bind(this.vrDeviceCallback, this);
-  this.pointerlockchange = __bind(this.pointerlockchange, this);
-  this.pointerlockerror = __bind(this.pointerlockerror, this);
   this.onWindowResize = __bind(this.onWindowResize, this);
+
   var ASPECT, FAR, NEAR, VIEW_ANGLE;
+  
   this.container = $("#scene-view").css({
     position: 'relative'
   });
+
   this.width = this.container.width();
   this.height = this.container.height();
   this.stats = new Stats();
@@ -61,17 +63,21 @@ Client.prototype.initialize = function(){
   this.stats.domElement.style.zIndex = 110;
   this.stats.domElement.style.left = '10px';
   this.container.append(this.stats.domElement);
+
   VIEW_ANGLE = 60;
   ASPECT = this.width / this.height;
   NEAR = 0.1;
   FAR = 700;
+
   this.scene = new THREE.Scene();
   this.world = new CANNON.World();
   this.world.gravity.set(0, -20, 0);
   this.world.broadphase = new CANNON.NaiveBroadphase();
+
   this.renderer = new THREE.WebGLRenderer({
     antialias: false
   });
+
   this.renderer.setSize(this.width / DOWN_SAMPLE, this.height / DOWN_SAMPLE);
   this.renderer.setClearColor(0x000000);
   this.renderer.autoClear = false;
@@ -81,10 +87,6 @@ Client.prototype.initialize = function(){
 
   this.authentication = new Authentication(this);
 
-  if (!MOBILE) {
-    this.addMessageInput();
-    this.addPointLockGrab();
-  }
   this.camera = new THREE.PerspectiveCamera(VIEW_ANGLE, ASPECT, NEAR, FAR);
   this.addControls();
   this.addPlayerBody();
@@ -104,6 +106,10 @@ Client.prototype.initialize = function(){
     } else {
       self.addInstructions();
     }
+
+    if (EDITING_ENABLED){
+      self.editor = new Editor(self);
+    }
   });
 
   this.connector.on('disconnected', function(){
@@ -111,10 +117,11 @@ Client.prototype.initialize = function(){
   });
 
   this.connector.on('restarting', function(){
-    _this.showMessage("Reconnecting...");
+    self.showMessage("Reconnecting...");
   });
 
-  this.on('click', this.onClick);
+  this.on('click', this.onClick.bind(this));
+
   this.raycaster = new THREE.Raycaster;
   this.container.append(this.renderer.domElement);
 
@@ -122,6 +129,11 @@ Client.prototype.initialize = function(){
     width: this.width,
     height: this.height
   });
+
+  if (!MOBILE) {
+    this.addMessageInput();
+    this.addPointLockGrab();
+  }
 
   this.tick();
 
@@ -163,30 +175,13 @@ Client.prototype.onWindowResize = function() {
   return this.centerOverlay();
 };
 
-Client.prototype.hasPointerLock = function() {
-  return document.pointerLockElement || document.mozPointerLockElement || document.webkitPointerLockElement;
-};
-
-Client.prototype.pointerlockerror = function(event) {
-  return alert("[FAIL] There was an error acquiring pointerLock. You will not be able to use sceneserver.");
-};
-
-Client.prototype.pointerlockchange = function(event) {
-  if (this.hasPointerLock()) {
-    return this.enableControls();
-  } else {
-    return this.disableControls();
-  }
-};
-
 Client.prototype.enableControls = function() {
   this.controls.enabled = true;
-  return this.hideInstructions();
+  this.hideInstructions();
 };
 
 Client.prototype.disableControls = function() {
   this.controls.enabled = false;
-  return this.showInstructions();
 };
 
 Client.prototype.getUriFromLocation = function() {
@@ -296,42 +291,58 @@ Client.prototype.promotePortal = function() {
   return this.connector.setPosition(this.connector.spawnPosition);
 };
 
-Client.prototype.onClick = function() {
-  var direction, intersection, obj, position, _i, _len, _ref;
-  position = this.controls.getObject().position;
-  direction = this.controls.getDirection(new THREE.Vector3);
+Client.prototype.onClick = function(e) {
+  var position = this.controls.getObject().position,
+    direction = this.controls.getDirection(new THREE.Vector3);
+
   this.raycaster.set(position, direction);
   this.raycaster.far = 5.0;
-  _ref = this.raycaster.intersectObjects(this.getAllClickableObjects());
 
   if(DEBUG){
     var material = new THREE.LineBasicMaterial({
         color: 0x0000ff,
         linewidth: 5
     });
+
     var geometry = new THREE.Geometry();
     geometry.vertices.push(position.clone());
     geometry.vertices.push(position.clone().add(direction.multiplyScalar(5.0)));
+
     var line = new THREE.Line(geometry, material);
     this.scene.add(line);
   }
 
+  var _i, _len, _ref = this.raycaster.intersectObjects(this.getAllClickableObjects());
+
   for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-    intersection = _ref[_i];
+    var intersection = _ref[_i];
+  
     if (intersection.object && intersection.object.parent && intersection.object.parent.userData.is && intersection.object.parent.userData.is("link")) {
       intersection.object.parent.onClick();
     }
-    obj = intersection.object;
+  
+    var obj = intersection.object;
+  
     while (obj.parent) {
       if (obj.userData instanceof jQuery) {
-        this.connector.onClick({
-          uuid: obj.name,
-          point: intersection.point
-        });
+        
+        if(e.which === 3 && this.editor){
+          this.editor.trigger('object:click', [obj]);
+        }else{
+          this.connector.onClick({
+            uuid: obj.name,
+            point: intersection.point
+          });
+        }
+
         return;
       }
       obj = obj.parent;
     }
+  }
+
+  if(this.editor){
+    this.editor.trigger('object:click');
   }
 };
 
@@ -392,10 +403,18 @@ Client.prototype.addConnectionError = function() {
   }));
 };
 
-Client.prototype.renderOverlay = function(html) {
+Client.prototype.renderOverlay = function(el) {
+  if(typeof el === 'function'){
+    el = $("<div />").html(el());
+  } else if (typeof el === 'string'){
+    el = $("<div />").html(el);
+  }
+
   $(".overlay").remove();
-  this.overlay = $("<div class='overlay'>").html(html).appendTo(this.container);
+
+  this.overlay = $("<div class='overlay'>").append(el).appendTo(this.container);
   this.centerOverlay();
+  this.exitPointerLock();
 };
 
 Client.prototype.centerOverlay = function() {
@@ -423,36 +442,57 @@ Client.prototype.addInstructions = function() {
   }
 };
 
+Client.prototype.exitPointerLock = function(){
+  document.exitPointerLock();  
+}
+
+Client.prototype.requestPointerLock = function(){
+  document.body.requestPointerLock();  
+}
+
+Client.prototype.hasPointerLock = function() {
+  return document.pointerLockElement || document.mozPointerLockElement || document.webkitPointerLockElement;
+}
+
+Client.prototype.pointerLockError = function(event) {
+  alert("[FAIL] There was an error acquiring pointerLock. You will not be able to use sceneserver.");
+}
+
+Client.prototype.pointerLockChange = function(event) {
+  if (this.hasPointerLock()) {
+    this.enableControls();
+  } else {
+    this.disableControls();
+  }
+}
+
 Client.prototype.addPointLockGrab = function() {
-  return $('body').click((function(_this) {
-    return function() {
-      var element;
-      if (_this.controls.enabled) {
-        return;
-      }
-      document.addEventListener('pointerlockchange', _this.pointerlockchange, false);
-      document.addEventListener('mozpointerlockchange', _this.pointerlockchange, false);
-      document.addEventListener('webkitpointerlockchange', _this.pointerlockchange, false);
-      document.addEventListener('pointerlockerror', _this.pointerlockerror, false);
-      document.addEventListener('mozpointerlockerror', _this.pointerlockerror, false);
-      document.addEventListener('webkitpointerlockerror', _this.pointerlockerror, false);
-      element = document.body;
-      element.requestPointerLock = element.requestPointerLock || element.mozRequestPointerLock || element.webkitRequestPointerLock;
-      return element.requestPointerLock();
-    };
-  })(this));
+  var prefix = ''; // || moz || webkit
+
+  document.addEventListener(prefix + 'pointerlockchange', this.pointerLockChange.bind(this), false);
+  document.addEventListener(prefix + 'pointerlockerror', this.pointerLockError.bind(this), false);
+
+  var self = this;
+
+  $(this.renderer.domElement).click(function(){
+    if (self.controls.enabled) {
+      return;
+    }
+
+    document.body[prefix + 'requestPointerLock']();
+  });
 };
 
 Client.prototype.showMessage = function(message) {
-  return this.renderOverlay(message);
+  this.renderOverlay(message);
 };
 
 Client.prototype.showInstructions = function() {
-  return this.addInstructions();
+  this.addInstructions();
 };
 
 Client.prototype.hideInstructions = function() {
-  return $(".overlay").remove();
+  $(".overlay").remove();
 };
 
 Client.prototype.addLoadingScene = function() {
@@ -542,10 +582,13 @@ Client.prototype.getPlayerDropPoint = function() {
 
 Client.prototype.tickPhysics = function() {
   var timeStep;
+
   timeStep = 1.0 / PHYSICS_HZ;
+
   if (this.controls.enabled) {
     this.connector.physicsWorld.step(timeStep);
   }
+
   TWEEN.update();
 
   // Get click event from the gamepad
@@ -560,7 +603,9 @@ Client.prototype.tickPhysics = function() {
 
   this.controls.update(Date.now() - this.time);
 
-  return this.time = Date.now();
+  this.trigger('controls:update', [this.controls]);
+
+  this.time = Date.now();
 };
 
 Client.prototype.tick = function() {

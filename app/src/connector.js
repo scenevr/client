@@ -12,6 +12,7 @@ var Utils = require("./utils"),
   EventEmitter = require('wolfy87-eventemitter'),
   Billboard = require("./elements/billboard"),
   Box = require("./elements/box"),
+  Sphere = require("./elements/sphere"),
   Skybox = require("./elements/skybox"),
   Fog = require("./elements/fog"),
   Utils = require("./utils"),
@@ -357,6 +358,25 @@ var Connector = (function(_super) {
     }
   };
 
+  // These events will be ignored if you don't have modify permission
+  Connector.prototype.createElement = function(el){
+    this.sendMessage(
+      $("<event />").attr("name", "create").append(el)
+    );
+  }
+
+  Connector.prototype.updateElement = function(el){
+    this.sendMessage(
+      $("<event />").attr("name", "update").attr("uuid", el.attr("uuid")).append(el)
+    );
+  }
+
+  Connector.prototype.removeElement = function(el){
+    this.sendMessage(
+      $("<event />").attr("name", "remove").attr("uuid", el.attr("uuid"))
+    );
+  }
+
   Connector.prototype.sendChat = function(message) {
     this.sendMessage($("<event />").attr("name", "chat").attr("message", message.slice(0, 200)));
   };
@@ -539,6 +559,8 @@ var Connector = (function(_super) {
       obj = Billboard.create(this, el);
     } else if (el.is("box")) {
       obj = Box.create(this, el);
+    } else if (el.is("sphere")) {
+      obj = Sphere.create(this, el);
     } else if (el.is("plane")) {
       obj = Plane.create(this, el);
     } else if (el.is("skybox")) {
@@ -604,14 +626,14 @@ var Connector = (function(_super) {
         obj.visible = true;
       }
 
-      if (el.is("box,plane") && styles.color) {
+      if (el.is("sphere,box,plane") && styles.color) {
         obj.material.setValues({
           color: styles.color,
           ambient: styles.color
         });
       }
 
-      if (el.is("box,plane") && styles.textureMap) {
+      if (el.is("sphere,box,plane") && styles.textureMap) {
         var url = "//" + this.getAssetHost() + this.getUrlFromStyle(styles.textureMap);
         THREE.ImageUtils.crossOrigin = true;
 
@@ -673,7 +695,7 @@ var Connector = (function(_super) {
 
     if (el.is("dead")) {
       var obj;
-
+      
       if (obj = this.scene.getObjectByName(uuid)) {
         if (obj.body) {
           this.physicsWorld.remove(obj.body);

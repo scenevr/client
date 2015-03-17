@@ -443,11 +443,21 @@ Client.prototype.addInstructions = function() {
 };
 
 Client.prototype.exitPointerLock = function(){
-  document.exitPointerLock();  
+  if (document.exitPointerLock) {
+    document.exitPointerLock();
+  } else if (document.mozExitPointerLock) {
+    document.mozExitPointerLock();
+  }
 }
 
 Client.prototype.requestPointerLock = function(){
-  document.body.requestPointerLock();  
+  var el = this.renderer.domElement;
+
+  if (el.requestPointerLock) {
+    el.requestPointerLock();
+  } else if (el.mozRequestPointerLock) {
+    el.mozRequestPointerLock();
+  }
 }
 
 Client.prototype.hasPointerLock = function() {
@@ -455,7 +465,7 @@ Client.prototype.hasPointerLock = function() {
 }
 
 Client.prototype.pointerLockError = function(event) {
-  alert("[FAIL] There was an error acquiring pointerLock. You will not be able to use sceneserver.");
+  console.error("[FAIL] There was an error acquiring pointerLock. You will not be able to use scenevr.");
 }
 
 Client.prototype.pointerLockChange = function(event) {
@@ -467,10 +477,14 @@ Client.prototype.pointerLockChange = function(event) {
 }
 
 Client.prototype.addPointLockGrab = function() {
-  var prefix = ''; // || moz || webkit
+  document.addEventListener('pointerlockchange', this.pointerLockChange.bind(this), false);
+  document.addEventListener('pointerlockerror', this.pointerLockError.bind(this), false);
 
-  document.addEventListener(prefix + 'pointerlockchange', this.pointerLockChange.bind(this), false);
-  document.addEventListener(prefix + 'pointerlockerror', this.pointerLockError.bind(this), false);
+  document.addEventListener('mozpointerlockchange', this.pointerLockChange.bind(this), false);
+  document.addEventListener('mozpointerlockerror', this.pointerLockError.bind(this), false);
+
+  document.addEventListener('webkitpointerlockchange', this.pointerLockChange.bind(this), false);
+  document.addEventListener('webkitpointerlockerror', this.pointerLockError.bind(this), false);
 
   var self = this;
 
@@ -479,7 +493,7 @@ Client.prototype.addPointLockGrab = function() {
       return;
     }
 
-    document.body[prefix + 'requestPointerLock']();
+    self.requestPointerLock();
   });
 };
 

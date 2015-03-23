@@ -15,8 +15,10 @@ function Authentication(client){
   window.addEventListener("message", function(e){
     if((e.origin === "http://localhost:3000") || (e.origin === "http://login.scenevr.com")){
       self.checkStatus();
-    }else{
-      console.error("Invalid origin");
+    } else if(e.data.match(/^OTHelpers.+/)) {
+      // OpenTok spam
+    } else {
+      console.error("Invalid origin " + e.origin);
     }
   });
 }

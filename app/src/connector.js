@@ -58,8 +58,6 @@ var Connector = (function(_super) {
     if(this.client.authentication.isLoggedIn()){
       this.authenticate();
     }
-
-    //this.webRTC();
   }
 
   Connector.prototype.authenticate = function(){
@@ -75,77 +73,82 @@ var Connector = (function(_super) {
     });
   }
 
-  Connector.prototype.webRTC = function() {
-    var self = this;
+  Connector.prototype.initializeOpentok = function(apiKey, sessionId, token) {
+    var self = this,
+      div = document.createElement("div");
 
-    $('body').keydown((function(self) {
-      return function(e) {
-        if (e.keyCode === 84) {
-          return self.startTalking();
-        }
-      };
-    })(this));
-    
-    $('body').keyup((function(self) {
-      return function(e) {
-        if (e.keyCode === 84) {
-          return self.stopTalking();
-        }
-      };
-    })(this));
-
-    var apiKey   , div, sessionId, token    ;
-    apiKey    = "45164122";
-    sessionId = "2_MX40NTE2NDEyMn5-MTQyNDgxNjg1ODM5NX5qNGFJMUpUOVdiNkdyeFRXRlZHeFZCVXR-fg";
-    token     = "T1==cGFydG5lcl9pZD00NTE2NDEyMiZzaWc9N2UyMzg1ZDkwOGY2MWIzNTRiYTUyMjk5OGZmYTZhZTViMDlhNTQ4Nzpyb2xlPXB1Ymxpc2hlciZzZXNzaW9uX2lkPTJfTVg0ME5URTJOREV5TW41LU1UUXlORGd4TmpnMU9ETTVOWDVxTkdGSk1VcFVPVmRpTmtkeWVGUlhSbFpIZUZaQ1ZYUi1mZyZjcmVhdGVfdGltZT0xNDI0ODE2ODY2Jm5vbmNlPTAuNjg3MjgyODY2MDkzMzM2NCZleHBpcmVfdGltZT0xNDI3NDA4ODE1";
-    div = document.createElement("div");
     div.style.display = "none";
     document.body.appendChild(div);
+    
+    this.opentokSettings = {
+      apiKey : apiKey,
+      sessionId : sessionId,
+      token : token
+    };
+
     this.session = OT.initSession(apiKey, sessionId);
-    this.session.on("streamCreated", (function(self) {
-      return function(event) {
-        self.session.subscribe(event.stream, div);
-        return console.log("Someone is speaking...");
-      };
-    })(this));
-    return this.session.connect(token, (function(self) {
-      return function(error) {
-        return console.log("Listening in...");
-      };
-    })(this));
+    this.session.on("streamCreated", function(event) {
+      console.log("Someone is speaking...");
+      self.subscriber = self.session.subscribe(event.stream, div);
+      self.subscriber.setStyle({
+        audioLevelDisplayMode : 'off',
+        buttonDisplayMode : 'off',
+        nameDisplayMode : 'off',
+        videoDisabledDisplayMode : 'off'
+      });
+    });
+
+    this.session.connect(token, function(error) {
+      console.log("Listening in...");
+    });
   };
 
   Connector.prototype.startTalking = function() {
-    var apiKey   , div, sessionId, token    ;
+    var apiKey = this.opentokSettings.apiKey,
+      div;
+    
     if (!this.publisher) {
-      apiKey    = "45164122";
-      sessionId = "2_MX40NTE2NDEyMn5-MTQyNDgxNjg1ODM5NX5qNGFJMUpUOVdiNkdyeFRXRlZHeFZCVXR-fg";
-      token     = "T1==cGFydG5lcl9pZD00NTE2NDEyMiZzaWc9N2UyMzg1ZDkwOGY2MWIzNTRiYTUyMjk5OGZmYTZhZTViMDlhNTQ4Nzpyb2xlPXB1Ymxpc2hlciZzZXNzaW9uX2lkPTJfTVg0ME5URTJOREV5TW41LU1UUXlORGd4TmpnMU9ETTVOWDVxTkdGSk1VcFVPVmRpTmtkeWVGUlhSbFpIZUZaQ1ZYUi1mZyZjcmVhdGVfdGltZT0xNDI0ODE2ODY2Jm5vbmNlPTAuNjg3MjgyODY2MDkzMzM2NCZleHBpcmVfdGltZT0xNDI3NDA4ODE1";
       div = document.createElement("div");
       div.style.display = "none";
       document.body.appendChild(div);
+
       this.publisher = OT.initPublisher(apiKey, div, {
         videoSource: null,
         publishVideo: false,
+        publishAudio: true,
         mirror: false
       });
+      this.publisher.setStyle({
+        audioLevelDisplayMode : 'off',
+        buttonDisplayMode : 'off',
+        nameDisplayMode : 'off'
+      });
+
       this.session.publish(this.publisher);
       this.publisher.publishAudio(false);
+      this.muted = true;
+
+      this.client.exitPointerLock();
     }
-    this.publisher.publishAudio(true);
-    return console.log("publishing...");
-  };
+
+    if(this.muted){
+      this.publisher.publishAudio(true);
+      console.log("publishing...");
+      this.muted = false;
+    }
+};
 
   Connector.prototype.stopTalking = function() {
-    if (this.publisher) {
+    if (this.publisher && !this.muted) {
       this.publisher.publishAudio(false);
       console.log("muting...");
-      return setTimeout((function(self) {
-        return function() {
-          self.session.unpublish(self.publisher);
-          return self.publisher = null;
-        };
-      })(this), 10000);
+      this.muted = true;
+      
+      // Remove the publisher after 10 seconds
+      // setTimeout(function() {
+      //   self.session.unpublish(self.publisher);
+      //   self.publisher = null;
+      //  }, 10000);
     }
   };
 
@@ -679,6 +682,10 @@ var Connector = (function(_super) {
         }, el.attr('message'));
       } else if (name === 'respawn') {
         this.respawn(el.attr('reason'));
+      } else if (name === 'opentok') {
+        this.initializeOpentok(
+          el.attr('apikey'), el.attr('session'), el.attr('token')
+        );
       } else {
         console.log("Unrecognized event " + (el.attr('name')));
       }

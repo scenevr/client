@@ -599,9 +599,24 @@ Client.prototype.addDot = function() {
 };
 
 Client.prototype.addControls = function() {
+  var self = this;
+
   this.controls = new PointerLockControls(this.camera, this, MOBILE);
   this.controls.enabled = false;
-  return this.scene.add(this.controls.getObject());
+  this.scene.add(this.controls.getObject());
+
+  $('body').keydown(function (e){
+    if ((e.keyCode === 84) || (e.keyCode === 86)) {
+      self.connector.startTalking();
+    }
+  });
+  
+  $('body').keyup(function(e) {
+    if ((e.keyCode === 84) || (e.keyCode === 86)) {
+      self.connector.stopTalking();
+    }
+  });
+
 };
 
 Client.prototype.getPlayerObject = function() {

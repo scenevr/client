@@ -60,7 +60,7 @@
 
 	var onMouseClick = function( event) {
 		if ( scope.enabled === false ) return;
-		event.preventDefault();
+		// event.preventDefault();
 		client.trigger('click', [event]);
 	};
 
@@ -154,12 +154,9 @@
 
     };
 
-    /*
     document.addEventListener( 'click', onMouseClick, false );
     document.addEventListener( 'mousedown', onMouseDown, false );
     document.addEventListener( 'mouseup', onMouseUp, false );
-    */
-
     document.addEventListener( 'keydown', onKeyDown, false );
     document.addEventListener( 'keyup', onKeyUp, false );
     document.addEventListener( 'mousemove', onMouseMove, false );

@@ -606,14 +606,18 @@ Client.prototype.addControls = function() {
   this.scene.add(this.controls.getObject());
 
   $('body').keydown(function (e){
-    if ((e.keyCode === 84) || (e.keyCode === 86)) {
-      self.connector.startTalking();
+    if($('input:focus')[0] === undefined){
+      if ((e.keyCode === 84) || (e.keyCode === 86)) {
+        self.connector.startTalking();
+      }
     }
   });
   
   $('body').keyup(function(e) {
-    if ((e.keyCode === 84) || (e.keyCode === 86)) {
-      self.connector.stopTalking();
+    if($('input:focus')[0] === undefined){
+      if ((e.keyCode === 84) || (e.keyCode === 86)) {
+        self.connector.stopTalking();
+      }
     }
   });
 

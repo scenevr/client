@@ -33,6 +33,8 @@ var Connector = (function(_super) {
   __extends(Connector, _super);
 
   function Connector(client, scene, physicsWorld, uri, isPortal, referrer) {
+    this.messageQueue = [];
+
     this.client = client;
     this.scene = scene;
     this.physicsWorld = physicsWorld;
@@ -57,6 +59,8 @@ var Connector = (function(_super) {
 
     if(this.client.authentication.isLoggedIn()){
       this.authenticate();
+    }else{
+      this.announceAnonymous();
     }
   }
 
@@ -73,7 +77,12 @@ var Connector = (function(_super) {
     });
   }
 
-  Connector.prototype.initializeOpentok = function(apiKey, sessionId, token) {
+  Connector.prototype.announceAnonymous = function(){
+    var self = this;
+    self.sendMessage($("<event />").attr("name", "authenticate").attr("anonymous", true));
+  }
+
+  Connector.prototype.initializeOpentok = function(role, apiKey, sessionId, token) {
     var self = this,
       div = document.createElement("div");
 
@@ -81,6 +90,7 @@ var Connector = (function(_super) {
     document.body.appendChild(div);
     
     this.opentokSettings = {
+      role : role,
       apiKey : apiKey,
       sessionId : sessionId,
       token : token
@@ -104,6 +114,16 @@ var Connector = (function(_super) {
   };
 
   Connector.prototype.startTalking = function() {
+    if(!this.opentokSettings){
+      console.log("This server doesn't appear to support voice chat");
+      return;
+    }
+
+    if(this.opentokSettings.role === 'subscriber'){
+      this.client.addChatMessage(null, "You must log in to be able to speak");
+      return;
+    }
+
     var apiKey = this.opentokSettings.apiKey,
       div;
     
@@ -324,7 +344,6 @@ var Connector = (function(_super) {
 
     this.ws = new WebSocket("ws://" + components.host + ":" + (components.port || 80) + components.path, this.protocol);
     this.ws.binaryType = 'arraybuffer';
-    this.messageQueue = [];
 
     var self = this;
 
@@ -684,7 +703,7 @@ var Connector = (function(_super) {
         this.respawn(el.attr('reason'));
       } else if (name === 'opentok') {
         this.initializeOpentok(
-          el.attr('apikey'), el.attr('session'), el.attr('token')
+          el.attr('role'), el.attr('apikey'), el.attr('session'), el.attr('token')
         );
       } else {
         console.log("Unrecognized event " + (el.attr('name')));

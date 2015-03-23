@@ -1,10 +1,18 @@
 
 var SERVER = "http://login.scenevr.com",
   Template = require("../templates/login.jade"),
-  URI = require("uri-js");
+  URI = require("uri-js"),
+  heir = require("heir"),
+  EventEmitter = require('wolfy87-eventemitter');
 
 function Authentication(client){
   this._client = client;
+  this.initialize();
+}
+
+heir.inherit(Authentication, EventEmitter);
+
+Authentication.prototype.initialize = function(){
   this._isLoggedIn = null;
   this._user = null;
   this._div = $("<div id='authentication' />").appendTo('body');
@@ -21,6 +29,10 @@ function Authentication(client){
       console.error("Invalid origin " + e.origin);
     }
   });
+}
+
+Authentication.prototype.hasCompleted = function(){
+  return !(this._isLoggedIn === null);
 }
 
 Authentication.prototype.getTokenFor = function(uri, callback){
@@ -78,15 +90,23 @@ Authentication.prototype.displayLogInButton = function(){
 }
 
 Authentication.prototype.showAccountSettings = function(){
+  var self = this;
+
   this._client.renderOverlay(Template({
     url : SERVER + "/"
-  }));
+  })).find('button').click(function(){
+    self._client.hideOverlays();
+  });
 }
 
 Authentication.prototype.showLogin = function(){
+  var self = this;
+
   this._client.renderOverlay(Template({
     url : SERVER + "/users/sign_in"
-  }));
+  })).find('button').click(function(){
+    self._client.hideOverlays();
+  });
 }
 
 Authentication.prototype.checkStatus = function(){
@@ -95,11 +115,10 @@ Authentication.prototype.checkStatus = function(){
   this.statusRequest(function(ok){
     if(self.isLoggedIn()){
       self.displayName();
-
-      // The connector might not exist - should this be decoupled a bit?
-      self._client.connector.authenticate();
+      self.trigger('ready');
     }else{
       self.displayLogInButton();
+      self.trigger('ready');
     }
   })
 };

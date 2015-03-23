@@ -25,8 +25,6 @@ RenderQueue.prototype.nextJob = function(){
     return;
   }
 
-  console.log("Starting job...");
-
   this.processing = true;
 
   job(function(){

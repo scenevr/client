@@ -57,13 +57,21 @@ var Connector = (function(_super) {
     this.addLights();
     this.addFloor();
 
+    if(this.client.authentication.hasCompleted()){
+      this.onAuthenticationReady();
+    }else{
+      this.client.authentication.on('ready', this.onAuthenticationReady.bind(this));
+    }
+  }
+
+  Connector.prototype.onAuthenticationReady = function(){
     if(this.client.authentication.isLoggedIn()){
       this.authenticate();
     }else{
       this.announceAnonymous();
     }
   }
-
+  
   Connector.prototype.authenticate = function(){
     var self = this;
 

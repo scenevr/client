@@ -439,6 +439,8 @@ Client.prototype.renderOverlay = function(el) {
   this.overlay = $("<div class='overlay'>").append(el).appendTo(this.container);
   this.centerOverlay();
   this.exitPointerLock();
+
+  return this.overlay;
 };
 
 Client.prototype.centerOverlay = function() {

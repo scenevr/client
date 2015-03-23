@@ -8,7 +8,6 @@ var Client,
 
 var DEBUG = false,
   LOW_POWER_MODE = false,
-  DOWN_SAMPLE = 1,
   PHYSICS_HZ = 60.0,
   MOBILE = false,
   EDITING_ENABLED = false;
@@ -18,7 +17,8 @@ var Connector = require("./connector"),
   TWEEN = require("tween.js"),
   EventEmitter = require('wolfy87-eventemitter'),
   Authentication = require("./authentication"),
-  Editor = require("./editor");
+  Editor = require("./editor"),
+  Preferences = require("./preferences");
 
 var Templates = {
   inQueue: require("../templates/in_queue.jade"),
@@ -43,6 +43,8 @@ heir.inherit(Client, EventEmitter);
 Client.prototype.initialize = function(){
   var self = this;
 
+  this.preferences = new Preferences(this);
+
   this.tick = __bind(this.tick, this);
   this.tickPhysics = __bind(this.tickPhysics, this);
   this.vrDeviceCallback = __bind(this.vrDeviceCallback, this);
@@ -56,6 +58,7 @@ Client.prototype.initialize = function(){
 
   this.width = this.container.width();
   this.height = this.container.height();
+
   this.stats = new Stats();
   this.stats.setMode(0);
   this.stats.domElement.style.position = 'absolute';
@@ -74,13 +77,6 @@ Client.prototype.initialize = function(){
   this.world.gravity.set(0, -20, 0);
   this.world.broadphase = new CANNON.NaiveBroadphase();
 
-  this.renderer = new THREE.WebGLRenderer({
-    antialias: false
-  });
-
-  this.renderer.setSize(this.width / DOWN_SAMPLE, this.height / DOWN_SAMPLE);
-  this.renderer.setClearColor(0x000000);
-  this.renderer.autoClear = false;
   this.initVR();
 
   this.time = Date.now();
@@ -88,6 +84,7 @@ Client.prototype.initialize = function(){
   this.authentication = new Authentication(this);
 
   this.camera = new THREE.PerspectiveCamera(VIEW_ANGLE, ASPECT, NEAR, FAR);
+  this.initializeRenderer();
   this.addControls();
   this.addPlayerBody();
   
@@ -123,12 +120,6 @@ Client.prototype.initialize = function(){
   this.on('click', this.onClick.bind(this));
 
   this.raycaster = new THREE.Raycaster;
-  this.container.append(this.renderer.domElement);
-
-  $(this.renderer.domElement).css({
-    width: this.width,
-    height: this.height
-  });
 
   if (!MOBILE) {
     this.addMessageInput();
@@ -136,6 +127,8 @@ Client.prototype.initialize = function(){
   }
 
   this.tick();
+
+  this.preferences.createGui();
 
   setInterval(this.tickPhysics, 1000 / PHYSICS_HZ);
 
@@ -147,13 +140,13 @@ Client.prototype.initialize = function(){
         _this.vrrenderer.resetOrientation(_this.controls, _this.vrHMDSensor);
       }
       if ((e.charCode === 'f'.charCodeAt(0)) && _this.vrrenderer && _this.controls.enabled) {
-        if (_this.renderer.domElement.mozRequestFullScreen) {
-          _this.renderer.domElement.mozRequestFullScreen({
+        if (_this.domElement.mozRequestFullScreen) {
+          _this.domElement.mozRequestFullScreen({
             vrDisplay: vrHMD
           });
         }
-        if (_this.renderer.domElement.webkitRequestFullscreen) {
-          return _this.renderer.domElement.webkitRequestFullscreen({
+        if (_this.domElement.webkitRequestFullscreen) {
+          return _this.domElement.webkitRequestFullscreen({
             vrDisplay: _this.vrHMD
           });
         }
@@ -162,17 +155,48 @@ Client.prototype.initialize = function(){
   })(this));
 }
 
-Client.prototype.onWindowResize = function() {
-  this.width = this.container.width();
-  this.height = this.container.height();
-  $(this.renderer.domElement).css({
+Client.prototype.initializeRenderer = function(){
+  if(this.renderer){
+    throw "Cannot reinitialize";
+  }
+
+  this.domElement = $("<canvas />");
+  this.container.append(this.domElement);
+
+  this.renderer = new THREE.WebGLRenderer({
+    antialias: this.preferences.getState().graphicsAntialiasing,
+    canvas : this.domElement[0]
+  });
+
+  this.renderer.setSize(this.width / this.preferences.getState().downSampling, this.height / this.preferences.getState().downSampling);
+  this.renderer.setClearColor(0x000000);
+  this.renderer.autoClear = false;
+
+  this.domElement.css({
     width: this.width,
     height: this.height
   });
+}
+
+Client.prototype.reinitializeGraphics = function(){
+  // We can't reinitialize because webgl contexts can't be freed
+  this.onWindowResize();
+}
+
+Client.prototype.onWindowResize = function() {
+  this.width = this.container.width();
+  this.height = this.container.height();
+
   this.camera.aspect = this.width / this.height;
   this.camera.updateProjectionMatrix();
-  this.renderer.setSize(this.width / DOWN_SAMPLE, this.height / DOWN_SAMPLE);
-  return this.centerOverlay();
+  this.renderer.setSize(this.width / this.preferences.getState().downSampling, this.height / this.preferences.getState().downSampling);
+
+  this.domElement.css({
+    width: this.width,
+    height: this.height
+  });
+
+  this.centerOverlay();
 };
 
 Client.prototype.enableControls = function() {
@@ -451,7 +475,7 @@ Client.prototype.exitPointerLock = function(){
 }
 
 Client.prototype.requestPointerLock = function(){
-  var el = this.renderer.domElement;
+  var el = this.domElement[0];
 
   if (el.requestPointerLock) {
     el.requestPointerLock();
@@ -488,7 +512,7 @@ Client.prototype.addPointLockGrab = function() {
 
   var self = this;
 
-  $(this.renderer.domElement).click(function(){
+  this.domElement.click(function(){
     if (self.controls.enabled) {
       return;
     }
@@ -631,6 +655,12 @@ Client.prototype.tick = function() {
     q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), this.controls.getYaw());
     this.directionArrow.quaternion.copy(q);
     this.directionArrow.position.copy(this.controls.getPosition()).setY(0.1);
+  }
+
+  if(this.preferences.gui){
+    this.preferences.gui.update({ 
+      position : this.controls.getPosition().clone().add(new THREE.Vector3(-1.25, 2.0, -2))
+    });
   }
 
   if (this.vrrenderer) {

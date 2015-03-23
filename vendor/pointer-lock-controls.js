@@ -57,6 +57,7 @@
         var direction = $("<div />").addClass('direction dpad').appendTo('body'),
             movement = $("<div />").addClass('movement dpad').appendTo('body');
     }
+
 	var onMouseClick = function( event) {
 		if ( scope.enabled === false ) return;
 		event.preventDefault();
@@ -153,12 +154,15 @@
 
     };
 
+    /*
     document.addEventListener( 'click', onMouseClick, false );
     document.addEventListener( 'mousedown', onMouseDown, false );
     document.addEventListener( 'mouseup', onMouseUp, false );
-    document.addEventListener( 'mousemove', onMouseMove, false );
+    */
+
     document.addEventListener( 'keydown', onKeyDown, false );
     document.addEventListener( 'keyup', onKeyUp, false );
+    document.addEventListener( 'mousemove', onMouseMove, false );
 
     document.addEventListener("touchstart", function(e){
         e.preventDefault();

@@ -6,13 +6,8 @@ var Client,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
   heir = require("heir");
 
-var DEBUG = false,
-  LOW_POWER_MODE = false,
-  PHYSICS_HZ = 60.0,
-  MOBILE = false,
-  EDITING_ENABLED = false;
-
 var Connector = require("./connector"),
+  environment = require("./environment"),
   URI = require("uri-js"),
   TWEEN = require("tween.js"),
   EventEmitter = require('wolfy87-eventemitter'),
@@ -29,10 +24,6 @@ var Templates = {
 
 // Not sure why this has to be global
 window.CANNON = require("cannon");
-
-if (/Android|iPhone|iPad|iPod|IEMobile/i.test(navigator.userAgent)) {
-  MOBILE = true;
-}
 
 function Client() {
   this.initialize();
@@ -88,7 +79,7 @@ Client.prototype.initialize = function(){
   this.addControls();
   this.addPlayerBody();
   
-  if(DEBUG){
+  if(environment.isDebug()){
     this.addDirectionArrow();
   }
 
@@ -98,13 +89,13 @@ Client.prototype.initialize = function(){
   this.addConnecting();
 
   this.connector.on('connected', function() {
-    if (MOBILE) {
+    if (environment.isMobile()) {
       self.enableControls();
     } else {
       self.addInstructions();
     }
 
-    if (EDITING_ENABLED){
+    if (environment.isEditingEnabled()){
       self.editor = new Editor(self);
     }
   });
@@ -121,7 +112,7 @@ Client.prototype.initialize = function(){
 
   this.raycaster = new THREE.Raycaster;
 
-  if (!MOBILE) {
+  if (!environment.isMobile()) {
     this.addMessageInput();
     this.addPointLockGrab();
   }
@@ -130,7 +121,7 @@ Client.prototype.initialize = function(){
 
   this.preferences.createGui();
 
-  setInterval(this.tickPhysics, 1000 / PHYSICS_HZ);
+  setInterval(this.tickPhysics, 1000 / environment.physicsHertz());
 
   window.addEventListener('resize', this.onWindowResize, false);
 
@@ -322,7 +313,7 @@ Client.prototype.onClick = function(e) {
   this.raycaster.set(position, direction);
   this.raycaster.far = 5.0;
 
-  if(DEBUG){
+  if(environment.isDebug()){
     var material = new THREE.LineBasicMaterial({
         color: 0x0000ff,
         linewidth: 5
@@ -463,7 +454,7 @@ Client.prototype.addInstructions = function() {
   $(".overlay").remove();
   this.renderOverlay(Templates.instructions);
   element = document.body;
-  if (!(MOBILE || element.requestPointerLock || element.mozRequestPointerLock || element.webkitRequestPointerLock)) {
+  if (!(environment.isMobile() || element.requestPointerLock || element.mozRequestPointerLock || element.webkitRequestPointerLock)) {
     alert("[FAIL] Your browser doesn't seem to support pointerlock. Please use ie, chrome or firefox.");
   }
 };
@@ -603,7 +594,7 @@ Client.prototype.addDot = function() {
 Client.prototype.addControls = function() {
   var self = this;
 
-  this.controls = new PointerLockControls(this.camera, this, MOBILE);
+  this.controls = new PointerLockControls(this.camera, this, environment.isMobile());
   this.controls.enabled = false;
   this.scene.add(this.controls.getObject());
 
@@ -642,7 +633,7 @@ Client.prototype.getPlayerDropPoint = function() {
 Client.prototype.tickPhysics = function() {
   var timeStep;
 
-  timeStep = 1.0 / PHYSICS_HZ;
+  timeStep = 1.0 / environment.physicsHertz();
 
   if (this.controls.enabled) {
     this.connector.physicsWorld.step(timeStep);
@@ -671,7 +662,7 @@ Client.prototype.tick = function() {
   var state;
   this.stats.begin();
 
-  if(DEBUG){
+  if(environment.isDebug()){
     var q = new THREE.Quaternion;
     q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), this.controls.getYaw());
     this.directionArrow.quaternion.copy(q);
@@ -698,7 +689,7 @@ Client.prototype.tick = function() {
 
   this.stats.end();
 
-  if(LOW_POWER_MODE){
+  if(environment.isLowPowerMode()){
     setTimeout(this.tick, 1000 / 12);
   }else{
     requestAnimationFrame(this.tick);

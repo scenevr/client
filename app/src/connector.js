@@ -7,6 +7,7 @@ var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments)
 
 var Utils = require("./utils"),
   URI = require("uri-js"),
+  environment = require("./environment"),
   StyleMap = require("./style_map"),
   TWEEN = require("tween.js"),
   EventEmitter = require('wolfy87-eventemitter'),
@@ -146,11 +147,14 @@ var Connector = (function(_super) {
         publishAudio: true,
         mirror: false
       });
+
       this.publisher.setStyle({
         audioLevelDisplayMode : 'off',
         buttonDisplayMode : 'off',
         nameDisplayMode : 'off'
       });
+
+      this.publisherIcon = $("<img src='/images/microphone-icon.png' />").addClass('microphone-icon').appendTo('body').hide();
 
       this.session.publish(this.publisher);
       this.publisher.publishAudio(false);
@@ -161,6 +165,7 @@ var Connector = (function(_super) {
 
     if(this.muted){
       this.publisher.publishAudio(true);
+      this.publisherIcon.show();
       console.log("publishing...");
       this.muted = false;
     }
@@ -169,6 +174,7 @@ var Connector = (function(_super) {
   Connector.prototype.stopTalking = function() {
     if (this.publisher && !this.muted) {
       this.publisher.publishAudio(false);
+      this.publisherIcon.hide();
       console.log("muting...");
       this.muted = true;
       
@@ -710,9 +716,11 @@ var Connector = (function(_super) {
       } else if (name === 'respawn') {
         this.respawn(el.attr('reason'));
       } else if (name === 'opentok') {
-        this.initializeOpentok(
-          el.attr('role'), el.attr('apikey'), el.attr('session'), el.attr('token')
-        );
+        if(!environment.isMobile()){
+          this.initializeOpentok(
+            el.attr('role'), el.attr('apikey'), el.attr('session'), el.attr('token')
+          );
+        }
       } else {
         console.log("Unrecognized event " + (el.attr('name')));
       }

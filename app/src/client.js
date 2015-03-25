@@ -289,13 +289,16 @@ Client.prototype.promotePortal = function() {
   this.portal = this.connector.portal;
   window.history.pushState({}, "SceneVR", "?connect=" + this.portal.connector.uri.replace(/^\/\//, ''));
   controlObject = this.controls.getObject();
+  
   this.scene.remove(controlObject);
   this.world.remove(this.playerBody);
   this.world = this.portal.world;
   this.scene = this.portal.scene;
   this.scene.add(controlObject);
-  this.connector.disconnect();
+
+  this.connector.destroy();
   delete this.connector;
+
   this.connector = this.portal.connector;
   this.connector.isPortal = false;
   delete this.portal;

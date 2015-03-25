@@ -25,4 +25,9 @@ Environment.prototype.isEditingEnabled = function(){
   return false;
 }
 
+// unpublish after 60 seconds of inactivity
+Environment.prototype.unpublishTimeout = function(){
+  return 10 * 1000;
+}
+
 module.exports = new Environment;

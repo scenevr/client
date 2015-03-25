@@ -65,6 +65,27 @@ var Connector = (function(_super) {
     }
   }
 
+  Connector.prototype.destroy = function(){
+    clearInterval(this.interval);
+
+    this.disconnect();
+    this.unpublishOpentok();
+
+    if(this.session){
+      var self = this;
+  
+      // OpenTok needs some time to unpublish before we can destroy it.
+      setTimeout(function(){
+        self.session.disconnect();
+        delete self.session;
+      }, 1500);
+    }
+
+    delete this.physicsWorld;
+    delete this.scene;
+    delete this.client;
+  }
+
   Connector.prototype.onAuthenticationReady = function(){
     if(this.client.authentication.isLoggedIn()){
       this.authenticate();
@@ -154,10 +175,12 @@ var Connector = (function(_super) {
         nameDisplayMode : 'off'
       });
 
-      this.publisherIcon = $("<img src='/images/microphone-icon.png' />").addClass('microphone-icon').appendTo('body').hide();
-
+      this.publisherIcon = $("<img src='/images/microphone-icon.png' />").addClass('microphone-icon').appendTo('body');
       this.session.publish(this.publisher);
       this.publisher.publishAudio(false);
+      this.publisherIcon.hide();
+
+      this.unpublishTimeout = setTimeout(this.unpublishOpentok.bind(this), environment.unpublishTimeout());
       this.muted = true;
 
       this.client.exitPointerLock();
@@ -166,24 +189,36 @@ var Connector = (function(_super) {
     if(this.muted){
       this.publisher.publishAudio(true);
       this.publisherIcon.show();
+
       console.log("publishing...");
+
+      clearTimeout(this.unpublishTimeout);
       this.muted = false;
     }
 };
 
   Connector.prototype.stopTalking = function() {
+    var self = this;
+
     if (this.publisher && !this.muted) {
       this.publisher.publishAudio(false);
       this.publisherIcon.hide();
+
       console.log("muting...");
-      this.muted = true;
       
       // Remove the publisher after 10 seconds
-      // setTimeout(function() {
-      //   self.session.unpublish(self.publisher);
-      //   self.publisher = null;
-      //  }, 10000);
+      this.unpublishTimeout = setTimeout(this.unpublishOpentok.bind(this), environment.unpublishTimeout());
+      this.muted = true;
     }
+  };
+
+  Connector.prototype.unpublishOpentok = function(){
+    console.log("Unpublishing...");
+
+    clearTimeout(this.unpublishTimeout);
+
+    this.session.unpublish(this.publisher);
+    this.publisher = null;
   };
 
   Connector.prototype.addFloor = function() {
@@ -230,12 +265,13 @@ var Connector = (function(_super) {
   };
 
   Connector.prototype.loadPortal = function(el, obj) {
-    var destinationUri;
     if (this.isPortal) {
       console.error("Portal tried to #loadPortal");
       return;
     }
-    destinationUri = URI.resolve(this.uri, el.attr('href'));
+
+    var destinationUri = URI.resolve(this.uri, el.attr('href'));
+
     this.portal = {};
     this.portal.el = el;
     this.portal.obj = obj;
@@ -254,9 +290,12 @@ var Connector = (function(_super) {
     this.portal.connector.disconnect();
     delete this.portal.scene;
     delete this.portal.world;
+
+    this.portal.connector.destroy();
     delete this.portal.connector;
+
     delete this.portal;
-    return delete this.stencilScene;
+    delete this.stencilScene;
   };
 
   Connector.prototype.createPortal = function(el, obj) {
@@ -422,31 +461,7 @@ var Connector = (function(_super) {
   };
 
   Connector.prototype.onClick = function(e) {
-    this.flashObject(this.scene.getObjectByName(e.uuid));
     this.sendMessage($("<event />").attr("name", "click").attr("uuid", e.uuid).attr("point", e.point.toArray().join(" ")));
-  };
-
-  Connector.prototype.flashObject = function(obj) {
-    var tween;
-    if (obj.material) {
-      obj.material.setValues({
-        transparent: true
-      });
-      tween = new TWEEN.Tween({
-        opacity: 0.5
-      });
-      return tween.to({
-        opacity: 1.0
-      }, 200).onUpdate(function() {
-        return obj.material.setValues({
-          opacity: this.opacity
-        });
-      }).onComplete(function() {
-        return obj.material.setValues({
-          transparent: false
-        });
-      }).easing(TWEEN.Easing.Linear.None).start();
-    }
   };
 
   Connector.prototype.tick = function() {

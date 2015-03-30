@@ -217,7 +217,10 @@ var Connector = (function(_super) {
 
     clearTimeout(this.unpublishTimeout);
 
-    this.session.unpublish(this.publisher);
+    if(this.session){
+      this.session.unpublish(this.publisher);
+    }
+    
     this.publisher = null;
   };
 

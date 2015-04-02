@@ -1,53 +1,56 @@
-var Utils = require("../utils");
+var Utils = require('../utils');
+var URI = require('uri-js');
 
-// look of disapproval
-window.html2canvas = require("html2canvas");
+// For jshint
+var THREE = window.THREE;
+var $ = window.jQuery;
+var CANNON = window.CANNON;
+var html2canvas = window.html2canvas = require('html2canvas');
 
-function RenderQueue(){
+function RenderQueue () {
   this.queue = [];
   this.processing = false;
   this.interjobDelay = 25;
 }
 
-RenderQueue.prototype.add = function(job){
+RenderQueue.prototype.add = function (job) {
   this.queue.push(job);
-  
-  if(!this.processing){
+
+  if (!this.processing) {
     this.nextJob();
   }
-}
+};
 
-RenderQueue.prototype.nextJob = function(){
+RenderQueue.prototype.nextJob = function () {
   var job = this.queue.shift(),
     self = this;
 
-  if(!job || this.processing){
+  if (!job || this.processing) {
     return;
   }
 
   this.processing = true;
 
-  job(function(){
-    setTimeout(function(){
+  job(function () {
+    setTimeout(function () {
       self.processing = false;
       self.nextJob();
     }, self.interjobDelay);
   });
-}
+};
 
-var rQueue = new RenderQueue;
+var rQueue = new RenderQueue();
 
 var SIZE = 512;
 
-function Billboard() {
+function Billboard () {
 }
 
-Billboard.create = function(connector, el) {
-  var box, boxBody, boxShape, canvas, div, geometry, material, mesh, newScale, obj;
-  obj = new THREE.Object3D;
-  canvas = $("<canvas width='" + SIZE + "' height='" + SIZE + "' />")[0];
+Billboard.create = function (connector, el) {
+  var box, boxBody, boxShape, geometry, material, mesh, newScale;
+  var obj = new THREE.Object3D();
 
-  div = $("<div />").html(el.text()).css({
+  var div = $('<div />').html(el.text()).css({
     zIndex: 50,
     position: 'absolute',
     left: 0,
@@ -59,11 +62,11 @@ Billboard.create = function(connector, el) {
     border: '1px solid #ccc',
     fontSize: '22px'
   });
-  div.find("img").each((function(_this) {
-    return function(index, img) {
-      return img.src = URI.resolve(connector.uri, img.getAttribute("src"));
-    };
-  })(this));
+
+  div.find('img').each(function (index, img) {
+    img.src = URI.resolve(connector.uri, img.getAttribute('src'));
+  });
+
   div.appendTo('body');
   geometry = new THREE.BoxGeometry(1, 1, 1);
   material = new THREE.MeshLambertMaterial({
@@ -79,8 +82,10 @@ Billboard.create = function(connector, el) {
 
   obj.add(box);
   obj.add(mesh);
-  newScale = el.attr("scale") ? Utils.parseVector(el.attr("scale")) : new THREE.Vector3(2, 2, 0.5);
+
+  newScale = el.attr('scale') ? Utils.parseVector(el.attr('scale')) : new THREE.Vector3(2, 2, 0.5);
   obj.scale.copy(newScale);
+
   boxShape = new CANNON.Box(new CANNON.Vec3().copy(newScale.multiplyScalar(0.5)));
   boxBody = new CANNON.Body({
     mass: 0
@@ -89,13 +94,11 @@ Billboard.create = function(connector, el) {
 
   obj.body = boxBody;
 
-  var self = this;
-
-  rQueue.add(function(finished){
+  rQueue.add(function (finished) {
     html2canvas(div[0], {
       useCORS: true,
-      letterRendering : false
-    }).then(function(canvas){
+      letterRendering: false
+    }).then(function (canvas) {
       var texture;
       texture = new THREE.Texture(canvas);
       texture.needsUpdate = true;

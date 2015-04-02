@@ -398,6 +398,11 @@ var Connector = (function(_super) {
       throw "Invalid uri string " + this.uri;
     }
 
+    // fixme: Make all websockets connections on port 8080, instead of this hack for scenevr.hosting.
+    if(components.host.match(/scenevr\.hosting/)){
+      components.port = '8080';
+    }
+
     this.ws = new WebSocket("ws://" + components.host + ":" + (components.port || 80) + components.path, this.protocol);
     this.ws.binaryType = 'arraybuffer';
 

@@ -1,11 +1,15 @@
 var Utils = require('../utils');
 var URI = require('uri-js');
+var CANNON = require('cannon');
+var html2canvas = require('html2canvas');
+
+if (!window.html2canvas) {
+  window.html2canvas = html2canvas;
+}
 
 // For jshint
 var THREE = window.THREE;
 var $ = window.jQuery;
-var CANNON = window.CANNON;
-var html2canvas = window.html2canvas = require('html2canvas');
 
 function RenderQueue () {
   this.queue = [];

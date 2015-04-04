@@ -1,13 +1,13 @@
-'use strict';
+var Utils = require('../utils');
+var StyleMap = require('../style_map');
+var THREE = require('three');
+var CANNON = require('cannon');
 
-var Utils = require("../utils"),
-  StyleMap = require("../style_map");
-
-function Box() {
+function Box () {
 }
 
-Box.create = function(connector, el) {
-  var styles = new StyleMap(el.attr("style"));
+Box.create = function (connector, el) {
+  var styles = new StyleMap(el.attr('style'));
 
   var geometry = new THREE.BoxGeometry(1, 1, 1);
   var material = new THREE.MeshLambertMaterial({
@@ -15,16 +15,16 @@ Box.create = function(connector, el) {
   });
 
   var obj = new THREE.Mesh(geometry, material);
-  var scale = el.attr("scale") ? Utils.parseVector(el.attr("scale")) : new THREE.Vector3(1, 1, 1);
+  var scale = el.attr('scale') ? Utils.parseVector(el.attr('scale')) : new THREE.Vector3(1, 1, 1);
   obj.scale.copy(scale);
 
-  if(styles.collision === 'none'){
+  if (styles.collision === 'none') {
     // No collision at all
-  }else{
+  } else {
     var boxShape = new CANNON.Box(new CANNON.Vec3().copy(scale.multiplyScalar(0.5))),
       boxBody = new CANNON.Body({ mass: 0 });
 
-    if(styles.collisionResponse === 'false'){
+    if (styles.collisionResponse === 'false') {
       boxBody.collisionResponse = false;
     }
 

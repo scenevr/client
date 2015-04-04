@@ -20,7 +20,6 @@ var Element = require('./elements/element');
 // For semistandard
 var $ = window.jQuery;
 var THREE = window.THREE;
-var OT = window.OT;
 
 // Constants
 var PLAYER_MAX_HEAD_ANGLE = Math.PI / 4;
@@ -121,7 +120,7 @@ Connector.prototype.initializeOpentok = function (role, apiKey, sessionId, token
     token: token
   };
 
-  this.session = OT.initSession(apiKey, sessionId);
+  this.session = window.OT.initSession(apiKey, sessionId);
 
   this.session.on('streamCreated', function (event) {
     console.log('Someone is speaking...');
@@ -162,7 +161,7 @@ Connector.prototype.startTalking = function () {
     div.style.display = 'none';
     document.body.appendChild(div);
 
-    this.publisher = OT.initPublisher(apiKey, div, {
+    this.publisher = window.OT.initPublisher(apiKey, div, {
       videoSource: null,
       publishVideo: false,
       publishAudio: true,
@@ -213,7 +212,7 @@ Connector.prototype.unpublishOpentok = function () {
 
   clearTimeout(this.unpublishTimeout);
 
-  if (this.session) {
+  if ((this.session) && (this.publisher)) {
     this.session.unpublish(this.publisher);
   }
 
@@ -765,7 +764,7 @@ Connector.prototype.processMessage = function (el) {
     return;
   }
 
-obj = this.scene.getObjectByName(uuid);
+  obj = this.scene.getObjectByName(uuid);
 
   // The element has changed more than just position / rotation, destroy it
   if (obj && (Element.substantialDifference(obj.el, el[0]))) {

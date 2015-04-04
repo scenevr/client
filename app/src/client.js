@@ -6,7 +6,6 @@ var TWEEN = require('tween.js');
 var CANNON = require('cannon');
 var EventEmitter = require('wolfy87-eventemitter');
 var Authentication = require('./authentication');
-var Editor = require('./editor');
 var Preferences = require('./preferences');
 
 // For semistandard
@@ -68,7 +67,7 @@ Client.prototype.initialize = function () {
   this.addPlayerBody();
 
   // Init connector
-  this.connector = new Connector(this, this.scene, this.world, this.getUriFromLocation());
+  this.connector = new Connector(this, this.scene, this.world, this.getUrlFromLocation());
   this.connector.connect();
   this.addConnecting();
 
@@ -85,7 +84,7 @@ Client.prototype.initialize = function () {
     }
 
     if (environment.isEditingEnabled()) {
-      self.editor = new Editor(self);
+      // self.editor = new Editor(self);
     }
   });
 
@@ -187,7 +186,7 @@ Client.prototype.disableControls = function () {
   this.controls.enabled = false;
 };
 
-Client.prototype.getUriFromLocation = function () {
+Client.prototype.getUrlFromLocation = function () {
   if (window.location.search.match(/connect.+/)) {
     return '//' + window.location.search.split(/[=]/)[1];
   } else {
@@ -261,7 +260,7 @@ Client.prototype.checkForPortalCollision = function () {
 Client.prototype.promotePortal = function () {
   this.portal = this.connector.portal;
 
-  window.history.pushState({}, 'SceneVR', '?connect=' + this.portal.connector.uri.replace(/^\/\//, ''));
+  window.history.pushState({}, 'SceneVR', '?connect=' + URI.serialize(this.portal.connector.uri).replace(/^\/\//, ''));
 
   var controlObject = this.controls.getObject();
 
@@ -406,7 +405,7 @@ Client.prototype.addConnectionError = function () {
   $('.overlay').remove();
 
   this.renderOverlay(Templates.unableToConnect({
-    host: URI.parse(this.connector.uri).host
+    host: this.connector.uri.host
   }));
 };
 
@@ -437,7 +436,7 @@ Client.prototype.centerOverlay = function () {
 
 Client.prototype.addConnecting = function () {
   this.renderOverlay(Templates.connecting({
-    host: URI.parse(this.connector.uri).host
+    host: this.connector.uri.host
   }));
 };
 
@@ -450,7 +449,7 @@ Client.prototype.addInstructions = function () {
 
   if (!(environment.isMobile() || element.requestPointerLock || element.mozRequestPointerLock || element.webkitRequestPointerLock)) {
     this.renderOverlay(Templates.noPointerLock({
-      host: URI.parse(this.connector.uri).host
+      host: this.connector.uri.host
     }));
   }
 };

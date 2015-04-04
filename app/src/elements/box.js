@@ -1,7 +1,8 @@
 var Utils = require('../utils');
 var StyleMap = require('../style_map');
-var THREE = require('three');
 var CANNON = require('cannon');
+
+var THREE = window.THREE;
 
 function Box () {
 }

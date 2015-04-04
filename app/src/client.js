@@ -1,55 +1,135 @@
-'use strict';
+var util = require('util');
+var Connector = require('./connector');
+var environment = require('./environment');
+var URI = require('uri-js');
+var TWEEN = require('tween.js');
+var CANNON = require('cannon');
+var EventEmitter = require('wolfy87-eventemitter');
+var Authentication = require('./authentication');
+var Editor = require('./editor');
+var Preferences = require('./preferences');
 
-var Client,
-  __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-  heir = require("heir");
-
-var Connector = require("./connector"),
-  environment = require("./environment"),
-  URI = require("uri-js"),
-  TWEEN = require("tween.js"),
-  EventEmitter = require('wolfy87-eventemitter'),
-  Authentication = require("./authentication"),
-  Editor = require("./editor"),
-  Preferences = require("./preferences");
+// For semistandard
+var $ = window.jQuery;
+var Stats = window.Stats;
+var THREE = window.THREE;
 
 var Templates = {
-  inQueue: require("../templates/in_queue.jade"),
-  unableToConnect: require("../templates/unable_to_connect.jade"),
-  instructions: require("../templates/instructions.jade"),
-  connecting: require("../templates/connecting.jade")
+  inQueue: require('../templates/in_queue.jade'),
+  unableToConnect: require('../templates/unable_to_connect.jade'),
+  instructions: require('../templates/instructions.jade'),
+  connecting: require('../templates/connecting.jade'),
+  noPointerLock: require('../templates/no_pointer_lock.jade')
 };
 
 // Not sure why this has to be global
-window.CANNON = require("cannon");
+window.CANNON = CANNON;
 
-function Client() {
+function Client () {
   this.initialize();
 }
 
-heir.inherit(Client, EventEmitter);
+util.inherits(Client, EventEmitter);
 
-Client.prototype.initialize = function(){
+Client.prototype.initialize = function () {
   var self = this;
 
   this.preferences = new Preferences(this);
 
-  this.tick = __bind(this.tick, this);
-  this.tickPhysics = __bind(this.tickPhysics, this);
-  this.vrDeviceCallback = __bind(this.vrDeviceCallback, this);
-  this.onWindowResize = __bind(this.onWindowResize, this);
-
-  var ASPECT, FAR, NEAR, VIEW_ANGLE;
-  
-  this.container = $("#scene-view").css({
-    position: 'relative'
-  });
-
+  this.container = $('#scene-view');
   this.width = this.container.width();
   this.height = this.container.height();
+  window.addEventListener('resize', this.onWindowResize.bind(this), false);
 
+  this.createStats();
+  this.initVR();
+
+  this.authentication = new Authentication(this);
+
+  // Register event handlers
+  this.on('click', this.onClick.bind(this));
+
+  this.scene = new THREE.Scene();
+  var aspect = this.width / this.height;
+  this.camera = new THREE.PerspectiveCamera(environment.getViewAngle(), aspect, environment.getNear(), environment.getFar());
+  this.initializeRenderer();
+  this.addControls();
+
+  if (environment.isDebug()) {
+    this.addDirectionArrow();
+  }
+
+  this.addDot();
+
+  // Init physics
+  this.world = new CANNON.World();
+  this.world.gravity.set(0, -20, 0);
+  this.world.broadphase = new CANNON.NaiveBroadphase();
+  this.addPlayerBody();
+
+  // Init connector
+  this.connector = new Connector(this, this.scene, this.world, this.getUriFromLocation());
+  this.connector.connect();
+  this.addConnecting();
+
+  if (!environment.isMobile()) {
+    this.addMessageInput();
+    this.addPointLockGrab();
+  }
+
+  this.connector.on('connected', function () {
+    if (environment.isMobile()) {
+      self.enableControls();
+    } else {
+      self.addInstructions();
+    }
+
+    if (environment.isEditingEnabled()) {
+      self.editor = new Editor(self);
+    }
+  });
+
+  this.connector.on('disconnected', function () {
+    self.addConnectionError();
+  });
+
+  this.connector.on('restarting', function () {
+    self.showMessage('Reconnecting...');
+  });
+
+  this.raycaster = new THREE.Raycaster();
+
+  this.tick();
+
+  this.preferences.createGui();
+
+  // Start physics
+  this.time = Date.now();
+  setInterval(this.tickPhysics.bind(this), 1000 / environment.physicsHertz());
+
+  window.addEventListener('keypress', function (e) {
+    if (self.vrrenderer && self.controls.enabled) {
+      if (e.charCode === 'r'.charCodeAt(0)) {
+        self.vrrenderer.resetOrientation(self.controls, self.vrHMDSensor);
+      }
+
+      if (e.charCode === 'f'.charCodeAt(0)) {
+        if (self.domElement.mozRequestFullScreen) {
+          self.domElement.mozRequestFullScreen({
+            vrDisplay: self.vrHMD
+          });
+        }
+        if (self.domElement.webkitRequestFullscreen) {
+          self.domElement.webkitRequestFullscreen({
+            vrDisplay: self.vrHMD
+          });
+        }
+      }
+    }
+  });
+};
+
+Client.prototype.createStats = function () {
   this.stats = new Stats();
   this.stats.setMode(0);
   this.stats.domElement.style.position = 'absolute';
@@ -57,106 +137,19 @@ Client.prototype.initialize = function(){
   this.stats.domElement.style.zIndex = 110;
   this.stats.domElement.style.left = '10px';
   this.container.append(this.stats.domElement);
+};
 
-  VIEW_ANGLE = 60;
-  ASPECT = this.width / this.height;
-  NEAR = 0.1;
-  FAR = 700;
-
-  this.scene = new THREE.Scene();
-  this.world = new CANNON.World();
-  this.world.gravity.set(0, -20, 0);
-  this.world.broadphase = new CANNON.NaiveBroadphase();
-
-  this.initVR();
-
-  this.time = Date.now();
-
-  this.authentication = new Authentication(this);
-
-  this.camera = new THREE.PerspectiveCamera(VIEW_ANGLE, ASPECT, NEAR, FAR);
-  this.initializeRenderer();
-  this.addControls();
-  this.addPlayerBody();
-  
-  if(environment.isDebug()){
-    this.addDirectionArrow();
+Client.prototype.initializeRenderer = function () {
+  if (this.renderer) {
+    throw new Error('Cannot reinitialize');
   }
 
-  this.addDot();
-  this.connector = new Connector(this, this.scene, this.world, this.getUriFromLocation());
-  this.connector.connect();
-  this.addConnecting();
-
-  this.connector.on('connected', function() {
-    if (environment.isMobile()) {
-      self.enableControls();
-    } else {
-      self.addInstructions();
-    }
-
-    if (environment.isEditingEnabled()){
-      self.editor = new Editor(self);
-    }
-  });
-
-  this.connector.on('disconnected', function(){
-    self.addConnectionError();
-  });
-
-  this.connector.on('restarting', function(){
-    self.showMessage("Reconnecting...");
-  });
-
-  this.on('click', this.onClick.bind(this));
-
-  this.raycaster = new THREE.Raycaster;
-
-  if (!environment.isMobile()) {
-    this.addMessageInput();
-    this.addPointLockGrab();
-  }
-
-  this.tick();
-
-  this.preferences.createGui();
-
-  setInterval(this.tickPhysics, 1000 / environment.physicsHertz());
-
-  window.addEventListener('resize', this.onWindowResize, false);
-
-  window.addEventListener("keypress", (function(_this) {
-    return function(e) {
-      if ((e.charCode === 'r'.charCodeAt(0)) && _this.vrrenderer && _this.controls.enabled) {
-        _this.vrrenderer.resetOrientation(_this.controls, _this.vrHMDSensor);
-      }
-      if ((e.charCode === 'f'.charCodeAt(0)) && _this.vrrenderer && _this.controls.enabled) {
-        if (_this.domElement.mozRequestFullScreen) {
-          _this.domElement.mozRequestFullScreen({
-            vrDisplay: vrHMD
-          });
-        }
-        if (_this.domElement.webkitRequestFullscreen) {
-          return _this.domElement.webkitRequestFullscreen({
-            vrDisplay: _this.vrHMD
-          });
-        }
-      }
-    };
-  })(this));
-}
-
-Client.prototype.initializeRenderer = function(){
-  if(this.renderer){
-    throw "Cannot reinitialize";
-  }
-
-  this.domElement = $("<canvas />");
+  this.domElement = $('<canvas />');
   this.container.append(this.domElement);
 
   this.renderer = new THREE.WebGLRenderer({
     antialias: this.preferences.getState().graphicsAntialiasing,
-    canvas : this.domElement[0]
+    canvas: this.domElement[0]
   });
 
   this.renderer.setSize(this.width / this.preferences.getState().downSampling, this.height / this.preferences.getState().downSampling);
@@ -167,14 +160,9 @@ Client.prototype.initializeRenderer = function(){
     width: this.width,
     height: this.height
   });
-}
+};
 
-Client.prototype.reinitializeGraphics = function(){
-  // We can't reinitialize because webgl contexts can't be freed
-  this.onWindowResize();
-}
-
-Client.prototype.onWindowResize = function() {
+Client.prototype.onWindowResize = function () {
   this.width = this.container.width();
   this.height = this.container.height();
 
@@ -190,106 +178,93 @@ Client.prototype.onWindowResize = function() {
   this.centerOverlay();
 };
 
-Client.prototype.enableControls = function() {
+Client.prototype.enableControls = function () {
   this.controls.enabled = true;
   this.hideInstructions();
 };
 
-Client.prototype.disableControls = function() {
+Client.prototype.disableControls = function () {
   this.controls.enabled = false;
 };
 
-Client.prototype.getUriFromLocation = function() {
+Client.prototype.getUriFromLocation = function () {
   if (window.location.search.match(/connect.+/)) {
-    return "//" + window.location.search.split(/[=]/)[1];
+    return '//' + window.location.search.split(/[=]/)[1];
   } else {
-    return "//home.scenevr.hosting/home.xml";
+    return '//home.scenevr.hosting/home.xml';
   }
 };
 
-Client.prototype.removeReflectedObjects = function() {
-  var list, obj, _i, _len, _results;
-  list = (function() {
-    var _i, _len, _ref, _results;
-    _ref = this.scene.children;
-    _results = [];
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      obj = _ref[_i];
-      if (obj.name) {
-        _results.push(obj);
-      }
+Client.prototype.removeAllObjectsFromScene = function () {
+  var self = this;
+
+  this.scene.children.forEach(function (child) {
+    if (child.body) {
+      self.world.remove(child.body);
     }
-    return _results;
-  }).call(this);
-  _results = [];
-  for (_i = 0, _len = list.length; _i < _len; _i++) {
-    obj = list[_i];
-    this.scene.remove(obj);
-    if (obj.body) {
-      _results.push(this.world.remove(obj.body));
-    } else {
-      _results.push(void 0);
-    }
-  }
-  return _results;
+
+    self.scene.remove(child);
+  });
 };
 
-Client.prototype.getAllClickableObjects = function() {
-  var list;
-  list = [];
-  this.scene.traverse(function(obj) {
+Client.prototype.getAllClickableObjects = function () {
+  var list = [];
+
+  this.scene.traverse(function (obj) {
     return list.push(obj);
   });
+
   return list;
 };
 
-Client.prototype.initVR = function() {
+Client.prototype.initVR = function () {
   if (navigator.getVRDevices) {
-    return navigator.getVRDevices().then(this.vrDeviceCallback);
+    navigator.getVRDevices().then(this.vrDeviceCallback.bind(this));
   } else if (navigator.mozGetVRDevices) {
-    return navigator.mozGetVRDevices(this.vrDeviceCallback);
+    navigator.mozGetVRDevices(this.vrDeviceCallback.bind(this));
   }
 };
 
-Client.prototype.vrDeviceCallback = function(vrdevs) {
-  var device, _i, _j, _len, _len1;
-  for (_i = 0, _len = vrdevs.length; _i < _len; _i++) {
-    device = vrdevs[_i];
-    if (device instanceof HMDVRDevice) {
-      this.vrHMD = device;
-      break;
+Client.prototype.vrDeviceCallback = function (vrdevs) {
+  var self = this;
+
+  vrdevs.forEach(function (device) {
+    if (device instanceof window.HMDVRDevice) {
+      self.vrHMD = device;
     }
-  }
-  for (_j = 0, _len1 = vrdevs.length; _j < _len1; _j++) {
-    device = vrdevs[_j];
-    if (device instanceof PositionSensorVRDevice && device.hardwareUnitId === this.vrHMD.hardwareUnitId) {
-      this.vrHMDSensor = device;
-      break;
+  });
+
+  vrdevs.forEach(function (device) {
+    if (device instanceof window.PositionSensorVRDevice && device.hardwareUnitId === self.vrHMD.hardwareUnitId) {
+      self.vrHMDSensor = device;
     }
-  }
+  });
+
   if (this.vrHMD) {
-    return this.vrrenderer = new THREE.VRRenderer(this.renderer, this.vrHMD, this.vrHMDSensor);
+    this.vrrenderer = new THREE.VRRenderer(this.renderer, this.vrHMD, this.vrHMDSensor);
   }
 };
 
-Client.prototype.checkForPortalCollision = function() {
-  var direction, ints, position;
-  position = this.controls.getObject().position;
-  direction = this.controls.getDirection(new THREE.Vector3);
+Client.prototype.checkForPortalCollision = function () {
+  var position = this.controls.getObject().position;
+  var direction = this.controls.getDirection(new THREE.Vector3());
   this.raycaster.set(position, direction);
   this.raycaster.far = 0.5;
-  ints = this.raycaster.intersectObject(this.connector.stencilScene.children[0], false);
+
+  var ints = this.raycaster.intersectObject(this.connector.stencilScene.children[0], false);
+
   if ((ints.length > 0) && (this.connector.portal.connector.hasSpawned())) {
     return this.promotePortal();
   }
 };
 
-Client.prototype.promotePortal = function() {
-  var controlObject;
+Client.prototype.promotePortal = function () {
   this.portal = this.connector.portal;
-  window.history.pushState({}, "SceneVR", "?connect=" + this.portal.connector.uri.replace(/^\/\//, ''));
-  controlObject = this.controls.getObject();
-  
+
+  window.history.pushState({}, 'SceneVR', '?connect=' + this.portal.connector.uri.replace(/^\/\//, ''));
+
+  var controlObject = this.controls.getObject();
+
   this.scene.remove(controlObject);
   this.world.remove(this.playerBody);
   this.world = this.portal.world;
@@ -301,22 +276,25 @@ Client.prototype.promotePortal = function() {
 
   this.connector = this.portal.connector;
   this.connector.isPortal = false;
+
   delete this.portal;
   delete this.playerBody;
+
   this.world.gravity.set(0, -20, 0);
   this.world.broadphase = new CANNON.NaiveBroadphase();
   this.addPlayerBody();
-  return this.connector.setPosition(this.connector.spawnPosition);
+  this.connector.setPosition(this.connector.spawnPosition);
 };
 
-Client.prototype.onClick = function(e) {
-  var position = this.controls.getObject().position,
-    direction = this.controls.getDirection(new THREE.Vector3);
+Client.prototype.onClick = function (e) {
+  var position = this.controls.getObject().position;
+  var direction = this.controls.getDirection(new THREE.Vector3());
 
   this.raycaster.set(position, direction);
   this.raycaster.far = 5.0;
 
-  if(environment.isDebug()){
+  if (environment.isDebug()) {
+    // Add an arrow showing where the click ray is being cast.
     var material = new THREE.LineBasicMaterial({
         color: 0x0000ff,
         linewidth: 5
@@ -334,19 +312,18 @@ Client.prototype.onClick = function(e) {
 
   for (_i = 0, _len = _ref.length; _i < _len; _i++) {
     var intersection = _ref[_i];
-  
+
     if (intersection.object && intersection.object.parent && intersection.object.parent.userData.is && intersection.object.parent.userData.is("link")) {
       intersection.object.parent.onClick();
     }
-  
+
     var obj = intersection.object;
-  
+
     while (obj.parent) {
-      if (obj.userData instanceof jQuery) {
-        
-        if(e.which === 3 && this.editor){
+      if (obj.userData instanceof window.jQuery) {
+        if (this.editor) {
           this.editor.trigger('object:click', [obj]);
-        }else{
+        } else {
           this.connector.onClick({
             uuid: obj.name,
             point: intersection.point
@@ -359,85 +336,97 @@ Client.prototype.onClick = function(e) {
     }
   }
 
-  if(this.editor){
+  if (this.editor) {
     this.editor.trigger('object:click');
   }
 };
 
-Client.prototype.addMessageInput = function() {
-  var input;
-  this.chatForm = $("<div id='message-input'> <input type='text' placeholder='Press enter to start chatting...' /> </div>").appendTo("body");
-  input = this.chatForm.find('input');
-  $('body').on('keydown', (function(_this) {
-    return function(e) {
-      if (e.keyCode === 13 && !input.is(":focus")) {
-        _this.chatForm.find('input').focus();
-        _this.controls.enabled = false;
-      }
-      if (e.keyCode === 27) {
-        return _this.disableControls();
-      }
-    };
-  })(this));
-  input.on('keydown', (function(_this) {
-    return function(e) {
-      if (e.keyCode === 13) {
-        _this.addChatMessage({
-          name: 'You'
-        }, input.val());
-        _this.connector.sendChat(input.val());
-        input.val("").blur();
-        _this.enableControls();
-        e.preventDefault();
-        return e.stopPropagation();
-      }
-    };
-  })(this));
-  return this.chatMessages = $("<div id='messages' />").hide().appendTo('body');
+Client.prototype.addMessageInput = function () {
+  var self = this;
+
+  this.chatForm = $('<div id=\'message-input\'> <input type=\'text\' placeholder=\'Press enter to start chatting...\' /> </div>').appendTo('body');
+
+  var input = this.chatForm.find('input');
+
+  $('body').on('keydown', function (e) {
+    if (e.keyCode === 13 && !input.is(':focus')) {
+      self.chatForm.find('input').focus();
+      self.controls.enabled = false;
+    }
+
+    if (e.keyCode === 27) {
+      self.disableControls();
+    }
+  });
+
+  input.on('keydown', function (e) {
+    if (e.keyCode === 27) {
+      input.text('').blur();
+      self.enableControls();
+    }
+
+    if (e.keyCode === 13) {
+      self.addChatMessage({
+        name: 'You'
+      }, input.val());
+
+      self.connector.sendChat(input.val());
+      self.enableControls();
+      input.val('').blur();
+
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  });
+
+  this.chatMessages = $("<div id='messages' />").hide().appendTo('body');
 };
 
-Client.prototype.addChatMessage = function(player, message) {
+Client.prototype.addChatMessage = function (player, message) {
   this.chatMessages.show();
+
   if (player === null || player.name === 'scene') {
-    $("<div />").text("" + message).addClass('scene-message').appendTo(this.chatMessages);
+    $('<div />').text('' + message).addClass('scene-message').appendTo(this.chatMessages);
   } else {
-    $("<div />").text("" + player.name + ": " + message).appendTo(this.chatMessages);
+    $('<div />').text('' + player.name + ': ' + message).appendTo(this.chatMessages);
   }
-  return this.chatMessages.scrollTop(this.chatMessages[0].scrollHeight);
+
+  this.chatMessages.scrollTop(this.chatMessages[0].scrollHeight);
 };
 
-Client.prototype.hideOverlays = function() {
-  return $(".overlay").hide();
+Client.prototype.hideOverlays = function () {
+  return $('.overlay').hide();
 };
 
-Client.prototype.showOverlays = function() {
-  return $(".overlay").show();
+Client.prototype.showOverlays = function () {
+  return $('.overlay').show();
 };
 
-Client.prototype.addConnectionError = function() {
-  $(".overlay").remove();
+Client.prototype.addConnectionError = function () {
+  $('.overlay').remove();
+
   this.renderOverlay(Templates.unableToConnect({
     host: URI.parse(this.connector.uri).host
   }));
 };
 
-Client.prototype.renderOverlay = function(el) {
-  if(typeof el === 'function'){
-    el = $("<div />").html(el());
-  } else if (typeof el === 'string'){
-    el = $("<div />").html(el);
+Client.prototype.renderOverlay = function (el) {
+  if (typeof el === 'function') {
+    el = $('<div />').html(el());
+  } else if (typeof el === 'string') {
+    el = $('<div />').html(el);
   }
 
-  $(".overlay").remove();
+  $('.overlay').remove();
 
-  this.overlay = $("<div class='overlay'>").append(el).appendTo(this.container);
+  this.overlay = $('<div class="overlay" />').append(el).appendTo(this.container);
   this.centerOverlay();
   this.exitPointerLock();
 
-  return this.overlay;
+  this.overlay;
 };
 
-Client.prototype.centerOverlay = function() {
+Client.prototype.centerOverlay = function () {
   if (this.overlay) {
     this.overlay.css({
       left: ($(window).width() - this.overlay.width()) / 2 - 20,
@@ -446,31 +435,35 @@ Client.prototype.centerOverlay = function() {
   }
 };
 
-Client.prototype.addConnecting = function() {
+Client.prototype.addConnecting = function () {
   this.renderOverlay(Templates.connecting({
     host: URI.parse(this.connector.uri).host
   }));
 };
 
-Client.prototype.addInstructions = function() {
-  var element;
-  $(".overlay").remove();
+Client.prototype.addInstructions = function () {
+  $('.overlay').remove();
+
   this.renderOverlay(Templates.instructions);
-  element = document.body;
+
+  var element = document.body;
+
   if (!(environment.isMobile() || element.requestPointerLock || element.mozRequestPointerLock || element.webkitRequestPointerLock)) {
-    alert("[FAIL] Your browser doesn't seem to support pointerlock. Please use ie, chrome or firefox.");
+    this.renderOverlay(Templates.noPointerLock({
+      host: URI.parse(this.connector.uri).host
+    }));
   }
 };
 
-Client.prototype.exitPointerLock = function(){
+Client.prototype.exitPointerLock = function () {
   if (document.exitPointerLock) {
     document.exitPointerLock();
   } else if (document.mozExitPointerLock) {
     document.mozExitPointerLock();
   }
-}
+};
 
-Client.prototype.requestPointerLock = function(){
+Client.prototype.requestPointerLock = function () {
   var el = this.domElement[0];
 
   if (el.requestPointerLock) {
@@ -478,25 +471,25 @@ Client.prototype.requestPointerLock = function(){
   } else if (el.mozRequestPointerLock) {
     el.mozRequestPointerLock();
   }
-}
+};
 
-Client.prototype.hasPointerLock = function() {
+Client.prototype.hasPointerLock = function () {
   return document.pointerLockElement || document.mozPointerLockElement || document.webkitPointerLockElement;
-}
+};
 
-Client.prototype.pointerLockError = function(event) {
-  console.error("[FAIL] There was an error acquiring pointerLock. You will not be able to use scenevr.");
-}
+Client.prototype.pointerLockError = function (event) {
+  console.error('[FAIL] There was an error acquiring pointerLock. You will not be able to use scenevr.');
+};
 
-Client.prototype.pointerLockChange = function(event) {
+Client.prototype.pointerLockChange = function (event) {
   if (this.hasPointerLock()) {
     this.enableControls();
   } else {
     this.disableControls();
   }
-}
+};
 
-Client.prototype.addPointLockGrab = function() {
+Client.prototype.addPointLockGrab = function () {
   document.addEventListener('pointerlockchange', this.pointerLockChange.bind(this), false);
   document.addEventListener('pointerlockerror', this.pointerLockError.bind(this), false);
 
@@ -508,7 +501,7 @@ Client.prototype.addPointLockGrab = function() {
 
   var self = this;
 
-  this.domElement.click(function(){
+  this.domElement.click(function () {
     if (self.controls.enabled) {
       return;
     }
@@ -517,126 +510,111 @@ Client.prototype.addPointLockGrab = function() {
   });
 };
 
-Client.prototype.showMessage = function(message) {
+Client.prototype.showMessage = function (message) {
   this.renderOverlay(message);
 };
 
-Client.prototype.showInstructions = function() {
+Client.prototype.showInstructions = function () {
   this.addInstructions();
 };
 
-Client.prototype.hideInstructions = function() {
-  $(".overlay").remove();
+Client.prototype.hideInstructions = function () {
+  $('.overlay').remove();
 };
 
-Client.prototype.addLoadingScene = function() {
-  var geometry, material;
-  geometry = new THREE.IcosahedronGeometry(500, 3);
-  material = new THREE.MeshBasicMaterial({
-    color: '#999999',
-    wireframe: true,
-    wireframeLinewidth: 1
-  });
-  this.loadingDome = new THREE.Mesh(geometry, material);
-  return this.scene.add(this.loadingDome);
-};
-
-Client.prototype.addDirectionArrow = function(){
+Client.prototype.addDirectionArrow = function () {
   var material = new THREE.LineBasicMaterial({
       color: 0x0ffff00,
       linewidth: 10
   });
   var geometry = new THREE.Geometry();
-  geometry.vertices.push(new THREE.Vector3(0,0.2,0));
-  geometry.vertices.push(new THREE.Vector3(0,0.2,-5));
+  geometry.vertices.push(new THREE.Vector3(0, 0.2, 0));
+  geometry.vertices.push(new THREE.Vector3(0, 0.2, -5));
   this.directionArrow = new THREE.Line(geometry, material);
   this.scene.add(this.directionArrow);
-}
-Client.prototype.addPlayerBody = function() {
-  var lastContact, sphereShape;
+};
+
+Client.prototype.addPlayerBody = function () {
+  var self = this;
+
   this.playerBody = new CANNON.Body({
     mass: 100
   });
-  sphereShape = new CANNON.Sphere(0.5);
+
+  var sphereShape = new CANNON.Sphere(0.5);
+
   this.playerBody.addShape(sphereShape);
   this.playerBody.position.set(0, 0, 0);
   this.playerBody.linearDamping = 0;
   this.world.add(this.playerBody);
   this.controls.setCannonBody(this.playerBody);
-  lastContact = {
+
+  // :/
+  var lastContact = {
     time: 0,
     uuid: null
   };
-  return this.playerBody.addEventListener("collide", (function(_this) {
-    return function(e) {
-      var contact, other;
-      contact = e.contact;
-      other = contact.bi.id === _this.playerBody.id ? contact.bj : contact.bi;
-      if (other.uuid) {
-        if (((new Date) - lastContact.time < 500) && (lastContact.uuid === other.uuid)) {
-          return true;
-        } else {
-          lastContact = {
-            time: new Date,
-            uuid: other.uuid
-          };
-          return _this.connector.onCollide({
-            uuid: other.uuid,
-            normal: contact.ni
-          });
-        }
+
+  this.playerBody.addEventListener('collide', function (e) {
+    var contact = e.contact;
+    var other = contact.bi.id === self.playerBody.id ? contact.bj : contact.bi;
+
+    if (other.uuid) {
+      if (((new Date()) - lastContact.time < 500) && (lastContact.uuid === other.uuid)) {
+        return true;
+      } else {
+        lastContact = {
+          time: new Date(),
+          uuid: other.uuid
+        };
+
+        self.connector.onCollide({
+          uuid: other.uuid,
+          normal: contact.ni
+        });
       }
-    };
-  })(this));
+    }
+  });
 };
 
-Client.prototype.addDot = function() {
-  return $("<div />").addClass('aiming-point').appendTo('body');
+Client.prototype.addDot = function () {
+  $('<div />').addClass('aiming-point').appendTo('body');
 };
 
-Client.prototype.addControls = function() {
+Client.prototype.addControls = function () {
   var self = this;
 
-  this.controls = new PointerLockControls(this.camera, this, environment.isMobile());
+  this.controls = new window.PointerLockControls(this.camera, this, environment.isMobile());
   this.controls.enabled = false;
   this.scene.add(this.controls.getObject());
 
-  $('body').keydown(function (e){
-    if($('input:focus')[0] === undefined){
+  $('body').keydown(function (e) {
+    if ($('input:focus')[0] === undefined) {
       if ((e.keyCode === 84) || (e.keyCode === 86)) {
         self.connector.startTalking();
       }
     }
   });
-  
-  $('body').keyup(function(e) {
-    if($('input:focus')[0] === undefined){
+
+  $('body').keyup(function (e) {
+    if ($('input:focus')[0] === undefined) {
       if ((e.keyCode === 84) || (e.keyCode === 86)) {
         self.connector.stopTalking();
       }
     }
   });
-
 };
 
-Client.prototype.getPlayerObject = function() {
+Client.prototype.getPlayerObject = function () {
   return this.controls.getObject();
 };
 
-Client.prototype.getRotation = function(){
+Client.prototype.getRotation = function () {
   return this.controls.getRotation();
-}
-
-Client.prototype.getPlayerDropPoint = function() {
-  var v;
-  v = new THREE.Vector3(0, 0, -20);
-  return this.getAvatarObject().position.clone().add(v.applyEuler(this.getAvatarObject().rotation));
 };
 
-Client.prototype.tickPhysics = function() {
-  var timeStep;
-
-  timeStep = 1.0 / environment.physicsHertz();
+Client.prototype.tickPhysics = function () {
+  var timeStep = 1.0 / environment.physicsHertz();
 
   if (this.controls.enabled) {
     this.connector.physicsWorld.step(timeStep);
@@ -651,7 +629,7 @@ Client.prototype.tickPhysics = function() {
 
   // maybe reset orientation from gamepad
   if ((this.vrrender) && (this.controls.getObject().reorient)) {
-    this.vrrenderer.resetOrientation(this.controls, this.vrHMDSensor)
+    this.vrrenderer.resetOrientation(this.controls, this.vrHMDSensor);
   }
 
   this.controls.update(Date.now() - this.time);
@@ -661,20 +639,21 @@ Client.prototype.tickPhysics = function() {
   this.time = Date.now();
 };
 
-Client.prototype.tick = function() {
+Client.prototype.tick = function () {
   var state;
+
   this.stats.begin();
 
-  if(environment.isDebug()){
-    var q = new THREE.Quaternion;
+  if (environment.isDebug()) {
+    var q = new THREE.Quaternion();
     q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), this.controls.getYaw());
     this.directionArrow.quaternion.copy(q);
     this.directionArrow.position.copy(this.controls.getPosition()).setY(0.1);
   }
 
-  if(this.preferences.gui){
-    this.preferences.gui.update({ 
-      position : this.controls.getPosition().clone().add(new THREE.Vector3(-1.25, 2.0, -2))
+  if (this.preferences.gui) {
+    this.preferences.gui.update({
+      position: this.controls.getPosition().clone().add(new THREE.Vector3(-1.25, 2.0, -2))
     });
   }
 
@@ -692,21 +671,22 @@ Client.prototype.tick = function() {
 
   this.stats.end();
 
-  if(environment.isLowPowerMode()){
-    setTimeout(this.tick, 1000 / 12);
-  }else{
-    requestAnimationFrame(this.tick);
+  if (environment.isLowPowerMode()) {
+    setTimeout(this.tick.bind(this), 1000 / 12);
+  } else {
+    window.requestAnimationFrame(this.tick.bind(this));
   }
 };
 
-Client.prototype.renderPortals = function() {
-  var gl, originalCameraMatrixWorld, originalCameraProjectionMatrix;
-  gl = this.renderer.context;
-  originalCameraMatrixWorld = new THREE.Matrix4();
-  originalCameraProjectionMatrix = new THREE.Matrix4();
+Client.prototype.renderPortals = function () {
+  var gl = this.renderer.context;
+  var originalCameraMatrixWorld = new THREE.Matrix4();
+  var originalCameraProjectionMatrix = new THREE.Matrix4();
+
   originalCameraMatrixWorld.copy(this.camera.matrixWorld);
   originalCameraProjectionMatrix.copy(this.camera.projectionMatrix);
   this.renderer.clear(true, true, true);
+
   gl.colorMask(false, false, false, false);
   gl.depthMask(false);
   gl.enable(gl.STENCIL_TEST);
@@ -714,25 +694,31 @@ Client.prototype.renderPortals = function() {
   gl.stencilFunc(gl.NEVER, 0, 0xFF);
   gl.stencilOp(gl.INCR, gl.KEEP, gl.KEEP);
   this.renderer.render(this.connector.stencilScene, this.camera);
+
   gl.colorMask(true, true, true, true);
   gl.depthMask(true);
   gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
+
   this.renderer.clear(false, true, false);
   gl.stencilFunc(gl.LESS, 0, 0xff);
   this.renderer.render(this.connector.portal.scene, this.camera);
   gl.disable(gl.STENCIL_TEST);
+
   this.renderer.clear(false, false, true);
   this.camera.matrixWorld.copy(originalCameraMatrixWorld);
   this.camera.projectionMatrix.copy(originalCameraProjectionMatrix);
   this.renderer.clear(false, true, false);
+
   gl.colorMask(false, false, false, false);
   gl.depthMask(true);
+
   this.renderer.render(this.connector.stencilScene, this.camera);
+
   gl.colorMask(true, true, true, true);
   gl.depthMask(true);
   gl.enable(gl.DEPTH_TEST);
   this.renderer.render(this.scene, this.camera);
-  return this.camera.projectionMatrix.copy(originalCameraProjectionMatrix);
+  this.camera.projectionMatrix.copy(originalCameraProjectionMatrix);
 };
 
 module.exports = Client;

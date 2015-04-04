@@ -244,7 +244,7 @@ var Connector = (function(_super) {
     groundShape = new CANNON.Plane();
     groundBody.addShape(groundShape);
     groundBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
-    return this.physicsWorld.add(groundBody);
+    this.physicsWorld.add(groundBody);
   };
 
   // Fixme - make proper lights, not hardcoded ones.
@@ -385,7 +385,7 @@ var Connector = (function(_super) {
     this.disconnect();
     this.trigger('restarting');
     if (this.client) {
-      this.client.removeReflectedObjects();
+      this.client.removeAllObjectsFromScene();
     }
     clearInterval(this.interval);
     setTimeout(this.reconnect, 500);
@@ -453,6 +453,12 @@ var Connector = (function(_super) {
       $("<event />").attr("name", "update").attr("uuid", el.attr("uuid")).append(el)
     );
   }
+
+  Connector.prototype.inspectElement = function(el){
+    this.sendMessage(
+      $("<event />").attr("name", "inspect").attr("uuid", el.attr("uuid"))
+    );
+  };
 
   Connector.prototype.removeElement = function(el){
     this.sendMessage(
@@ -727,10 +733,10 @@ var Connector = (function(_super) {
     if (el.is("event")) {
       var name = el.attr("name");
 
-      if (name === "ready") {
-        this.uuid = el.attr("uuid");
-      } else if (name === "restart") {
-        console.log("Got restart message");
+      if (name === 'ready') {
+        this.uuid = el.attr('uuid');
+      } else if (name === 'restart') {
+        console.log('Got restart message');
         this.restartConnection();
       } else if (name === 'chat') {
         this.client.addChatMessage({
@@ -739,11 +745,13 @@ var Connector = (function(_super) {
       } else if (name === 'respawn') {
         this.respawn(el.attr('reason'));
       } else if (name === 'opentok') {
-        if(!environment.isMobile()){
+        if (!environment.isMobile()) {
           this.initializeOpentok(
             el.attr('role'), el.attr('apikey'), el.attr('session'), el.attr('token')
           );
         }
+      } else if (name === 'inspect') {
+        this.client.editor.inspectResult(el);
       } else {
         console.log("Unrecognized event " + (el.attr('name')));
       }

@@ -1,25 +1,68 @@
-'use strict';
+var util = require('util');
+var EventEmitter = require('wolfy87-eventemitter');
+var CodeMirror = require('codemirror');
+var $ = window.jQuery;
 
-var heir = require("heir"),
-  EventEmitter = require('wolfy87-eventemitter');
-
-function Editor(client){
+function Editor (client) {
   this.client = client;
   this.dragging = false;
   this.initialize();
 }
 
-heir.inherit(Editor, EventEmitter);
+util.inherits(Editor, EventEmitter);
 
-Editor.prototype.initialize = function(){
-  var self = this;
-
+Editor.prototype.initialize = function () {
   this.addHelpers();
 
   this.on('object:click', this.onClick.bind(this));
 
   this.client.on('controls:update', this.onUpdate.bind(this));
-}
+
+  this.loadSource();
+};
+
+Editor.prototype.loadSource = function () {
+  var save = $('<button>Save</button>').appendTo('#editor');
+
+  var textarea = $('<textarea />').appendTo('#editor');
+
+  save.click(function () {
+    $.ajax({
+      url: 'http://localhost:8080/fs/hello.xml',
+      method: 'post',
+      data: textarea.val()
+    });
+  });
+
+  $.ajax({
+    url: 'http://localhost:8080/fs/hello.xml',
+    success: function (text) {
+      textarea.val(text);
+      // var editor = CodeMirror.fromTextArea(textarea[0], {
+      //   lineNumbers: true
+      // });
+    }
+  });
+};
+
+Editor.prototype.inspect = function (el) {
+  this.client.connector.inspectElement(el);
+};
+
+Editor.prototype.inspectResult = function (el) {
+  var textarea = $('#editor textarea');
+  var src = textarea.val();
+  var startIndex = parseInt(el.attr('startindex'), 10);
+  var newLines = src.substr(0, startIndex).match(/\n/g) || [];
+  var lineNumber = newLines.length + 1;
+
+  console.log(startIndex);
+  console.log(lineNumber);
+
+  textarea.focus();
+  textarea[0].selectionStart = startIndex;
+  this.client.exitPointerLock();
+};
 
 Editor.prototype.addHelpers = function(){
   this.sceneHelpers = this.client.scene;
@@ -31,12 +74,16 @@ Editor.prototype.addHelpers = function(){
   this.sceneHelpers.add( this.selectionBox );
 }
 
-Editor.prototype.onClick = function(obj){
-  if(this.dragging){
+Editor.prototype.onClick = function (obj)  {
+  this.inspect(obj.userData);
+
+  return;
+
+  if (this.dragging){
     this.endDrag();
-  }else{
+  } else {
     this.selectedObject = obj;
-    this.showMenu();
+    this.inspect(obj);
   }
 
   // if(obj && this.selectionBox.object){

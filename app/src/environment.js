@@ -28,4 +28,18 @@ Environment.prototype.unpublishTimeout = function () {
   return 90 * 1000;
 };
 
+// degrees
+Environment.prototype.getViewAngle = function () {
+  return 60;
+};
+
+// Near and far clipping panes in meters
+Environment.prototype.getNear = function () {
+  return 0.1;
+};
+
+Environment.prototype.getFar = function () {
+  return 700;
+};
+
 module.exports = new Environment();

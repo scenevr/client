@@ -1,5 +1,3 @@
-"use strict";
-
 THREE.VRRenderer = function(renderer, hmd, hmdSensor) {
 
     var self = this;

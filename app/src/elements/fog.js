@@ -1,34 +1,23 @@
-(function() {
-  var DEFAULT_COLOR, DEFAULT_FAR, DEFAULT_NEAR, Fog, StyleMap, Utils;
+var StyleMap = require('../style_map');
 
-  Utils = require("../utils");
+var THREE = window.THREE;
 
-  StyleMap = require("../style_map");
+var DEFAULT_COLOR = '#ffffff';
+var DEFAULT_NEAR = 100;
+var DEFAULT_FAR = 1000;
 
-  DEFAULT_COLOR = "#ffffff";
+function Fog () {
+}
 
-  DEFAULT_NEAR = 100;
+Fog.create = function (connector, el) {
+  var styles = new StyleMap(el.attr('style'));
+  var color = styles.color || DEFAULT_COLOR;
+  var near = parseInt(el.attr('near') || DEFAULT_NEAR, 10);
+  var far = parseInt(el.attr('far') || DEFAULT_FAR, 10);
 
-  DEFAULT_FAR = 1000;
+  connector.scene.fog = new THREE.Fog(color, near, far);
 
-  Fog = (function() {
-    function Fog() {
-      true;
-    }
+  return connector.scene.fog;
+};
 
-    return Fog;
-
-  })();
-
-  Fog.create = function(connector, el) {
-    var color, far, near, styles;
-    styles = new StyleMap(el.attr("style"));
-    color = styles.color || DEFAULT_COLOR;
-    near = parseInt(el.attr("near") || DEFAULT_NEAR);
-    far = parseInt(el.attr("far") || DEFAULT_FAR);
-    return connector.scene.fog = new THREE.Fog(color, near, far);
-  };
-
-  module.exports = Fog;
-
-}).call(this);
+module.exports = Fog;

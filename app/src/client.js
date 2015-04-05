@@ -261,6 +261,7 @@ Client.prototype.checkForPortalCollision = function () {
 Client.prototype.promotePortal = function () {
   this.portal = this.connector.portal;
 
+  this.connector.sendChat('/entered ' + URI.serialize(this.portal.connector.uri).slice(0, 30) + '...');
   window.history.pushState({}, 'SceneVR', '?connect=' + URI.serialize(this.portal.connector.uri).replace(/^\/\//, ''));
 
   var controlObject = this.controls.getObject();
@@ -391,7 +392,13 @@ Client.prototype.addChatMessage = function (player, message) {
   if (player === null || player.name === 'scene') {
     $('<div />').text('' + message).addClass('scene-message').appendTo(this.chatMessages);
   } else {
-    $('<div />').text('' + player.name + ': ' + message).appendTo(this.chatMessages);
+    if (message.match(/^\/entered/)) {
+      $('<div />').addClass('message action').text(
+        player.name + ' ' + message.replace(/^.entered/, ' left through the portal to ')
+      ).appendTo(this.chatMessages);
+    } else {
+      $('<div />').text('' + player.name + ': ' + message).appendTo(this.chatMessages);
+    }
   }
 
   this.chatMessages.scrollTop(this.chatMessages[0].scrollHeight);

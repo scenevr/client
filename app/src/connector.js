@@ -706,7 +706,7 @@ Connector.prototype.addElement = function (el) {
 
       texture.repeat.set(repeatX, repeatY);
 
-      obj.material.setValues({ map: texture });
+      obj.material.setValues({ map: texture, transparent: true });
     }
   }
 

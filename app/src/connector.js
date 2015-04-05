@@ -269,14 +269,15 @@ Connector.prototype.loadPortal = function (el, obj) {
     return;
   }
 
-  var destinationUri = URI.resolve(this.uri, el.attr('href'));
+  var uri = URI.serialize(this.uri);
+  var destinationUri = URI.resolve(uri, el.attr('href'));
 
   this.portal = {};
   this.portal.el = el;
   this.portal.obj = obj;
   this.portal.scene = new THREE.Scene();
   this.portal.world = new CANNON.World();
-  this.portal.connector = new Connector(this.client, this.portal.scene, this.portal.world, destinationUri, true, this.uri);
+  this.portal.connector = new Connector(this.client, this.portal.scene, this.portal.world, destinationUri, true, uri);
   this.portal.connector.connect();
 
   if (el.attr('backlink') === 'true') {

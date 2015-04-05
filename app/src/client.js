@@ -7,6 +7,7 @@ var CANNON = require('cannon');
 var EventEmitter = require('wolfy87-eventemitter');
 var Authentication = require('./authentication');
 var Preferences = require('./preferences');
+var AssetManager = require('./asset_manager');
 
 // For semistandard
 var $ = window.jQuery;
@@ -32,6 +33,7 @@ util.inherits(Client, EventEmitter);
 Client.prototype.initialize = function () {
   var self = this;
 
+  this.assetManager = new AssetManager(this);
   this.preferences = new Preferences(this);
 
   this.container = $('#scene-view');

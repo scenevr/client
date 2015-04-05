@@ -54,9 +54,7 @@ Model.create = function (connector, el) {
     }
   }
 
-  var objLoader = new THREE.OBJLoader(this.manager);
-
-  objLoader.load(connector.getAssetHost() + el.attr('src'), function (object) {
+  connector.client.assetManager.loadObj(connector.getAssetHost() + el.attr('src'), function (object) {
     object.traverse(function (child) {
       var boundingBox, boxBody, boxShape, dimensions;
 

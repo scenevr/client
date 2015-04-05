@@ -1,12 +1,7 @@
-(function() {
-  var Client;
+var Client = require('./app/src/client');
 
-  Client = require("./app/src/client");
-
-  $(function() {
-    return setTimeout(function() {
-      return window.client = new Client;
-    }, 250);
-  });
-
-}).call(this);
+window.jQuery(function () {
+  setTimeout(function () {
+    window.client = new Client();
+  }, 250);
+});

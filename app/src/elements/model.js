@@ -1,20 +1,18 @@
-var Utils = require("../utils"),
-  StyleMap = require("../style_map"),
-  Element = require("./element");
+var Utils = require('../utils');
+var StyleMap = require('../style_map');
+var CANNON = require('cannon');
 
-function Model() {
+var THREE = window.THREE;
+
+function Model () {
 }
 
-Model.create = function(connector, el) {
-  var obj, styles;
-
-  obj = new THREE.Object3D;
-  texture = null;
-  styles = new StyleMap(el.attr("style"));
-
+Model.create = function (connector, el) {
+  var obj = new THREE.Object3D();
+  var styles = new StyleMap(el.attr('style'));
   var material = null;
 
-  if (el.attr("style")) {
+  if (el.attr('style')) {
     if (styles['color']) {
       material = new THREE.MeshLambertMaterial({
         color: styles['color']
@@ -22,14 +20,14 @@ Model.create = function(connector, el) {
     }
 
     if (styles.lightMap || styles.textureMap) {
-      material = styles.textureMap ? new THREE.MeshLambertMaterial : new THREE.MeshBasicMaterial;
+      material = styles.textureMap ? new THREE.MeshLambertMaterial() : new THREE.MeshBasicMaterial();
 
       var texture = new THREE.Texture();
       var loader = new THREE.ImageLoader(this.manager);
 
       loader.crossOrigin = true;
 
-      loader.load("//" + connector.getAssetHost() + StyleMap.parseUrl(styles.lightMap || styles.textureMap), function(image) {
+      loader.load('//' + connector.getAssetHost() + StyleMap.parseUrl(styles.lightMap || styles.textureMap), function (image) {
         texture.image = image;
         texture.needsUpdate = true;
         texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
@@ -37,14 +35,14 @@ Model.create = function(connector, el) {
         var repeatX = 1,
           repeatY = 1;
 
-        if(styles.textureRepeat){
-          repeatX = parseFloat(styles.textureRepeat.split(" ")[0]);
-          repeatY = parseFloat(styles.textureRepeat.split(" ")[1]);
+        if (styles.textureRepeat) {
+          repeatX = parseFloat(styles.textureRepeat.split(' ')[0]);
+          repeatY = parseFloat(styles.textureRepeat.split(' ')[1]);
         }
-        if(styles.textureRepeatX){
+        if (styles.textureRepeatX) {
           repeatX = parseFloat(styles.textureRepeatX);
         }
-        if(styles.textureRepeatY){
+        if (styles.textureRepeatY) {
           repeatY = parseFloat(styles.textureRepeatY);
         }
 
@@ -54,14 +52,12 @@ Model.create = function(connector, el) {
         material.needsUpdate = true;
       });
     }
-
   }
 
-  var self = this,
-    objLoader = new THREE.OBJLoader(this.manager);
+  var objLoader = new THREE.OBJLoader(this.manager);
 
-  objLoader.load("//" + connector.getAssetHost() + el.attr("src"), function(object){
-    object.traverse(function(child) {
+  objLoader.load('//' + connector.getAssetHost() + el.attr('src'), function (object) {
+    object.traverse(function (child) {
       var boundingBox, boxBody, boxShape, dimensions;
 
       if (child instanceof THREE.Mesh) {
@@ -69,18 +65,18 @@ Model.create = function(connector, el) {
 
         if (styles.collision === 'none') {
           // No collision at all
-        } else if (styles.collision === "mesh"){
-          var vertices = child.geometry.attributes.position.array,
-            indices = [],
-            i = 0;
+        } else if (styles.collision === 'mesh') {
+          var vertices = child.geometry.attributes.position.array;
+          var indices = [];
+          var i = 0;
 
           // This is a bit gross, but it works
-          for(i=0;i<vertices.length;i++){
+          for (i = 0; i < vertices.length; i++) {
             indices.push(i);
-          } 
+          }
 
           var trimeshShape = new CANNON.Trimesh(vertices, indices);
-          trimeshBody = new CANNON.Body({ mass: 0 });
+          var trimeshBody = new CANNON.Body({ mass: 0 });
           trimeshBody.addShape(trimeshShape);
 
           trimeshBody.position.copy(obj.position);
@@ -114,15 +110,14 @@ Model.create = function(connector, el) {
         if (obj.body) {
           connector.physicsWorld.add(obj.body);
         }
-
       }
-      
+
       obj.add(object);
     });
   });
 
-  newScale = el.attr("scale") ? Utils.parseVector(el.attr("scale")) : new THREE.Vector3(1, 1, 1);
-  obj.scale.copy(newScale);
+  var scale = el.attr('scale') ? Utils.parseVector(el.attr('scale')) : new THREE.Vector3(1, 1, 1);
+  obj.scale.copy(scale);
 
   return obj;
 };

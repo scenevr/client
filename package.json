@@ -16,11 +16,12 @@
     "wolfy87-eventemitter": "~4.2.9"
   },
   "devDependencies": {
+    "browserify": "^9.0.7",
     "semistandard": "^4.0.3"
   },
   "scripts": {
     "start": "node server.js",
-    "test": "semistandard && browserify --debug -t browserify-jade index.js"
+    "test": "semistandard && browserify --debug -t browserify-jade index.js >/dev/null"
   },
   "semistandard": {
     "ignore": "vendor/**"

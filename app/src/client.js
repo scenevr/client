@@ -366,11 +366,14 @@ Client.prototype.addMessageInput = function () {
     }
 
     if (e.keyCode === 13) {
-      self.addChatMessage({
-        name: 'You'
-      }, input.val());
+      if (input.val() !== '') {
+        self.addChatMessage({
+          name: 'You'
+        }, input.val());
 
-      self.connector.sendChat(input.val());
+        self.connector.sendChat(input.val());
+      }
+
       self.enableControls();
       input.val('').blur();
 

@@ -23,8 +23,8 @@ Plane.create = function (connector, el) {
   var physicsScale = scale.multiplyScalar(0.5);
   physicsScale.z = Z_AXIS_SCALE;
 
-  var shape = new CANNON.Box(new CANNON.Vec3().copy(physicsScale)),
-    body = new CANNON.Body({ mass: 0 });
+  var shape = new CANNON.Box(new CANNON.Vec3().copy(physicsScale));
+  var body = new CANNON.Body({ mass: 0 });
   body.addShape(shape);
 
   obj.body = body;

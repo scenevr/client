@@ -397,6 +397,15 @@
             inputVelocity.z = velocityFactor * delta;
         }
 
+        if (supportsPointerLock) {
+            if (moveLeft) {
+                inputVelocity.x = -velocityFactor * delta;
+            }
+            if (moveRight) {
+                inputVelocity.x = velocityFactor * delta;
+            }
+        }
+
         // Convert velocity to world coordinates
         euler.x = pitchObject.rotation.x;
         euler.y = yawObject.rotation.y;

@@ -767,7 +767,15 @@ Connector.prototype.processMessage = function (el) {
 
   obj = this.scene.getObjectByName(uuid);
 
-  // The element has changed more than just position / rotation, destroy it
+  var startPosition = null;
+  var startQuaternion = null;
+
+  if (obj) {
+    startPosition = obj.position.clone();
+    startQuaternion = obj.quaternion.clone();
+  }
+
+  // The element has changed more than just position / rotation, destroy it, but save the position / rotation
   if (obj && (Element.substantialDifference(obj.el, el[0]))) {
     if (obj.body) {
       this.physicsWorld.remove(obj.body);
@@ -790,7 +798,9 @@ Connector.prototype.processMessage = function (el) {
     if (obj) {
       obj.el = el[0];
     }
+  }
 
+  if (!obj) {
     return;
   }
 
@@ -803,10 +813,8 @@ Connector.prototype.processMessage = function (el) {
     return;
   }
 
-  // If we've got to here, only the position or rotation attributes changed, so tween...
-  if ((position) && (el.is('box,player,billboard,model,link'))) {
-    var startPosition = obj.position.clone();
-
+  // If we've got to here, check if the position / rotation has changed
+  if (startPosition && position && (el.is('box,player,billboard,model,link'))) {
     if (!startPosition.equals(position)) {
       var tweenPosition = new TWEEN.Tween(startPosition);
 
@@ -816,14 +824,12 @@ Connector.prototype.processMessage = function (el) {
         if (obj.body) {
           obj.body.position.set(this.x, this.y, this.z);
         }
-      }).easing(TWEEN.Easing.Linear.None).start();
+      }).easing(TWEEN.Easing.Linear.None).start().update();
     }
   }
 
   // Tween anything but the player
-  if ((quaternion) && (el.is('box,billboard,model,link'))) {
-    var startQuaternion = obj.quaternion.clone();
-
+  if (startQuaternion && quaternion && (el.is('box,billboard,model,link'))) {
     if (!startQuaternion.equals(quaternion)) {
       var tweenRotation = new TWEEN.Tween({ i: 0.0 });
 
@@ -833,11 +839,11 @@ Connector.prototype.processMessage = function (el) {
         if (obj.body) {
           obj.body.quaternion.copy(obj.quaternion);
         }
-      }).easing(TWEEN.Easing.Linear.None).start();
+      }).easing(TWEEN.Easing.Linear.None).start().update();
     }
   }
 
-  if ((quaternion) && (el.is('player'))) {
+  if (quaternion && (el.is('player'))) {
     // Player rotation is different because the head / body are decoupled
     var euler = Utils.parseEuler(el.attr('rotation'));
     var bodyQuaternion = new THREE.Quaternion().setFromAxisAngle(Y_AXIS, euler.y + Math.PI / 2);
@@ -855,7 +861,7 @@ Connector.prototype.processMessage = function (el) {
     tween.to({ i: 1.0}, 200).onUpdate(function () {
       obj.quaternion.copy(startBodyQ).slerp(bodyQuaternion, this.i);
       head.quaternion.copy(startHeadQ).slerp(headQuaternion, this.i);
-    }).easing(TWEEN.Easing.Linear.None).start();
+    }).easing(TWEEN.Easing.Linear.None).start().update();
   }
 };
 

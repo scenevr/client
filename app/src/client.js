@@ -314,7 +314,7 @@ Client.prototype.onClick = function (e) {
   for (_i = 0, _len = _ref.length; _i < _len; _i++) {
     var intersection = _ref[_i];
 
-    if (intersection.object && intersection.object.parent && intersection.object.parent.userData.is && intersection.object.parent.userData.is("link")) {
+    if (intersection.object && intersection.object.parent && intersection.object.parent.userData.is && intersection.object.parent.userData.is('link')) {
       intersection.object.parent.onClick();
     }
 

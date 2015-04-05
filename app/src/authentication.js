@@ -1,146 +1,145 @@
+var SERVER = 'http://login.scenevr.com';
+var Template = require('../templates/login.jade');
+var util = require('util');
+var EventEmitter = require('wolfy87-eventemitter');
 
-var SERVER = "http://login.scenevr.com",
-  Template = require("../templates/login.jade"),
-  URI = require("uri-js"),
-  heir = require("heir"),
-  EventEmitter = require('wolfy87-eventemitter');
+var $ = window.jQuery;
 
-function Authentication(client){
+function Authentication (client) {
   this._client = client;
   this.initialize();
 }
 
-heir.inherit(Authentication, EventEmitter);
+util.inherits(Authentication, EventEmitter);
 
-Authentication.prototype.initialize = function(){
+Authentication.prototype.initialize = function () {
   this._isLoggedIn = null;
   this._user = null;
-  this._div = $("<div id='authentication' />").appendTo('body');
+  this._div = $('<div id=\'authentication\' />').appendTo('body');
   this.checkStatus();
 
   var self = this;
 
-  window.addEventListener("message", function(e){
-    if((e.origin === "http://localhost:3000") || (e.origin === "http://login.scenevr.com")){
+  window.addEventListener('message', function (e) {
+    if ((e.origin === 'http://localhost:3000') || (e.origin === 'http://login.scenevr.co m')) {
       self.checkStatus();
-    } else if(e.data.match(/^OTHelpers.+/)) {
+    } else if (e.data.match(/^OTHelpers.+/)) {
       // OpenTok spam
     } else {
-      console.error("Invalid origin " + e.origin);
+      console.error('Invalid origin ' + e.origin);
     }
   });
-}
+};
 
-Authentication.prototype.hasCompleted = function(){
+Authentication.prototype.hasCompleted = function () {
   return !(this._isLoggedIn === null);
-}
+};
 
-Authentication.prototype.getTokenFor = function(uri, callback){
-  if(!this.isLoggedIn()){
-    callback(false)
+Authentication.prototype.getTokenFor = function (uri, callback) {
+  if (!this.isLoggedIn()) {
+    callback(false);
     return;
   }
 
-  var components = URI.parse(this.uri),
-    host = components.host;
+  var host = uri.host;
 
-  if(components.port && components.port != 80){
-    host += ":" + components.port;
+  if (uri.port && uri.port !== 80) {
+    host += ':' + uri.port;
   }
 
   $.ajax({
-    url : SERVER + "/session/token.json",
-    params : { host : host },
-    type : 'GET',
-    dataType: "jsonp",
-    success : function(response){
+    url: SERVER + '/session/token.json',
+    params: { host: host },
+    type: 'GET',
+    dataType: 'jsonp',
+    success: function (response) {
       callback(true, response.token);
     }
   });
-}
+};
 
-Authentication.prototype.isLoggedIn = function(){
+Authentication.prototype.isLoggedIn = function () {
   return this._isLoggedIn;
-}
+};
 
-Authentication.prototype.getUser = function(){
+Authentication.prototype.getUser = function () {
   return this._user;
-}
+};
 
-Authentication.prototype.displayName = function(){
+Authentication.prototype.displayName = function () {
   var self = this;
 
   this._div.empty();
 
-  $("<button />").text(this.getUser().name).appendTo(this._div).click(function(e){
+  $('<button />').text(this.getUser().name).appendTo(this._div).click(function (e) {
     e.stopPropagation();
     self.showAccountSettings();
   });
-}
+};
 
-Authentication.prototype.displayLogInButton = function(){
+Authentication.prototype.displayLogInButton = function () {
   var self = this;
 
   this._div.empty();
 
-  $("<button />").text("Log in").appendTo(this._div).click(function(e){
+  $('<button />').text('Log in').appendTo(this._div).click(function (e) {
     e.stopPropagation();
     self.showLogin();
   });
-}
+};
 
-Authentication.prototype.showAccountSettings = function(){
+Authentication.prototype.showAccountSettings = function () {
   var self = this;
 
   this._client.renderOverlay(Template({
-    url : SERVER + "/"
-  })).find('button').click(function(){
+    url: SERVER + '/'
+  })).find('button').click(function () {
     self._client.hideOverlays();
   });
-}
+};
 
-Authentication.prototype.showLogin = function(){
+Authentication.prototype.showLogin = function () {
   var self = this;
 
   this._client.renderOverlay(Template({
-    url : SERVER + "/users/sign_in"
-  })).find('button').click(function(){
+    url: SERVER + '/users/sign_in'
+  })).find('button').click(function () {
     self._client.hideOverlays();
   });
-}
+};
 
-Authentication.prototype.checkStatus = function(){
+Authentication.prototype.checkStatus = function () {
   var self = this;
 
-  this.statusRequest(function(ok){
-    if(self.isLoggedIn()){
+  this.statusRequest(function (ok) {
+    if (self.isLoggedIn()) {
       self.displayName();
       self.trigger('ready');
-    }else{
+    } else {
       self.displayLogInButton();
       self.trigger('ready');
     }
-  })
+  });
 };
 
-Authentication.prototype.statusRequest = function(callback){
+Authentication.prototype.statusRequest = function (callback) {
   var self = this;
 
   $.ajax({
-    url : SERVER + "/session/status.json",
-    type : 'GET',
-    dataType: "jsonp",
-    success : function(response){
-      if(response){
+    url: SERVER + '/session/status.json',
+    type: 'GET',
+    dataType: 'jsonp',
+    success: function (response) {
+      if (response) {
         self._user = response;
         self._isLoggedIn = true;
-      }else{
+      } else {
         self._isLoggedIn = false;
       }
 
       callback(true);
     }
   });
-}
+};
 
 module.exports = Authentication;

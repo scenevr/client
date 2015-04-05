@@ -17,8 +17,7 @@ var Templates = {
   inQueue: require('../templates/in_queue.jade'),
   unableToConnect: require('../templates/unable_to_connect.jade'),
   instructions: require('../templates/instructions.jade'),
-  connecting: require('../templates/connecting.jade'),
-  noPointerLock: require('../templates/no_pointer_lock.jade')
+  connecting: require('../templates/connecting.jade')
 };
 
 // Not sure why this has to be global
@@ -440,18 +439,17 @@ Client.prototype.addConnecting = function () {
   }));
 };
 
+Client.prototype.supportsPointerLock = function () {
+  var element = document.body;
+  return !!(element.requestPointerLock || element.mozRequestPointerLock || element.webkitRequestPointerLock);
+};
+
 Client.prototype.addInstructions = function () {
   $('.overlay').remove();
 
-  this.renderOverlay(Templates.instructions);
-
-  var element = document.body;
-
-  if (!(environment.isMobile() || element.requestPointerLock || element.mozRequestPointerLock || element.webkitRequestPointerLock)) {
-    this.renderOverlay(Templates.noPointerLock({
-      host: this.connector.uri.host
-    }));
-  }
+  this.renderOverlay(Templates.instructions({
+    supportsPointerLock: this.supportsPointerLock()
+  }));
 };
 
 Client.prototype.exitPointerLock = function () {
@@ -463,12 +461,19 @@ Client.prototype.exitPointerLock = function () {
 };
 
 Client.prototype.requestPointerLock = function () {
+  var self = this;
   var el = this.domElement[0];
 
   if (el.requestPointerLock) {
     el.requestPointerLock();
   } else if (el.mozRequestPointerLock) {
     el.mozRequestPointerLock();
+  } else {
+    this.domElement.click(function (e) {
+      if (!self.controls.enabled) {
+        self.enableControls();
+      }
+    });
   }
 };
 
@@ -583,7 +588,7 @@ Client.prototype.addDot = function () {
 Client.prototype.addControls = function () {
   var self = this;
 
-  this.controls = new window.PointerLockControls(this.camera, this, environment.isMobile());
+  this.controls = new window.PointerLockControls(this.camera, this, environment.isMobile(), this.supportsPointerLock());
   this.controls.enabled = false;
   this.scene.add(this.controls.getObject());
 

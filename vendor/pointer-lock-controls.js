@@ -2,7 +2,7 @@
  * @author mrdoob / http://mrdoob.com/
  * @author schteppe / https://github.com/schteppe
  */
- var PointerLockControls = function ( camera, client, MOBILE ) {
+ var PointerLockControls = function ( camera, client, MOBILE, supportsPointerLock ) {
 
     var cannonBody = null;
     var velocity = new THREE.Vector3;
@@ -372,6 +372,15 @@
         pitchObject.rotation.x -= movementY * 0.002;
         pitchObject.rotation.x = Math.max( - PI_2, Math.min( PI_2, pitchObject.rotation.x ) );
 
+        if (!supportsPointerLock) {
+            if ( moveLeft ){
+                yawObject.rotation.y += 0.02;
+            }
+            if ( moveRight ){
+                yawObject.rotation.y -= 0.02;
+            }
+        }
+
         delta *= 0.5;
 
         inputVelocity.set(0,0,0);
@@ -386,13 +395,6 @@
         }
         if ( moveBackward ){
             inputVelocity.z = velocityFactor * delta;
-        }
-
-        if ( moveLeft ){
-            inputVelocity.x = -velocityFactor * delta;
-        }
-        if ( moveRight ){
-            inputVelocity.x = velocityFactor * delta;
         }
 
         // Convert velocity to world coordinates

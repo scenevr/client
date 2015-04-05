@@ -72,6 +72,7 @@ Billboard.create = function (connector, el) {
   });
 
   div.appendTo('body');
+
   geometry = new THREE.BoxGeometry(1, 1, 1);
   material = new THREE.MeshLambertMaterial({
     color: '#eeeeee',

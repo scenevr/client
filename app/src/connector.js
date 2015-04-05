@@ -814,7 +814,13 @@ Connector.prototype.processMessage = function (el) {
   }
 
   // If we've got to here, check if the position / rotation has changed
-  if (startPosition && position && (el.is('box,player,billboard,model,link'))) {
+  if (position && (el.is('box,player,billboard,model,link'))) {
+    if (startPosition) {
+      obj.position.copy(startPosition);
+    } else {
+      startPosition = obj.position.clone();
+    }
+
     if (!startPosition.equals(position)) {
       var tweenPosition = new TWEEN.Tween(startPosition);
 
@@ -824,12 +830,18 @@ Connector.prototype.processMessage = function (el) {
         if (obj.body) {
           obj.body.position.set(this.x, this.y, this.z);
         }
-      }).easing(TWEEN.Easing.Linear.None).start().update();
+      }).easing(TWEEN.Easing.Linear.None).start();
     }
   }
 
   // Tween anything but the player
   if (startQuaternion && quaternion && (el.is('box,billboard,model,link'))) {
+    if (startQuaternion) {
+      obj.quaternion.copy(startQuaternion);
+    } else {
+      startQuaternion = obj.quaternion.clone();
+    }
+
     if (!startQuaternion.equals(quaternion)) {
       var tweenRotation = new TWEEN.Tween({ i: 0.0 });
 
@@ -839,7 +851,7 @@ Connector.prototype.processMessage = function (el) {
         if (obj.body) {
           obj.body.quaternion.copy(obj.quaternion);
         }
-      }).easing(TWEEN.Easing.Linear.None).start().update();
+      }).easing(TWEEN.Easing.Linear.None).start();
     }
   }
 
@@ -861,7 +873,7 @@ Connector.prototype.processMessage = function (el) {
     tween.to({ i: 1.0}, 200).onUpdate(function () {
       obj.quaternion.copy(startBodyQ).slerp(bodyQuaternion, this.i);
       head.quaternion.copy(startHeadQ).slerp(headQuaternion, this.i);
-    }).easing(TWEEN.Easing.Linear.None).start().update();
+    }).easing(TWEEN.Easing.Linear.None).start();
   }
 };
 

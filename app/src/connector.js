@@ -479,7 +479,7 @@ Connector.prototype.tick = function () {
 };
 
 Connector.prototype.getAssetHost = function () {
-  return '//' + this.uri.host + ':' + (this.uri.port || 80);
+  return 'http://' + this.uri.host + ':' + (this.uri.port || 80);
 };
 
 Connector.prototype.createPlayer = function (el) {
@@ -680,7 +680,7 @@ Connector.prototype.addElement = function (el) {
     }
 
     if (el.is('sphere,box,plane') && styles.textureMap) {
-      var url = '//' + this.getAssetHost() + this.getUrlFromStyle(styles.textureMap);
+      var url = this.getAssetHost() + this.getUrlFromStyle(styles.textureMap);
       THREE.ImageUtils.crossOrigin = true;
 
       var texture = THREE.ImageUtils.loadTexture(url);

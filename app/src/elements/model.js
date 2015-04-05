@@ -27,7 +27,7 @@ Model.create = function (connector, el) {
 
       loader.crossOrigin = true;
 
-      loader.load('//' + connector.getAssetHost() + StyleMap.parseUrl(styles.lightMap || styles.textureMap), function (image) {
+      loader.load(connector.getAssetHost() + StyleMap.parseUrl(styles.lightMap || styles.textureMap), function (image) {
         texture.image = image;
         texture.needsUpdate = true;
         texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
@@ -56,7 +56,7 @@ Model.create = function (connector, el) {
 
   var objLoader = new THREE.OBJLoader(this.manager);
 
-  objLoader.load('//' + connector.getAssetHost() + el.attr('src'), function (object) {
+  objLoader.load(connector.getAssetHost() + el.attr('src'), function (object) {
     object.traverse(function (child) {
       var boundingBox, boxBody, boxShape, dimensions;
 

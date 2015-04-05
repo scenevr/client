@@ -18,7 +18,7 @@
     var color, finish, format, fragmentShader, material, path, reflectionCube, shader, src, start, uniforms, urls, vertexShader, _ref;
     material = null;
     if (src = el.attr("src")) {
-      path = "//" + connector.getAssetHost() + src.replace(/\..+?$/, '');
+      path = connector.getAssetHost() + src.replace(/\..+?$/, '');
       format = src.replace(/.+\./, '.');
       urls = [path + 'right' + format, path + 'left' + format, path + 'top' + format, path + 'bottom' + format, path + 'front' + format, path + 'back' + format];
       THREE.ImageUtils.crossOrigin = true;

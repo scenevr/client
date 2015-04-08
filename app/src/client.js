@@ -197,13 +197,18 @@ Client.prototype.getUrlFromLocation = function () {
 
 Client.prototype.removeAllObjectsFromScene = function () {
   var self = this;
+  var children = Array.prototype.slice.apply(this.scene.children);
 
-  this.scene.children.forEach(function (child) {
+  children.forEach(function (child) {
     if (child.body) {
       self.world.remove(child.body);
     }
 
-    self.scene.remove(child);
+    if (child === self.controls.getObject()) {
+      // ...
+    } else {
+      self.scene.remove(child);
+    }
   });
 };
 

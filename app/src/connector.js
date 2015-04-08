@@ -48,8 +48,6 @@ Connector.prototype.initialize = function () {
   this.manager = new THREE.LoadingManager();
   this.spawnPosition = null;
   this.spawnRotation = new THREE.Euler(0, 0, 0);
-  this.addLights();
-  this.addFloor();
 
   if (this.client.authentication.hasCompleted()) {
     this.onAuthenticationReady();
@@ -425,6 +423,9 @@ Connector.prototype.connect = function () {
     self.messageQueue.forEach(function (message) {
       self.sendMessage(message);
     });
+
+    self.addLights();
+    self.addFloor();
   };
 
   this.ws.onclose = function () {

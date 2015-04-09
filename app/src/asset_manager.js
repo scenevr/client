@@ -1,6 +1,7 @@
 var THREE = window.THREE;
 var util = require('util');
 var EventEmitter = require('wolfy87-eventemitter');
+var URI = require('uri-js');
 
 var $ = window.jQuery;
 
@@ -74,6 +75,17 @@ AssetManager.prototype.loadObj = function (url, callback) {
     return objLoader.parse(data);
   }, function (obj) {
     callback(obj.clone());
+  });
+};
+
+AssetManager.prototype.loadMtl = function (url, callback) {
+  var baseUrl = url.substr(0, url.lastIndexOf('/') + 1);
+
+  this.load(url, function (data) {
+    var mtlLoader = new THREE.MTLLoader(baseUrl, null, true, URI.resolve);
+    return mtlLoader.parse(data);
+  }, function (materialCreator) {
+    callback(materialCreator);
   });
 };
 

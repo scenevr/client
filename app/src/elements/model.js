@@ -55,12 +55,32 @@ Model.create = function (connector, el) {
   }
 
   connector.client.assetManager.loadObj(connector.getAssetHost() + el.attr('src'), function (object) {
+    if (el.attr('mtl')) {
+      connector.client.assetManager.loadMtl(connector.getAssetHost() + el.attr('src').replace('.obj', '.mtl'), function (materialsCreator) {
+        object.traverse(function (child) {
+          if (child instanceof THREE.Mesh) {
+            if (child.material.name) {
+              var material = materialsCreator.create(child.material.name);
+
+              if (material) {
+                child.material = material;
+              }
+            }
+          }
+        });
+      });
+    } else {
+      object.traverse(function (child) {
+        if (child instanceof THREE.Mesh) {
+          child.material = material;
+        };
+      });
+    }
+
     object.traverse(function (child) {
       var boundingBox, boxBody, boxShape, dimensions;
 
       if (child instanceof THREE.Mesh) {
-        child.material = material;
-
         if (styles.collision === 'none') {
           // No collision at all
         } else if (styles.collision === 'mesh') {

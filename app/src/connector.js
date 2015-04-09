@@ -415,7 +415,7 @@ Connector.prototype.connect = function () {
 
   this.ws.onopen = function () {
     if (self.client) {
-      self.interval = setInterval(self.tick.bind(self), 1000 / 5);
+      self.interval = setInterval(self.tick.bind(self), 1000 / environment.updateHertz());
     }
 
     self.trigger('connected');
@@ -825,7 +825,7 @@ Connector.prototype.processMessage = function (el) {
     if (!startPosition.equals(position)) {
       var tweenPosition = new TWEEN.Tween(startPosition);
 
-      tweenPosition.to(position, 200).onUpdate(function () {
+      tweenPosition.to(position, 1000 / environment.updateHertz()).onUpdate(function () {
         obj.position.set(this.x, this.y, this.z);
 
         if (obj.body) {
@@ -846,7 +846,7 @@ Connector.prototype.processMessage = function (el) {
     if (!startQuaternion.equals(quaternion)) {
       var tweenRotation = new TWEEN.Tween({ i: 0.0 });
 
-      tweenRotation.to({ i: 1.0}, 200).onUpdate(function () {
+      tweenRotation.to({ i: 1.0}, 1000 / environment.updateHertz()).onUpdate(function () {
         obj.quaternion.copy(startQuaternion).slerp(quaternion, this.i);
 
         if (obj.body) {
@@ -871,7 +871,7 @@ Connector.prototype.processMessage = function (el) {
 
     var tween = new TWEEN.Tween({ i: 0.0 });
 
-    tween.to({ i: 1.0}, 200).onUpdate(function () {
+    tween.to({ i: 1.0}, 1000 / environment.updateHertz()).onUpdate(function () {
       obj.quaternion.copy(startBodyQ).slerp(bodyQuaternion, this.i);
       head.quaternion.copy(startHeadQ).slerp(headQuaternion, this.i);
     }).easing(TWEEN.Easing.Linear.None).start();

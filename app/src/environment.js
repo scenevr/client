@@ -1,6 +1,10 @@
 function Environment () {
 }
 
+Environment.prototype.updateHertz = function () {
+  return 10;
+};
+
 Environment.prototype.isMobile = function () {
   return !!(/Android|iPhone|iPad|iPod|IEMobile/i.test(navigator.userAgent));
 };

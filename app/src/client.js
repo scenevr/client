@@ -105,7 +105,7 @@ Client.prototype.initialize = function () {
 
   // Start physics
   this.time = Date.now();
-  setInterval(this.tickPhysics.bind(this), 1000 / environment.physicsHertz());
+  this.physicsInterval = setInterval(this.tickPhysics.bind(this), 1000 / environment.physicsHertz());
 
   window.addEventListener('keypress', function (e) {
     if (self.vrrenderer && self.controls.enabled) {
@@ -127,6 +127,12 @@ Client.prototype.initialize = function () {
       }
     }
   });
+};
+
+Client.prototype.stop = function () {
+  this.stopped = true;
+  this.connector.disconnect();
+  clearInterval(this.physicsInterval);
 };
 
 Client.prototype.createStats = function () {
@@ -661,6 +667,10 @@ Client.prototype.tickPhysics = function () {
 };
 
 Client.prototype.tick = function () {
+  if (this.stopped) {
+    return;
+  }
+
   var state;
 
   this.stats.begin();

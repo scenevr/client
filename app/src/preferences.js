@@ -29,12 +29,17 @@ Preferences.prototype.saveState = function () {
   window.localStorage[KEY] = JSON.stringify(this.state);
 };
 
+Preferences.prototype.resetState = function () {
+  this.setDefaults();
+  this.saveState();
+};
+
 Preferences.prototype.setDefaults = function () {
   this.state = {
     downSampling: 1,
     graphicsAntialiasing: false,
     audioVolume: 8,
-    audioVoiceChat: true
+    audioVoiceChat: 8
   };
 };
 
@@ -83,6 +88,7 @@ Preferences.prototype.createGui = function () {
 
   folder2.add(this.state, 'audioVolume', 0, 10).step(0.25).name('Audio volume').onChange(function (value) {
     self.state.audioVolume = value;
+    self.client.updateVolume();
     self.saveState();
   });
 

@@ -733,6 +733,19 @@ Connector.prototype.getByUUID = function (uuid) {
   return this.elementMap[uuid];
 };
 
+Connector.prototype.getAudioElements = function () {
+  var results = [];
+  var key;
+
+  for (key in this.elementMap) {
+    if (this.elementMap[key] instanceof Audio) {
+      results.push(this.elementMap[key]);
+    }
+  }
+
+  return results;
+};
+
 Connector.prototype.processMessage = function (el) {
   var obj;
 
@@ -764,9 +777,6 @@ Connector.prototype.processMessage = function (el) {
     } else if (name === 'inspect') {
       this.client.editor.inspectResult(el);
     } else if (name === 'play') {
-      console.log('wtf?');
-      console.log(element);
-
       if (element) {
         element.play();
       }

@@ -11,26 +11,28 @@ function Audio (connector, el) {
 
 util.inherits(Audio, Element);
 
+Audio.prototype.updateVolume = function () {
+  var v = this.el.attr('volume') || 1.0;
+  this.sound.volume(this.connector.client.preferences.getState().audioVolume * 0.1 * v);
+};
+
 Audio.prototype.play = function () {
-  this.sound.pos3d(
-    this.connector.client.getPlayerObject().position.clone().sub(this.obj.position)
-  );
-
-  console.log('eh?');
-
+  this.sound.stop();
   this.sound.play();
+  this.updateVolume();
+};
+
+Audio.prototype.stop = function () {
+  this.sound.stop();
 };
 
 Audio.prototype.create = function () {
   this.obj = new THREE.Object3D();
 
-  this.setPosition();
-
   this.sound = new Howl({
     urls: [this.resolveURI(this.el.attr('src'))],
     autoplay: false,
-    loop: false,
-    volume: this.el.attr('volume') || 1.0
+    loop: false
   });
 
   return this.obj;

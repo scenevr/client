@@ -129,6 +129,12 @@ Client.prototype.initialize = function () {
   });
 };
 
+Client.prototype.updateVolume = function () {
+  this.connector.getAudioElements().forEach(function (el) {
+    el.updateVolume();
+  });
+};
+
 Client.prototype.stop = function () {
   this.stopped = true;
   this.connector.disconnect();

@@ -400,6 +400,16 @@ Connector.prototype.restartConnection = function () {
   setTimeout(this.reconnect.bind(this), 500);
 };
 
+Connector.prototype.addViewSourceButton = function () {
+  var self = this;
+
+  $('#view-source').remove();
+  var div = $('<div id=\'view-source\' />').appendTo('body');
+  $('<button />').text('View source').appendTo(div).click(function (e) {
+    window.location = 'view-source:http://' + URI.serialize(self.uri);
+  });
+};
+
 Connector.prototype.connect = function () {
   if (!this.uri.host || !this.uri.path.match(/^\//)) {
     throw new Error('Invalid uri ' + URI.serialize(this.uri));
@@ -420,6 +430,7 @@ Connector.prototype.connect = function () {
       self.interval = setInterval(self.tick.bind(self), 1000 / environment.updateHertz());
     }
 
+    self.addViewSourceButton();
     self.trigger('connected');
 
     self.messageQueue.forEach(function (message) {

@@ -84,23 +84,12 @@ Model.create = function (connector, el) {
         if (styles.collision === 'none') {
           // No collision at all
         } else if (styles.collision === 'mesh') {
-          var geometry = child.geometry;
-          var i;
-          var vertices = []; // attributes.position.array;
-
-          for (i = 0; i < geometry.vertices.length; i++) {
-            vertices.push(geometry.vertices[i].x);
-            vertices.push(geometry.vertices[i].y);
-            vertices.push(geometry.vertices[i].z);
-          }
-
+          var vertices = child.geometry.attributes.position.array;
           var indices = [];
 
           // This is a bit gross, but it works
-          for (i = 0; i < geometry.faces.length; i++) {
-            indices.push(geometry.faces[i].a);
-            indices.push(geometry.faces[i].b);
-            indices.push(geometry.faces[i].c);
+          for (var i = 0; i < vertices.length; i++) {
+            indices.push(i);
           }
 
           var trimeshShape = new CANNON.Trimesh(vertices, indices);

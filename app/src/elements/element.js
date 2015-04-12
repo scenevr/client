@@ -3,13 +3,11 @@ var Utils = require('../utils');
 
 var THREE = window.THREE;
 
-function Element (connector, el) {
-  this.connector = connector;
-  this.el = el;
+function Element () {
 }
 
 Element.prototype.resolveURI = function (url) {
-  return URI.resolve(this.connector.uri, url);
+  return URI.resolve(URI.serialize(this.connector.uri), url);
 };
 
 Element.prototype.getPosition = function () {
@@ -18,6 +16,10 @@ Element.prototype.getPosition = function () {
   } else {
     throw new Error('No position specified for <' + this.el[0].nodeName + ' />');
   }
+};
+
+Element.prototype.setPosition = function () {
+  this.obj.position.copy(this.getPosition());
 };
 
 Element.prototype.getQuaternion = function () {

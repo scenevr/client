@@ -7,6 +7,7 @@ var TWEEN = require('tween.js');
 var CANNON = require('cannon');
 var EventEmitter = require('wolfy87-eventemitter');
 var Billboard = require('./elements/billboard');
+var Audio = require('./elements/audio');
 var Box = require('./elements/box');
 var Sphere = require('./elements/sphere');
 var Skybox = require('./elements/skybox');
@@ -35,6 +36,7 @@ function Connector (client, scene, physicsWorld, uri, isPortal, referrer) {
   this.uri = URI.parse(uri);
   this.isPortal = isPortal || false;
   this.referrer = referrer || null;
+  this.elementMap = {};
 
   this.initialize();
 }
@@ -584,6 +586,7 @@ Connector.prototype.addElement = function (el) {
   var position = el.attr('position') && Utils.parseVector(el.attr('position'));
   var quaternion = el.attr('rotation') && new THREE.Quaternion().setFromEuler(Utils.parseEuler(el.attr('rotation')));
   var obj;
+  var element;
 
   if (el.is('spawn')) {
     obj = new THREE.Object3D();
@@ -608,6 +611,9 @@ Connector.prototype.addElement = function (el) {
       }
       this.spawned = true;
     }
+  } else if (el.is('audio')) {
+    element = new Audio(this, el);
+    obj = element.create();
   } else if (el.is('billboard')) {
     obj = Billboard.create(this, el);
   } else if (el.is('box')) {
@@ -711,12 +717,32 @@ Connector.prototype.addElement = function (el) {
     }
   }
 
+  if (element) {
+    this.elementMap[uuid] = element;
+  } else {
+    this.elementMap[uuid] = {
+      el: el,
+      obj: obj
+    };
+  }
+
   return obj;
 };
 
+Connector.prototype.getByUUID = function (uuid) {
+  return this.elementMap[uuid];
+};
+
 Connector.prototype.processMessage = function (el) {
+  var obj;
+
   if (el.is('event')) {
     var name = el.attr('name');
+    var element;
+
+    if (el.attr('uuid')) {
+      element = this.getByUUID(el.attr('uuid'));
+    }
 
     if (name === 'ready') {
       this.uuid = el.attr('uuid');
@@ -737,6 +763,17 @@ Connector.prototype.processMessage = function (el) {
       }
     } else if (name === 'inspect') {
       this.client.editor.inspectResult(el);
+    } else if (name === 'play') {
+      console.log('wtf?');
+      console.log(element);
+
+      if (element) {
+        element.play();
+      }
+    } else if (name === 'stop') {
+      if (element) {
+        element.stop();
+      }
     } else {
       console.log('Unrecognized event ' + (el.attr('name')));
     }
@@ -745,7 +782,6 @@ Connector.prototype.processMessage = function (el) {
   }
 
   var uuid = el.attr('uuid');
-  var obj;
 
   if (!uuid) {
     console.error('Element has no UUID in:\n' + el[0].outerHTML);
@@ -761,6 +797,8 @@ Connector.prototype.processMessage = function (el) {
       }
 
       this.scene.remove(obj);
+
+      delete this.elementMap[uuid];
     }
 
     return;

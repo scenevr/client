@@ -104,7 +104,6 @@ Client.prototype.initialize = function () {
   this.preferences.createGui();
 
   // Start physics
-  this.time = Date.now();
   this.physicsInterval = setInterval(this.tickPhysics.bind(this), 1000 / environment.physicsHertz());
 
   window.addEventListener('keypress', function (e) {
@@ -142,13 +141,32 @@ Client.prototype.stop = function () {
 };
 
 Client.prototype.createStats = function () {
-  this.stats = new Stats();
-  this.stats.setMode(0);
-  this.stats.domElement.style.position = 'absolute';
-  this.stats.domElement.style.top = '10px';
-  this.stats.domElement.style.zIndex = 110;
-  this.stats.domElement.style.left = '10px';
-  this.container.append(this.stats.domElement);
+  this.stats = {}
+
+  this.stats.rendering = new Stats();
+  this.stats.rendering.setMode(0);
+  this.stats.rendering.domElement.style.position = 'absolute';
+  this.stats.rendering.domElement.style.bottom = '10px';
+  this.stats.rendering.domElement.style.zIndex = 110;
+  this.stats.rendering.domElement.style.right = '10px';
+  this.container.append(this.stats.rendering.domElement);
+
+  this.stats.physics = new Stats();
+  this.stats.physics.setMode(1);
+  this.stats.physics.domElement.style.position = 'absolute';
+  this.stats.physics.domElement.style.bottom = '70px';
+  this.stats.physics.domElement.style.zIndex = 110;
+  this.stats.physics.domElement.style.right = '10px';
+  this.container.append(this.stats.physics.domElement);
+
+  this.stats.connector = new Stats();
+  this.stats.connector.setMode(1);
+  this.stats.connector.domElement.style.position = 'absolute';
+  this.stats.connector.domElement.style.bottom = '130px';
+  this.stats.connector.domElement.style.zIndex = 110;
+  this.stats.connector.domElement.style.right = '10px';
+  this.container.append(this.stats.connector.domElement);
+
 };
 
 Client.prototype.initializeRenderer = function () {
@@ -649,9 +667,9 @@ Client.prototype.getRotation = function () {
 Client.prototype.tickPhysics = function () {
   var timeStep = 1.0 / environment.physicsHertz();
 
-  if (this.controls.enabled) {
-    this.connector.physicsWorld.step(timeStep);
-  }
+  this.stats.physics.begin();
+
+  this.connector.physicsWorld.step(timeStep);
 
   TWEEN.update();
 
@@ -665,11 +683,9 @@ Client.prototype.tickPhysics = function () {
     this.vrrenderer.resetOrientation(this.controls, this.vrHMDSensor);
   }
 
-  this.controls.update(Date.now() - this.time);
-
+  this.controls.update(timeStep * 1000);
   this.trigger('controls:update', [this.controls]);
-
-  this.time = Date.now();
+  this.stats.physics.end();
 };
 
 Client.prototype.tick = function () {
@@ -679,7 +695,7 @@ Client.prototype.tick = function () {
 
   var state;
 
-  this.stats.begin();
+  this.stats.rendering.begin();
 
   if (environment.isDebug()) {
     var q = new THREE.Quaternion();
@@ -706,7 +722,7 @@ Client.prototype.tick = function () {
     this.checkForPortalCollision();
   }
 
-  this.stats.end();
+  this.stats.rendering.end();
 
   if (environment.isLowPowerMode()) {
     setTimeout(this.tick.bind(this), 1000 / 12);

@@ -1,3 +1,5 @@
+/* globals THREE, $ */
+
 var Utils = require('../utils');
 var URI = require('uri-js');
 var CANNON = require('cannon');
@@ -6,44 +8,6 @@ var html2canvas = require('html2canvas');
 if (!window.html2canvas) {
   window.html2canvas = html2canvas;
 }
-
-// For jshint
-var THREE = window.THREE;
-var $ = window.jQuery;
-
-function RenderQueue () {
-  this.queue = [];
-  this.processing = false;
-  this.interjobDelay = 25;
-}
-
-RenderQueue.prototype.add = function (job) {
-  this.queue.push(job);
-
-  if (!this.processing) {
-    this.nextJob();
-  }
-};
-
-RenderQueue.prototype.nextJob = function () {
-  var job = this.queue.shift(),
-    self = this;
-
-  if (!job || this.processing) {
-    return;
-  }
-
-  this.processing = true;
-
-  job(function () {
-    setTimeout(function () {
-      self.processing = false;
-      self.nextJob();
-    }, self.interjobDelay);
-  });
-};
-
-var rQueue = new RenderQueue();
 
 var SIZE = 512;
 
@@ -69,9 +33,8 @@ Billboard.create = function (connector, el) {
 
   div.find('img').each(function (index, img) {
     img.src = URI.resolve(URI.serialize(connector.uri), img.getAttribute('src'));
+    // img.crossOrigin = true;
   });
-
-  div.appendTo('body');
 
   geometry = new THREE.BoxGeometry(1, 1, 1);
   material = new THREE.MeshLambertMaterial({
@@ -99,7 +62,9 @@ Billboard.create = function (connector, el) {
 
   obj.body = boxBody;
 
-  rQueue.add(function (finished) {
+  connector.renderQueue.add(function (finished) {
+    div.appendTo('body');
+
     html2canvas(div[0], {
       useCORS: true,
       letterRendering: false

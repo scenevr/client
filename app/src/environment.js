@@ -43,7 +43,7 @@ Environment.prototype.getNear = function () {
 };
 
 Environment.prototype.getFar = function () {
-  return 700;
+  return 5000;
 };
 
 module.exports = new Environment();

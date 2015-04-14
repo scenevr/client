@@ -17,6 +17,7 @@ var Plane = require('./elements/plane');
 var Player = require('./elements/player');
 var Model = require('./elements/model');
 var Element = require('./elements/element');
+var RenderQueue = require('./render_queue');
 
 // For semistandard
 var $ = window.jQuery;
@@ -37,6 +38,7 @@ function Connector (client, scene, physicsWorld, uri, isPortal, referrer) {
   this.isPortal = isPortal || false;
   this.referrer = referrer || null;
   this.elementMap = {};
+  this.renderQueue = new RenderQueue();
 
   this.initialize();
 }
@@ -63,6 +65,7 @@ Connector.prototype.destroy = function () {
 
   clearInterval(this.interval);
 
+  this.renderQueue.clear();
   this.disconnect();
   this.unpublishOpentok();
 
@@ -71,9 +74,10 @@ Connector.prototype.destroy = function () {
     setTimeout(function () {
       self.session.disconnect();
       delete self.session;
-    }, 1500);
+    }, 1000);
   }
 
+  delete this.renderQueue;
   delete this.physicsWorld;
   delete this.scene;
   delete this.client;
@@ -938,12 +942,16 @@ Connector.prototype.processMessage = function (el) {
 };
 
 Connector.prototype.onMessage = function (e) {
+  this.client.stats.connector.begin();
+
   var self = this;
   var children = $($.parseXML(e.data).firstChild).children();
 
   children.each(function (index, el) {
     self.processMessage($(el));
   });
+
+  this.client.stats.connector.end();
 };
 
 module.exports = Connector;

@@ -141,7 +141,7 @@ Client.prototype.stop = function () {
 };
 
 Client.prototype.createStats = function () {
-  this.stats = {}
+  this.stats = {};
 
   this.stats.rendering = new Stats();
   this.stats.rendering.setMode(0);
@@ -166,7 +166,6 @@ Client.prototype.createStats = function () {
   this.stats.connector.domElement.style.zIndex = 110;
   this.stats.connector.domElement.style.right = '10px';
   this.container.append(this.stats.connector.domElement);
-
 };
 
 Client.prototype.initializeRenderer = function () {

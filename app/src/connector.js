@@ -702,6 +702,13 @@ Connector.prototype.addElement = function (el) {
       });
     }
 
+    if (el.is('sphere,box,plane') && styles.emissiveColor) {
+      obj.material.setValues({
+        color: 0x000000,
+        emissive: styles.emissiveColor
+      });
+    }
+
     if (el.is('sphere,box,plane') && styles.textureMap) {
       var url = this.getAssetHost() + this.getUrlFromStyle(styles.textureMap);
       THREE.ImageUtils.crossOrigin = true;

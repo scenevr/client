@@ -489,7 +489,7 @@ Connector.prototype.tick = function () {
     var position = new THREE.Vector3(0, -0.75, 0).add(this.client.getPlayerObject().position);
     var rotation = this.client.getRotation();
 
-    return this.sendMessage(
+    this.sendMessage(
       $('<player />').
         attr('position', position.toArray().join(' ')).
         attr('rotation', rotation.toArray().join(' '))

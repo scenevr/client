@@ -411,6 +411,13 @@
         euler.y = yawObject.rotation.y;
         euler.order = "XYZ";
 
+        if (client.vrrenderer) {
+            var orientation = client.vrrenderer.getOrientation();
+            var hmdEuler = new THREE.Euler().setFromQuaternion(orientation);
+
+            euler.y += hmdEuler.y;
+        }
+
         if(client.vrHMD){
             euler.x = 0;
         }

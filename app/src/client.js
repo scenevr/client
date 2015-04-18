@@ -113,13 +113,15 @@ Client.prototype.initialize = function () {
       }
 
       if (e.charCode === 'f'.charCodeAt(0)) {
-        if (self.domElement.mozRequestFullScreen) {
-          self.domElement.mozRequestFullScreen({
+        var el = $("canvas")[0];
+
+        if (el.mozRequestFullScreen) {
+          el.mozRequestFullScreen({
             vrDisplay: self.vrHMD
           });
         }
-        if (self.domElement.webkitRequestFullscreen) {
-          self.domElement.webkitRequestFullscreen({
+        if (el.webkitRequestFullscreen) {
+          el.webkitRequestFullscreen({
             vrDisplay: self.vrHMD
           });
         }
@@ -271,12 +273,28 @@ Client.prototype.vrDeviceCallback = function (vrdevs) {
   vrdevs.forEach(function (device) {
     if (device instanceof window.PositionSensorVRDevice && device.hardwareUnitId === self.vrHMD.hardwareUnitId) {
       self.vrHMDSensor = device;
+      console.log(device.getState());
     }
   });
 
   if (this.vrHMD) {
     this.vrrenderer = new THREE.VRRenderer(this.renderer, this.vrHMD, this.vrHMDSensor);
+    self.consoleLog('VR HMD detected, using rift mode. Hit F to enable distortion.');
   }
+
+  setTimeout(function () {
+    var o = self.vrHMDSensor.getState().orientation;
+
+    if ((o.x === 0) && (o.y === 0) && (o.z === 0)) {
+      self.consoleLog('Hmm... Some issue with your HMD or browserf, we\'re not getting positional information.');
+    }
+  }, 2500);
+};
+
+Client.prototype.consoleLog = function (msg) {
+  this.addChatMessage({
+    name: 'Client'
+  }, msg);
 };
 
 Client.prototype.checkForPortalCollision = function () {

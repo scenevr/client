@@ -3,13 +3,16 @@
  * @author schteppe / https://github.com/schteppe
  */
  var PointerLockControls = function ( camera, client, MOBILE, supportsPointerLock ) {
+    var scope = this;
+
+    var walkSpeed = client.environment.getWalkSpeed();
+    var runSpeed = client.environment.getRunSpeed();
+    var jumpVelocity = client.environment.getJumpImpulse();
+
+    var dampingFactor = 0.7;
 
     var cannonBody = null;
     var velocity = new THREE.Vector3;
-    var eyeYPos = 2; // eyes are 2 meters above the ground
-    var velocityFactor = 0.2;
-    var jumpVelocity = 8;
-    var scope = this;
 
     var pitchObject = new THREE.Object3D();
     pitchObject.add( camera );
@@ -24,6 +27,7 @@
     var moveBackward = false;
     var moveLeft = false;
     var moveRight = false;
+    var isRunning = false;
 
     var canJump = false;
 
@@ -93,6 +97,10 @@
 
         if ( scope.enabled === false ) return;
 
+        if (event.shiftKey) {
+            isRunning = true;
+        }
+
         switch ( event.keyCode ) {
 
             case 38: // up
@@ -127,6 +135,10 @@
     var onKeyUp = function ( event ) {
 
         if ( scope.enabled === false ) return;
+
+        if (event.shiftKey) {
+            isRunning = false;
+        }
 
         switch( event.keyCode ) {
 
@@ -381,13 +393,16 @@
             }
         }
 
-        delta *= 0.5;
-
         inputVelocity.set(0,0,0);
 
+        var velocityFactor;
+
         if(MOBILE){
-            inputVelocity.z = direction.y * velocityFactor * delta * 0.3;
-            inputVelocity.x = direction.x * velocityFactor * delta * 0.3;
+            velocityFactor = walkSpeed / 60;
+            inputVelocity.z = direction.y * velocityFactor * delta;
+            inputVelocity.x = direction.x * velocityFactor * delta;
+        }else{
+            velocityFactor = (isRunning ? runSpeed : walkSpeed) / 25;
         }
 
         if ( moveForward ){
@@ -426,8 +441,8 @@
         inputVelocity.applyQuaternion(quat);
 
         // Add to the object
-        velocity.x = velocity.x * 0.7 + inputVelocity.x;
-        velocity.z = velocity.z * 0.7 + inputVelocity.z;
+        velocity.x = velocity.x * dampingFactor + inputVelocity.x;
+        velocity.z = velocity.z * dampingFactor + inputVelocity.z;
 
         yawObject.position.copy(cannonBody.position).add(new THREE.Vector3(0,0.9,0));
     };

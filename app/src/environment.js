@@ -1,6 +1,18 @@
 function Environment () {
 }
 
+Environment.prototype.getWalkSpeed = function () {
+  return 1.8;
+};
+
+Environment.prototype.getRunSpeed = function () {
+  return 5.4;
+};
+
+Environment.prototype.getJumpImpulse = function () {
+  return 8.0;
+};
+
 Environment.prototype.updateHertz = function () {
   return 10;
 };

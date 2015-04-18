@@ -35,6 +35,7 @@ Client.prototype.initialize = function () {
 
   this.assetManager = new AssetManager(this);
   this.preferences = new Preferences(this);
+  this.environment = environment;
 
   this.container = $('#scene-view');
   this.width = this.container.width();

@@ -114,7 +114,7 @@ Client.prototype.initialize = function () {
       }
 
       if (e.charCode === 'f'.charCodeAt(0)) {
-        var el = $("canvas")[0];
+        var el = $('canvas')[0];
 
         if (el.mozRequestFullScreen) {
           el.mozRequestFullScreen({

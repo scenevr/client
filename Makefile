@@ -6,10 +6,7 @@ all:
 		../vendor/jquery.js \
 		../vendor/stats.js \
 		../vendor/pointer-lock-controls.js \
-		../vendor/three-vrrenderer.js \
-		../vendor/three-dat.js \
-		../vendor/helvetiker_regular.typeface.js \
-		../vendor/obj-loader.js \
+		../vendor/mtl-loader.js \
 		./bundle.js \
 		--source-map "scenevr.min.js.map" \
 		--compress "warnings=false" \

@@ -1,6 +1,6 @@
 {
   "name": "scenevr-web",
-  "version": "0.0.2",
+  "version": "1.0.0",
   "dependencies": {
     "browserify-jade": "~0.1.2",
     "browserify-middleware": "~4.1.0",

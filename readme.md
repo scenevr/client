@@ -1,6 +1,6 @@
 # SceneVR Web client
 
-[![Build Status](https://travis-ci.org/bnolan/scenevr-web.svg?branch=master)](https://travis-ci.org/bnolan/scenevr-web)
+[![Build Status](https://travis-ci.org/scenevr/client.svg?branch=master)](https://travis-ci.org/scenevr/client)
 
 [![js-semistandard-style](https://cdn.rawgit.com/flet/semistandard/master/badge.svg)](https://github.com/flet/semistandard)
 

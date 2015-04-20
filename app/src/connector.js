@@ -488,11 +488,18 @@ Connector.prototype.tick = function () {
   if (this.spawned && this.isConnected()) {
     var position = new THREE.Vector3(0, -0.75, 0).add(this.client.getPlayerObject().position);
     var rotation = this.client.getRotation();
+    var velocity = this.client.getVelocity();
+
+    // Round all numbers to 6dp
+    var to6dp = function (x) {
+      return x.toFixed ? x.toFixed(6) : x;
+    };
 
     this.sendMessage(
       $('<player />').
-        attr('position', position.toArray().join(' ')).
-        attr('rotation', rotation.toArray().join(' '))
+        attr('position', position.toArray().map(to6dp).join(' ')).
+        attr('rotation', rotation.toArray().map(to6dp).join(' ')).
+        attr('velocity', velocity.toArray().map(to6dp).join(' '))
     );
   }
 };

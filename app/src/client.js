@@ -80,10 +80,6 @@ Client.prototype.initialize = function () {
     } else {
       self.addInstructions();
     }
-
-    if (environment.isEditingEnabled()) {
-      // self.editor = new Editor(self);
-    }
   });
 
   this.connector.on('disconnected', function () {
@@ -274,6 +270,25 @@ Client.prototype.promotePortal = function () {
   this.connector.setPosition(this.connector.spawnPosition);
 };
 
+Client.prototype.inspect = function (el) {
+  this.connector.inspectElement(el);
+};
+
+Client.prototype.inspectResult = function (el) {
+  // var textarea = $('#editor textarea');
+  // var src = textarea.val();
+  // var startIndex = parseInt(el.attr('startindex'), 10);
+  // var newLines = src.substr(0, startIndex).match(/\n/g) || [];
+  // var lineNumber = newLines.length + 1;
+
+  // console.log(startIndex);
+  // console.log(lineNumber);
+
+  // textarea.focus();
+  // textarea[0].selectionStart = startIndex;
+  // this.client.exitPointerLock();
+};
+
 Client.prototype.onClick = function (e) {
   var position = this.controls.getObject().position;
   var direction = this.controls.getDirection(new THREE.Vector3());
@@ -309,23 +324,15 @@ Client.prototype.onClick = function (e) {
 
     while (obj.parent) {
       if (obj.userData instanceof window.jQuery) {
-        if (this.editor) {
-          this.editor.trigger('object:click', [obj]);
-        } else {
-          this.connector.onClick({
-            uuid: obj.name,
-            point: intersection.point
-          });
-        }
+        this.connector.onClick({
+          uuid: obj.name,
+          point: intersection.point
+        });
 
         return;
       }
       obj = obj.parent;
     }
-  }
-
-  if (this.editor) {
-    this.editor.trigger('object:click');
   }
 };
 

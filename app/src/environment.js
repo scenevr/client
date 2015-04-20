@@ -34,11 +34,6 @@ Environment.prototype.isLowPowerMode = function () {
   return false;
 };
 
-// Feature flag
-Environment.prototype.isEditingEnabled = function () {
-  return false;
-};
-
 // unpublish after 90 seconds of inactivity
 Environment.prototype.unpublishTimeout = function () {
   return 90 * 1000;

@@ -804,7 +804,7 @@ Connector.prototype.processMessage = function (el) {
         );
       }
     } else if (name === 'inspect') {
-      this.client.editor.inspectResult(el);
+      this.client.inspectResult(el);
     } else if (name === 'play') {
       if (element) {
         element.play();

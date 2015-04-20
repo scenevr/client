@@ -83,6 +83,13 @@ Connector.prototype.destroy = function () {
   delete this.client;
 };
 
+// Round all numbers to 6dp, works on eulers too
+Connector.prototype.vectorToWire = function (a) {
+  return a.toArray().map(function (x) {
+    return x.toFixed ? x.toFixed(6) : x;
+  }).join(' ');
+};
+
 Connector.prototype.onAuthenticationReady = function () {
   if (this.client.authentication.isLoggedIn()) {
     this.authenticate();
@@ -479,22 +486,24 @@ Connector.prototype.sendChat = function (message) {
 };
 
 Connector.prototype.onCollide = function (e) {
-  this.sendMessage($('<event />').attr('name', 'collide').attr('uuid', e.uuid).attr('normal', e.normal.toArray().join(' ')));
+  this.sendMessage($('<event />').attr('name', 'collide').attr('uuid', e.uuid).attr('normal', this.vectorToWire(e.normal)));
 };
 
 Connector.prototype.onClick = function (e) {
-  this.sendMessage($('<event />').attr('name', 'click').attr('uuid', e.uuid).attr('point', e.point.toArray().join(' ')));
+  this.sendMessage($('<event />').attr('name', 'click').attr('uuid', e.uuid).attr('point', this.vectorToWire(e.point)));
 };
 
 Connector.prototype.tick = function () {
   if (this.spawned && this.isConnected()) {
     var position = new THREE.Vector3(0, -0.75, 0).add(this.client.getPlayerObject().position);
     var rotation = this.client.getRotation();
+    var velocity = this.client.getVelocity();
 
     this.sendMessage(
       $('<player />').
-        attr('position', position.toArray().join(' ')).
-        attr('rotation', rotation.toArray().join(' '))
+        attr('position', this.vectorToWire(position)).
+        attr('rotation', this.vectorToWire(rotation)).
+        attr('velocity', this.vectorToWire(velocity))
     );
   }
 };
@@ -618,8 +627,8 @@ Connector.prototype.addElement = function (el) {
         var p = this.spawnPosition.clone();
         p.add(new THREE.Vector3(0, 1.28, 0));
 
-        this.addElement($('<link />').attr('position', p.toArray().join(' '))
-          .attr('rotation', [rotation.x, rotation.y, rotation.z].join(' '))
+        this.addElement($('<link />').attr('position', this.vectorToWire(p))
+          .attr('rotation', this.vectorToWire(rotation))
           .attr('backlink', true)
           .attr('href', this.referrer)
           .attr('style', 'color : #0033ff'));

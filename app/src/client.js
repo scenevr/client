@@ -47,8 +47,10 @@ Client.prototype.initialize = function () {
   this.on('click', this.onClick.bind(this));
 
   this.scene = new THREE.Scene();
+
   var aspect = this.width / this.height;
   this.camera = new THREE.PerspectiveCamera(environment.getViewAngle(), aspect, environment.getNear(), environment.getFar());
+
   this.initializeRenderer();
   this.addControls();
 
@@ -91,6 +93,8 @@ Client.prototype.initialize = function () {
   });
 
   this.raycaster = new THREE.Raycaster();
+
+  $(window).on('popstate', this.onPopState.bind(this));
 
   // Start renderer
   this.tick();
@@ -239,6 +243,10 @@ Client.prototype.checkForPortalCollision = function () {
   if ((ints.length > 0) && (this.connector.portal.connector.hasSpawned())) {
     return this.promotePortal();
   }
+};
+
+Client.prototype.onPopState = function (e) {
+  window.location.reload();
 };
 
 Client.prototype.promotePortal = function () {

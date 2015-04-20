@@ -786,7 +786,7 @@ Connector.prototype.processMessage = function (el) {
       this.restartConnection();
     } else if (name === 'chat') {
       this.client.addChatMessage({
-        name: el.attr('from'),
+        name: el.attr('from')
       }, el.attr('message'));
     } else if (name === 'respawn') {
       this.respawn(el.attr('reason'));

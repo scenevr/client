@@ -43,7 +43,6 @@ Client.prototype.initialize = function () {
   window.addEventListener('resize', this.onWindowResize.bind(this), false);
 
   this.createStats();
-  this.initVR();
 
   this.authentication = new Authentication(this);
 
@@ -106,29 +105,6 @@ Client.prototype.initialize = function () {
 
   // Start physics
   this.physicsInterval = setInterval(this.tickPhysics.bind(this), 1000 / environment.physicsHertz());
-
-  window.addEventListener('keypress', function (e) {
-    if (self.vrrenderer && self.controls.enabled) {
-      if (e.charCode === 'r'.charCodeAt(0)) {
-        self.vrrenderer.resetOrientation(self.controls, self.vrHMDSensor);
-      }
-
-      if (e.charCode === 'f'.charCodeAt(0)) {
-        var el = $('canvas')[0];
-
-        if (el.mozRequestFullScreen) {
-          el.mozRequestFullScreen({
-            vrDisplay: self.vrHMD
-          });
-        }
-        if (el.webkitRequestFullscreen) {
-          el.webkitRequestFullscreen({
-            vrDisplay: self.vrHMD
-          });
-        }
-      }
-    }
-  });
 };
 
 Client.prototype.updateVolume = function () {
@@ -252,44 +228,6 @@ Client.prototype.getAllClickableObjects = function () {
   });
 
   return list;
-};
-
-Client.prototype.initVR = function () {
-  if (navigator.getVRDevices) {
-    navigator.getVRDevices().then(this.vrDeviceCallback.bind(this));
-  } else if (navigator.mozGetVRDevices) {
-    navigator.mozGetVRDevices(this.vrDeviceCallback.bind(this));
-  }
-};
-
-Client.prototype.vrDeviceCallback = function (vrdevs) {
-  var self = this;
-
-  vrdevs.forEach(function (device) {
-    if (device instanceof window.HMDVRDevice) {
-      self.vrHMD = device;
-    }
-  });
-
-  vrdevs.forEach(function (device) {
-    if (device instanceof window.PositionSensorVRDevice && device.hardwareUnitId === self.vrHMD.hardwareUnitId) {
-      self.vrHMDSensor = device;
-      console.log(device.getState());
-    }
-  });
-
-  if (this.vrHMD) {
-    this.vrrenderer = new THREE.VRRenderer(this.renderer, this.vrHMD, this.vrHMDSensor);
-    self.consoleLog('VR HMD detected, using rift mode. Hit F to enable distortion.');
-  }
-
-  setTimeout(function () {
-    var o = self.vrHMDSensor.getState().orientation;
-
-    if ((o.x === 0) && (o.y === 0) && (o.z === 0)) {
-      self.consoleLog('Hmm... Some issue with your HMD or browserf, we\'re not getting positional information.');
-    }
-  }, 2500);
 };
 
 Client.prototype.consoleLog = function (msg) {
@@ -547,7 +485,7 @@ Client.prototype.hasPointerLock = function () {
 };
 
 Client.prototype.pointerLockError = function (event) {
-  console.error('[FAIL] There was an error acquiring pointerLock. You will not be able to use scenevr.');
+  console.error('[FAIL] There was an error acquiring pointerLock.');
 };
 
 Client.prototype.pointerLockChange = function (event) {
@@ -662,6 +600,10 @@ Client.prototype.addControls = function () {
       if ((e.keyCode === 84) || (e.keyCode === 86)) {
         self.connector.startTalking();
       }
+
+      if (e.charCode === 'f'.charCodeAt(0)) {
+        self.consoleLog('Rift support has been deprecated. Use JanusVR to view scenes in the rift.');
+      }
     }
   });
 
@@ -696,11 +638,6 @@ Client.prototype.tickPhysics = function () {
     this.onClick();
   }
 
-  // maybe reset orientation from gamepad
-  if ((this.vrrender) && (this.controls.getObject().reorient)) {
-    this.vrrenderer.resetOrientation(this.controls, this.vrHMDSensor);
-  }
-
   this.controls.update(timeStep * 1000);
   this.trigger('controls:update', [this.controls]);
   this.stats.physics.end();
@@ -710,8 +647,6 @@ Client.prototype.tick = function () {
   if (this.stopped) {
     return;
   }
-
-  var state;
 
   this.stats.rendering.begin();
 
@@ -728,13 +663,7 @@ Client.prototype.tick = function () {
     });
   }
 
-  if (this.vrrenderer) {
-    state = this.vrHMDSensor.getState();
-    this.camera.quaternion.set(state.orientation.x, state.orientation.y, state.orientation.z, state.orientation.w);
-    this.vrrenderer.render(this.scene, this.camera, this.controls);
-  } else {
-    this.renderer.render(this.scene, this.camera);
-  }
+  this.renderer.render(this.scene, this.camera);
 
   if (this.connector.isPortalOpen()) {
     this.checkForPortalCollision();

@@ -193,7 +193,17 @@ Client.prototype.disableControls = function () {
 
 Client.prototype.getUrlFromLocation = function () {
   if (window.location.search.match(/connect.+/)) {
-    return '//' + window.location.search.split(/[=]/)[1];
+    var url = window.location.search.split(/[=]/)[1];
+    var components = url.split('/');
+
+    // fix me this is so gross, need a better uri parsing library
+    if (components.length === 1) {
+      url += '/index.xml'
+    } else if ((components.length === 2) && (components.slice(-1)[0] === '')) {
+      url += 'index.xml'
+    }
+
+    return '//' + url;
   } else {
     return '//home.scenevr.hosting/home.xml';
   }

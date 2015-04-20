@@ -1,3 +1,5 @@
+/* globals $, THREE */
+
 var util = require('util');
 var Utils = require('./utils');
 var URI = require('uri-js');
@@ -18,10 +20,6 @@ var Player = require('./elements/player');
 var Model = require('./elements/model');
 var Element = require('./elements/element');
 var RenderQueue = require('./render_queue');
-
-// For semistandard
-var $ = window.jQuery;
-var THREE = window.THREE;
 
 // Constants
 var PLAYER_MAX_HEAD_ANGLE = Math.PI / 4;

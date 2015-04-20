@@ -49,8 +49,50 @@ Asset.prototype.onError = function (xhr, status, err) {
 
 function AssetManager () {
   this.assets = {};
-  this.objLoader = new Worker('/vendor/obj-loader.js');
+
+  this.initObjLoader();
 }
+
+AssetManager.prototype.initObjLoader = function () {
+  var self = this;
+
+  this.objLoader = new Worker('/vendor/obj-loader.js');
+
+  this.objLoader.onmessage = function (e) {
+    var asset = self.assets[e.data[0]];
+    var objects = e.data[1];
+
+    var container = new THREE.Object3D();
+
+    for (var i = 0, l = objects.length; i < l; i++) {
+      var object = objects[ i ];
+      var geometry = object.geometry;
+
+      var buffergeometry = new THREE.BufferGeometry();
+      buffergeometry.addAttribute('position', new THREE.BufferAttribute(new Float32Array(geometry.vertices), 3));
+
+      if (geometry.normals.length > 0) {
+        buffergeometry.addAttribute('normal', new THREE.BufferAttribute(new Float32Array(geometry.normals), 3));
+      }
+
+      if (geometry.uvs.length > 0) {
+        buffergeometry.addAttribute('uv', new THREE.BufferAttribute(new Float32Array(geometry.uvs), 2));
+      }
+
+      var material = new THREE.MeshLambertMaterial();
+      material.name = object.material.name;
+
+      var mesh = new THREE.Mesh(buffergeometry, material);
+      mesh.name = object.name;
+
+      container.add(mesh);
+    }
+
+    asset.value = container;
+    asset.loaded = true;
+    asset.trigger('loaded', [asset.value]);
+  };
+};
 
 AssetManager.prototype.createKey = function (url) {
   return url;
@@ -73,18 +115,9 @@ AssetManager.prototype.load = function (url, processor, callback) {
 
 AssetManager.prototype.loadObj = function (url, callback) {
   var self = this;
-  var filename = url.split('/').slice(-1);
 
   this.load(url, function (data, callback) {
-    // var objLoader = new THREE.OBJLoader();
-    // var obj = objLoader.parse(data);
-    // console.timeEnd('load obj ' + filename);
-
-    self.objLoader.postMessage([filename, data, callback]);
-
-    // w.onmessage = function (e) {
-    //   callback(e.data);
-    // };
+    self.objLoader.postMessage([url, data]);
   }, function (obj) {
     callback(obj.clone());
   });

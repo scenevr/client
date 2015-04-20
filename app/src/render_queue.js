@@ -13,7 +13,7 @@ RenderQueue.prototype.add = function (job) {
   this.queue.push(job);
 
   if (!this.processing) {
-    this.nextJob();
+    // this.nextJob();
   }
 };
 

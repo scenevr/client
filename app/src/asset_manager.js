@@ -1,4 +1,5 @@
-var THREE = window.THREE;
+/* globals THREE, Worker */
+
 var util = require('util');
 var EventEmitter = require('wolfy87-eventemitter');
 var URI = require('uri-js');
@@ -19,27 +20,27 @@ function Asset (callback, processor, args) {
 util.inherits(Asset, EventEmitter);
 
 Asset.prototype.load = function () {
-  console.log('[Asset] loading ' + this.url);
-
   $.ajax({
     success: this.onLoad.bind(this),
     error: this.onError.bind(this),
     url: this.url
   });
-
-  // var loader = new THREE.XHRLoader(THREE.DefaultLoadingManager);
-  // loader.setCrossOrigin(true);
-  // loader.load(this.url, this.onLoad.bind(this), this.onProgress.bind(this), this.onError.bind(this));
 };
 
 Asset.prototype.onLoad = function (data) {
-  if (this.processor) {
-    data = this.processor(data);
-  }
+  var self = this;
 
-  this.value = data;
-  this.loaded = true;
-  this.trigger('loaded', [this.value]);
+  if (this.processor) {
+    this.processor(data, function (data) {
+      self.value = data;
+      self.loaded = true;
+      self.trigger('loaded', [self.value]);
+    });
+  } else {
+    this.value = data;
+    this.loaded = true;
+    this.trigger('loaded', [this.value]);
+  }
 };
 
 Asset.prototype.onError = function (xhr, status, err) {
@@ -48,6 +49,7 @@ Asset.prototype.onError = function (xhr, status, err) {
 
 function AssetManager () {
   this.assets = {};
+  this.objLoader = new Worker('/vendor/obj-loader.js');
 }
 
 AssetManager.prototype.createKey = function (url) {
@@ -70,9 +72,19 @@ AssetManager.prototype.load = function (url, processor, callback) {
 };
 
 AssetManager.prototype.loadObj = function (url, callback) {
-  this.load(url, function (data) {
-    var objLoader = new THREE.OBJLoader();
-    return objLoader.parse(data);
+  var self = this;
+  var filename = url.split('/').slice(-1);
+
+  this.load(url, function (data, callback) {
+    // var objLoader = new THREE.OBJLoader();
+    // var obj = objLoader.parse(data);
+    // console.timeEnd('load obj ' + filename);
+
+    self.objLoader.postMessage([filename, data, callback]);
+
+    // w.onmessage = function (e) {
+    //   callback(e.data);
+    // };
   }, function (obj) {
     callback(obj.clone());
   });
@@ -81,9 +93,9 @@ AssetManager.prototype.loadObj = function (url, callback) {
 AssetManager.prototype.loadMtl = function (url, callback) {
   var baseUrl = url.substr(0, url.lastIndexOf('/') + 1);
 
-  this.load(url, function (data) {
+  this.load(url, function (data, callback) {
     var mtlLoader = new THREE.MTLLoader(baseUrl, null, true, URI.resolve);
-    return mtlLoader.parse(data);
+    callback(mtlLoader.parse(data));
   }, function (materialCreator) {
     callback(materialCreator);
   });

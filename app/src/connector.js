@@ -443,6 +443,8 @@ Connector.prototype.connect = function () {
 
     self.addLights();
     self.addFloor();
+
+    console.profile('warmup');
   };
 
   this.ws.onclose = function () {
@@ -959,6 +961,11 @@ Connector.prototype.onMessage = function (e) {
   });
 
   this.client.stats.connector.end();
+
+  if (children.length > 10) {
+    console.profileEnd('warmup');
+  }
+
 };
 
 module.exports = Connector;

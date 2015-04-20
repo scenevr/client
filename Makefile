@@ -19,6 +19,8 @@ all:
 	lessc css/scenevr.less > css/scenevr.css
 	# cp index.html build
 	cp css/*.css build/css
+	mkdir build/workers
+	cp workers/* build/workers
 	rm -rf build/vendor
 	cp images/* build/images
 	s3cmd put  --add-header='Cache-Control: public, max-age=43200' --recursive ./build/* s3://client.scenevr.com/

@@ -56,7 +56,7 @@ function AssetManager () {
 AssetManager.prototype.initObjLoader = function () {
   var self = this;
 
-  this.objLoader = new Worker('/vendor/obj-loader.js');
+  this.objLoader = new Worker('/workers/objloader.js');
 
   this.objLoader.onmessage = function (e) {
     var asset = self.assets[e.data[0]];

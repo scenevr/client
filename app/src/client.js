@@ -1,3 +1,5 @@
+/* globals $, Stats, THREE */
+
 var util = require('util');
 var Connector = require('./connector');
 var environment = require('./environment');
@@ -8,11 +10,6 @@ var EventEmitter = require('wolfy87-eventemitter');
 var Authentication = require('./authentication');
 var Preferences = require('./preferences');
 var AssetManager = require('./asset_manager');
-
-// For semistandard
-var $ = window.jQuery;
-var Stats = window.Stats;
-var THREE = window.THREE;
 
 var Templates = {
   inQueue: require('../templates/in_queue.jade'),
@@ -99,9 +96,8 @@ Client.prototype.initialize = function () {
 
   this.raycaster = new THREE.Raycaster();
 
+  // Start renderer
   this.tick();
-
-  this.preferences.createGui();
 
   // Start physics
   this.physicsInterval = setInterval(this.tickPhysics.bind(this), 1000 / environment.physicsHertz());

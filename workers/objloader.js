@@ -51,61 +51,51 @@ this.onmessage = function (e) {
     var ia = parseVertexIndex(a);
     var ib = parseVertexIndex(b);
     var ic = parseVertexIndex(c);
+    var id;
 
     if (d === undefined) {
       addVertex(ia, ib, ic);
     } else {
-      var id = parseVertexIndex(d);
+      id = parseVertexIndex(d);
 
       addVertex(ia, ib, id);
       addVertex(ib, ic, id);
     }
 
     if (ua !== undefined) {
-      var ia = parseUVIndex(ua);
-      var ib = parseUVIndex(ub);
-      var ic = parseUVIndex(uc);
+      ia = parseUVIndex(ua);
+      ib = parseUVIndex(ub);
+      ic = parseUVIndex(uc);
 
       if (d === undefined) {
-        addUV( ia, ib, ic );
+        addUV(ia, ib, ic);
       } else {
+        id = parseUVIndex(ud);
 
-        var id = parseUVIndex( ud );
-
-        addUV( ia, ib, id );
-        addUV( ib, ic, id );
-
+        addUV(ia, ib, id);
+        addUV(ib, ic, id);
       }
-
     }
 
-    if ( na !== undefined ) {
+    if (na !== undefined) {
+      ia = parseNormalIndex(na);
+      ib = parseNormalIndex(nb);
+      ic = parseNormalIndex(nc);
 
-      var ia = parseNormalIndex( na );
-      var ib = parseNormalIndex( nb );
-      var ic = parseNormalIndex( nc );
-
-      if ( d === undefined ) {
-
-        addNormal( ia, ib, ic );
-
+      if (d === undefined) {
+        addNormal(ia, ib, ic);
       } else {
+        id = parseNormalIndex(nd);
 
-        var id = parseNormalIndex( nd );
-
-        addNormal( ia, ib, id );
-        addNormal( ib, ic, id );
-
+        addNormal(ia, ib, id);
+        addNormal(ib, ic, id);
       }
-
     }
-
   }
 
   // create mesh if no objects in text
 
-  if ( /^o /gm.test( text ) === false ) {
-
+  if (/^o /gm.test(text) === false) {
     geometry = {
       vertices: [],
       normals: [],
@@ -122,8 +112,7 @@ this.onmessage = function (e) {
       material: material
     };
 
-    objects.push( object );
-
+    objects.push(object);
   }
 
   var vertices = [];
@@ -154,73 +143,57 @@ this.onmessage = function (e) {
 
   var face_pattern3 = /f( +(-?\d+)\/(-?\d+)\/(-?\d+))( +(-?\d+)\/(-?\d+)\/(-?\d+))( +(-?\d+)\/(-?\d+)\/(-?\d+))( +(-?\d+)\/(-?\d+)\/(-?\d+))?/;
 
-  // f vertex//normal vertex//normal vertex//normal ... 
+  // f vertex//normal vertex//normal vertex//normal ...
 
-  var face_pattern4 = /f( +(-?\d+)\/\/(-?\d+))( +(-?\d+)\/\/(-?\d+))( +(-?\d+)\/\/(-?\d+))( +(-?\d+)\/\/(-?\d+))?/
+  var face_pattern4 = /f( +(-?\d+)\/\/(-?\d+))( +(-?\d+)\/\/(-?\d+))( +(-?\d+)\/\/(-?\d+))( +(-?\d+)\/\/(-?\d+))?/;
 
-  //
+  var lines = text.split('\n');
 
-  var lines = text.split( '\n' );
-
-  for ( var i = 0; i < lines.length; i ++ ) {
-
+  for (var i = 0; i < lines.length; i++) {
     var line = lines[ i ];
     line = line.trim();
 
     var result;
 
-    if ( line.length === 0 || line.charAt( 0 ) === '#' ) {
-
+    if (line.length === 0 || line.charAt(0) === '#') {
       continue;
-
-    } else if ( ( result = vertex_pattern.exec( line ) ) !== null ) {
-
+    } else if ((result = vertex_pattern.exec(line)) !== null) {
       // ["v 1.0 2.0 3.0", "1.0", "2.0", "3.0"]
 
       vertices.push(
-        parseFloat( result[ 1 ] ),
-        parseFloat( result[ 2 ] ),
-        parseFloat( result[ 3 ] )
+        parseFloat(result[1]),
+        parseFloat(result[2]),
+        parseFloat(result[3])
       );
-
-    } else if ( ( result = normal_pattern.exec( line ) ) !== null ) {
-
+    } else if ((result = normal_pattern.exec(line)) !== null) {
       // ["vn 1.0 2.0 3.0", "1.0", "2.0", "3.0"]
 
       normals.push(
-        parseFloat( result[ 1 ] ),
-        parseFloat( result[ 2 ] ),
-        parseFloat( result[ 3 ] )
+        parseFloat(result[1]),
+        parseFloat(result[2]),
+        parseFloat(result[3])
       );
-
-    } else if ( ( result = uv_pattern.exec( line ) ) !== null ) {
-
+    } else if ((result = uv_pattern.exec(line)) !== null) {
       // ["vt 0.1 0.2", "0.1", "0.2"]
 
       uvs.push(
-        parseFloat( result[ 1 ] ),
-        parseFloat( result[ 2 ] )
+        parseFloat(result[1]),
+        parseFloat(result[2])
       );
-
-    } else if ( ( result = face_pattern1.exec( line ) ) !== null ) {
-
+    } else if ((result = face_pattern1.exec(line)) !== null) {
       // ["f 1 2 3", "1", "2", "3", undefined]
 
       addFace(
-        result[ 1 ], result[ 2 ], result[ 3 ], result[ 4 ]
+        result[1], result[2], result[3], result[4]
       );
-
-    } else if ( ( result = face_pattern2.exec( line ) ) !== null ) {
-
+    } else if ((result = face_pattern2.exec(line)) !== null) {
       // ["f 1/1 2/2 3/3", " 1/1", "1", "1", " 2/2", "2", "2", " 3/3", "3", "3", undefined, undefined, undefined]
-      
+
       addFace(
         result[ 2 ], result[ 5 ], result[ 8 ], result[ 11 ],
         result[ 3 ], result[ 6 ], result[ 9 ], result[ 12 ]
       );
-
-    } else if ( ( result = face_pattern3.exec( line ) ) !== null ) {
-
+    } else if ((result = face_pattern3.exec(line)) !== null) {
       // ["f 1/1/1 2/2/2 3/3/3", " 1/1/1", "1", "1", "1", " 2/2/2", "2", "2", "2", " 3/3/3", "3", "3", "3", undefined, undefined, undefined, undefined]
 
       addFace(
@@ -228,9 +201,7 @@ this.onmessage = function (e) {
         result[ 3 ], result[ 7 ], result[ 11 ], result[ 15 ],
         result[ 4 ], result[ 8 ], result[ 12 ], result[ 16 ]
       );
-
-    } else if ( ( result = face_pattern4.exec( line ) ) !== null ) {
-
+    } else if ((result = face_pattern4.exec(line)) !== null) {
       // ["f 1//1 2//2 3//3", " 1//1", "1", "1", " 2//2", "2", "2", " 3//3", "3", "3", undefined, undefined, undefined]
 
       addFace(
@@ -238,9 +209,7 @@ this.onmessage = function (e) {
         undefined, undefined, undefined, undefined,
         result[ 3 ], result[ 6 ], result[ 9 ], result[ 12 ]
       );
-
-    } else if ( /^o /.test( line ) ) {
-
+    } else if (/^o /.test(line)) {
       geometry = {
         vertices: [],
         normals: [],
@@ -252,19 +221,13 @@ this.onmessage = function (e) {
       };
 
       object = {
-        name: line.substring( 2 ).trim(),
+        name: line.substring(2).trim(),
         geometry: geometry,
         material: material
       };
 
-      objects.push( object )
-
-    } else if ( /^g /.test( line ) ) {
-
-      // group
-
-    } else if ( /^usemtl /.test( line ) ) {
-
+      objects.push(object);
+    } else if (/^usemtl /.test(line)) {
       geometry = {
         vertices: [],
         normals: [],
@@ -272,29 +235,18 @@ this.onmessage = function (e) {
       };
 
       material = {
-        name: line.substring( 7 ).trim()
+        name: line.substring(7).trim()
       };
 
       object = {
-        name: line.substring( 2 ).trim(),
+        name: line.substring(2).trim(),
         geometry: geometry,
         material: material
       };
 
-      objects.push( object )
-
-    } else if ( /^mtllib /.test( line ) ) {
-
-      // mtl file
-
-    } else if ( /^s /.test( line ) ) {
-
-      // smooth shading
-
+      objects.push(object);
     } else {
-
       // console.log( "THREE.OBJLoader: Unhandled line " + line );
-
     }
   }
 

@@ -267,6 +267,10 @@ var onMouseClick = function( event) {
       return yawObject.position;
   }
 
+  this.getVelocity = function(){
+      return velocity;
+  }
+
   this.getRotation = function(){
       var e = new THREE.Euler;
       e.y = this.getYaw();

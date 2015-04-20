@@ -624,6 +624,10 @@ Client.prototype.getRotation = function () {
   return this.controls.getRotation();
 };
 
+Client.prototype.getVelocity = function () {
+  return this.controls.getVelocity();
+};
+
 Client.prototype.tickPhysics = function () {
   var timeStep = 1.0 / environment.physicsHertz();
 

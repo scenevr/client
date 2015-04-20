@@ -67,6 +67,7 @@ Billboard.create = function (connector, el) {
 
     html2canvas(div[0], {
       useCORS: true,
+      taintTest: false,
       letterRendering: false
     }).then(function (canvas) {
       var texture;

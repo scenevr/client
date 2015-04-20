@@ -8,10 +8,10 @@ The web client of SceneVR. This client connects to a server over websockets, and
 
 This client requires webgl. The client has:
 
-* WebVR support (oculus rift)
-* Mobile support
 * Cross-browser (ie/safari/chrome/ff)
-* Audio support (using opentok)
+* Mobile support
+* Audio
+* WebRTC chat
 
 ## License
 

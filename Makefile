@@ -16,7 +16,6 @@ all:
 	lessc css/scenevr.less > css/scenevr.css
 	# cp index.html build
 	cp css/*.css build/css
-	mkdir build/workers
 	cp workers/* build/workers
 	rm -rf build/vendor
 	cp images/* build/images

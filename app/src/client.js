@@ -198,9 +198,9 @@ Client.prototype.getUrlFromLocation = function () {
 
     // fix me this is so gross, need a better uri parsing library
     if (components.length === 1) {
-      url += '/index.xml'
+      url += '/index.xml';
     } else if ((components.length === 2) && (components.slice(-1)[0] === '')) {
-      url += 'index.xml'
+      url += 'index.xml';
     }
 
     return '//' + url;

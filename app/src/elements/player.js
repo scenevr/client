@@ -3,6 +3,54 @@ var THREE = window.THREE;
 function Player () {
 }
 
+Player.create = function (connetor, el) {
+  var bodyMaterial = new THREE.MeshPhongMaterial({
+    color: '#999999'
+  });
+
+  var faceTexture = THREE.ImageUtils.loadTexture('http://localhost:3000/faces/user-boop.png'); // '/images/face.png');
+  var headMaterial = new THREE.MeshLambertMaterial({
+    color: '#ffffaa',
+    map: faceTexture
+  });
+
+  var geometry1 = new THREE.CylinderGeometry(0.02, 0.5, 1.3, 10);
+  var body = new THREE.Mesh(geometry1, bodyMaterial);
+
+  var geometry2 = new THREE.SphereGeometry(0.3, 10, 10);
+  var head = new THREE.Mesh(geometry2, headMaterial);
+  head.position.y = 0.6;
+  head.rotation.y = Math.PI / 2;
+
+  var obj = new THREE.Object3D();
+  obj.add(head);
+  obj.add(body);
+
+  if (el.attr('name')) {
+    obj.add(Player.createLabel(el));
+  }
+
+  // loader = new THREE.OBJLoader(this.manager);
+  // loader.load("//" + this.getAssetHost() + "/models/hardhat.obj", (function(self) {
+  //   return function(object) {
+  //     object.traverse(function(child) {
+  //       material = new THREE.MeshPhongMaterial({
+  //         color: '#FFCC00'
+  //       });
+  //       if (child instanceof THREE.Mesh) {
+  //         return child.material = material;
+  //       }
+  //     });
+  //     object.scale.set(0.3, 0.3, 0.3);
+  //     object.position.y += 0.7;
+  //     return obj.add(object);
+  //   };
+  // })(this));
+
+  return obj;
+};
+
+
 function roundRect (ctx, x, y, w, h, r) {
   ctx.beginPath();
   ctx.moveTo(x + r, y);

@@ -71,7 +71,13 @@ Client.prototype.initialize = function () {
   this.connector.connect();
   this.addConnecting();
 
-  if (!environment.isMobile()) {
+  if (environment.isMobile()) {
+    $('body').addClass('mobile');
+    $('html,body').on('touchstart touchmove', function (e) {
+      // prevent native touch activity like scrolling
+      e.preventDefault();
+    });
+  } else {
     this.addMessageInput();
     this.addPointLockGrab();
   }
@@ -132,6 +138,9 @@ Client.prototype.createStats = function () {
   this.stats.physics.domElement.style.bottom = '70px';
   this.stats.physics.domElement.style.zIndex = 110;
   this.stats.physics.domElement.style.right = '10px';
+  if (environment.isMobile()) {
+    this.stats.physics.domElement.style.display = 'none';
+  }
   this.container.append(this.stats.physics.domElement);
 
   this.stats.connector = new Stats();
@@ -140,6 +149,9 @@ Client.prototype.createStats = function () {
   this.stats.connector.domElement.style.bottom = '130px';
   this.stats.connector.domElement.style.zIndex = 110;
   this.stats.connector.domElement.style.right = '10px';
+  if (environment.isMobile()) {
+    this.stats.connector.domElement.style.display = 'none';
+  }
   this.container.append(this.stats.connector.domElement);
 };
 
@@ -442,6 +454,13 @@ Client.prototype.renderOverlay = function (el) {
   $('.overlay').remove();
 
   this.overlay = $('<div class="overlay" />').append(el).appendTo(this.container);
+
+  var w = $(window).width();
+
+  if (this.overlay.width() > w) {
+    this.overlay.css('width', w - 50);
+  }
+
   this.centerOverlay();
   this.exitPointerLock();
 
@@ -680,12 +699,6 @@ Client.prototype.tick = function () {
     q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), this.controls.getYaw());
     this.directionArrow.quaternion.copy(q);
     this.directionArrow.position.copy(this.controls.getPosition()).setY(0.1);
-  }
-
-  if (this.preferences.gui) {
-    this.preferences.gui.update({
-      position: this.controls.getPosition().clone().add(new THREE.Vector3(-1.25, 2.0, -2))
-    });
   }
 
   this.renderer.render(this.scene, this.camera);

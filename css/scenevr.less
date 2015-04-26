@@ -36,6 +36,7 @@ header{
   right: 10px;
   top: 10px;
   z-index: 1000;
+  display: none;
 }
 
 header a{
@@ -142,6 +143,10 @@ header a span{
   }
 }
 
+.mobile .aiming-point{
+  display: none;
+}
+
 .aiming-point{
   width: 12px;
   height: 12px;
@@ -164,12 +169,11 @@ header a span{
   z-index: 100;
 }
 
-.unable-to-connect{
+.overlay .unable-to-connect{
   text-align: left;
-  width: 400px;
 }
 
-.connecting{
+.overlay .connecting{
   text-align: left;
 }
 
@@ -226,16 +230,24 @@ header a span{
   }
 }
 
+.mobile #authentication{
+  display: none;
+}
+
 #authentication{
   right: 10px;
   font-size: 0.9em;
+}
+
+.mobile #view-source{
+  display: none;
 }
 
 #view-source{
   left: 10px;
   top: 10px;
   font-size: 0.9em;
-  
+
   button{
     width: 80px;
   }

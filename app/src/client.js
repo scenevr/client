@@ -11,6 +11,7 @@ var Authentication = require('./authentication');
 var Preferences = require('./preferences');
 var AssetManager = require('./asset_manager');
 var Profiler = require('./profiler');
+var PointerLockControls = require('./controls');
 
 var Templates = {
   inQueue: require('../templates/in_queue.jade'),
@@ -106,9 +107,6 @@ Client.prototype.initialize = function () {
 
   // Start renderer
   this.tick();
-
-  // Start physics
-  this.physicsInterval = setInterval(this.tickPhysics.bind(this), 5);
 };
 
 Client.prototype.updateVolume = function () {
@@ -134,21 +132,10 @@ Client.prototype.createStats = function () {
   this.stats.rendering.domElement.style.right = '10px';
   this.container.append(this.stats.rendering.domElement);
 
-  this.stats.physics = new Stats();
-  this.stats.physics.setMode(1);
-  this.stats.physics.domElement.style.position = 'absolute';
-  this.stats.physics.domElement.style.bottom = '70px';
-  this.stats.physics.domElement.style.zIndex = 110;
-  this.stats.physics.domElement.style.right = '10px';
-  if (environment.isMobile()) {
-    this.stats.physics.domElement.style.display = 'none';
-  }
-  this.container.append(this.stats.physics.domElement);
-
   this.stats.connector = new Stats();
   this.stats.connector.setMode(1);
   this.stats.connector.domElement.style.position = 'absolute';
-  this.stats.connector.domElement.style.bottom = '130px';
+  this.stats.connector.domElement.style.bottom = '70px';
   this.stats.connector.domElement.style.zIndex = 110;
   this.stats.connector.domElement.style.right = '10px';
   if (environment.isMobile()) {
@@ -278,6 +265,7 @@ Client.prototype.checkForPortalCollision = function () {
 };
 
 Client.prototype.onPopState = function (e) {
+  console.log(e);
   this.consoleLog('Changed scene. Reload to reconnect...');
 };
 
@@ -667,7 +655,7 @@ Client.prototype.addDot = function () {
 Client.prototype.addControls = function () {
   var self = this;
 
-  this.controls = new window.PointerLockControls(this.camera, this, environment.isMobile(), this.supportsPointerLock());
+  this.controls = new PointerLockControls(this.camera, this, environment.isMobile(), this.supportsPointerLock());
   this.controls.enabled = false;
   this.scene.add(this.controls.getObject());
 
@@ -705,31 +693,33 @@ Client.prototype.getVelocity = function () {
 };
 
 Client.prototype.tickPhysics = function () {
-  var timeStep = 1.0 / environment.physicsHertz();
+  var now = new Date().valueOf();
 
-  this.stats.physics.begin();
+  var timeStep = now - this.lastTime; // 1.0 / environment.physicsHertz();
 
-  if (this.isProfiling()) {
-    this.profiler.start('tickPhysics', { bodycount: this.connector.physicsWorld.bodies.length });
+  if (this.lastTime && (timeStep < 1000)) {
+    if (this.isProfiling()) {
+      this.profiler.start('tickPhysics', { bodycount: this.connector.physicsWorld.bodies.length });
+    }
+
+    this.connector.physicsWorld.step(timeStep / 1000.0);
+
+    TWEEN.update();
+
+    // Get click event from the gamepad
+    if (this.controls.getObject().click) {
+      this.onClick();
+    }
+
+    this.controls.update(timeStep);
+    this.trigger('controls:update', [this.controls]);
+
+    if (this.isProfiling()) {
+      this.profiler.end('tickPhysics');
+    }
   }
 
-  this.connector.physicsWorld.step(timeStep);
-
-  TWEEN.update();
-
-  // Get click event from the gamepad
-  if (this.controls.getObject().click) {
-    this.onClick();
-  }
-
-  this.controls.update(timeStep * 1000);
-  this.trigger('controls:update', [this.controls]);
-
-  if (this.isProfiling()) {
-    this.profiler.end('tickPhysics');
-  }
-
-  this.stats.physics.end();
+  this.lastTime = now;
 };
 
 Client.prototype.tick = function () {
@@ -761,6 +751,10 @@ Client.prototype.tick = function () {
   }
 
   this.stats.rendering.end();
+
+  if (this.controls.enabled) {
+    this.tickPhysics();
+  }
 
   if (environment.isLowPowerMode()) {
     setTimeout(this.tick.bind(this), 1000 / 12);

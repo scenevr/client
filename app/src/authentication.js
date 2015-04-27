@@ -21,7 +21,7 @@ Authentication.prototype.initialize = function () {
   var self = this;
 
   window.addEventListener('message', function (e) {
-    if ((e.origin === 'http://localhost:3000') || (e.origin === 'http://login.scenevr.com')) {
+    if ((e.origin.match(/localhost:/)) || (e.origin === 'http://login.scenevr.com')) {
       self.checkStatus();
     } else if (e.data.match(/^OTHelpers.+/)) {
       // OpenTok spam

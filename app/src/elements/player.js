@@ -8,7 +8,7 @@ Player.create = function (connetor, el) {
     color: '#999999'
   });
 
-  var faceTexture = THREE.ImageUtils.loadTexture('http://localhost:3000/faces/user-boop.png'); // '/images/face.png');
+  var faceTexture = THREE.ImageUtils.loadTexture('/images/face.png');
   var headMaterial = new THREE.MeshLambertMaterial({
     color: '#ffffaa',
     map: faceTexture

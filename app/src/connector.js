@@ -115,6 +115,13 @@ Connector.prototype.announceAnonymous = function () {
 };
 
 Connector.prototype.initializeOpentok = function (role, apiKey, sessionId, token) {
+  var OT = window.OT;
+
+  if (!OT.checkSystemRequirements()) {
+    this.client.consoleLog('Voice chat not supported on this browser');
+    return;
+  }
+
   var self = this;
 
   var div = document.createElement('div');
@@ -129,7 +136,7 @@ Connector.prototype.initializeOpentok = function (role, apiKey, sessionId, token
     token: token
   };
 
-  this.session = window.OT.initSession(apiKey, sessionId);
+  this.session = OT.initSession(apiKey, sessionId);
 
   this.session.on('streamCreated', function (event) {
     console.log('Someone is speaking...');

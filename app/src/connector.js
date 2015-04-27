@@ -51,10 +51,12 @@ Connector.prototype.initialize = function () {
   this.spawnPosition = null;
   this.spawnRotation = new THREE.Euler(0, 0, 0);
 
-  if (this.client.authentication.hasCompleted()) {
-    this.onAuthenticationReady();
-  } else {
-    this.client.authentication.on('ready', this.onAuthenticationReady.bind(this));
+  if (this.client.authentication) {
+    if (this.client.authentication.hasCompleted()) {
+      this.onAuthenticationReady();
+    } else {
+      this.client.authentication.on('ready', this.onAuthenticationReady.bind(this));
+    }
   }
 };
 

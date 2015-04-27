@@ -1,6 +1,11 @@
 function Environment () {
 }
 
+// Amount of time profiling will run for
+Environment.prototype.getProfilePeriod = function () {
+  return 0.5;
+};
+
 Environment.prototype.getWalkSpeed = function () {
   return 1.8;
 };

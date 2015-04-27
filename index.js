@@ -1,7 +1,8 @@
+/* globals jQuery */
+
 var Client = require('./app/src/client');
 
-window.jQuery(function () {
-  setTimeout(function () {
-    window.client = new Client();
-  }, 250);
+jQuery(function () {
+  var client = new Client();
+  client.initialize();
 });

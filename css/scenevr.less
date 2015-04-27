@@ -12,6 +12,12 @@ body{
   font-size: 0.85em;
 }
 
+/*
+.overlay, #view-source, #message-input, .aiming-point, #messages{
+  display: none !important;
+}
+*/
+
 *{
   box-sizing: border-box;
 }
@@ -19,6 +25,7 @@ body{
 canvas{
   z-index: 20;
   position: relative;
+  -webkit-transform: translateZ(0);
 }
 
 canvas, canvas *, .overlay, .overlay *{

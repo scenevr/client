@@ -10,6 +10,7 @@ var EventEmitter = require('wolfy87-eventemitter');
 var Authentication = require('./authentication');
 var Preferences = require('./preferences');
 var AssetManager = require('./asset_manager');
+var Profiler = require('./profiler');
 
 var Templates = {
   inQueue: require('../templates/in_queue.jade'),
@@ -22,13 +23,14 @@ var Templates = {
 window.CANNON = CANNON;
 
 function Client () {
-  this.initialize();
 }
 
 util.inherits(Client, EventEmitter);
 
 Client.prototype.initialize = function () {
   var self = this;
+
+  $('.sk-spinner').remove();
 
   this.assetManager = new AssetManager(this);
   this.preferences = new Preferences(this);
@@ -106,7 +108,7 @@ Client.prototype.initialize = function () {
   this.tick();
 
   // Start physics
-  this.physicsInterval = setInterval(this.tickPhysics.bind(this), 1000 / environment.physicsHertz());
+  this.physicsInterval = setInterval(this.tickPhysics.bind(this), 5);
 };
 
 Client.prototype.updateVolume = function () {
@@ -163,19 +165,27 @@ Client.prototype.initializeRenderer = function () {
   this.domElement = $('<canvas />');
   this.container.append(this.domElement);
 
+  this.domElement.css({
+    width: this.width,
+    height: this.height,
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    zIndex: 20
+  });
+
   this.renderer = new THREE.WebGLRenderer({
     antialias: this.preferences.getState().graphicsAntialiasing,
+    alpha: false,
+    // precision: 'lowp',
     canvas: this.domElement[0]
   });
 
   this.renderer.setSize(this.width / this.preferences.getState().downSampling, this.height / this.preferences.getState().downSampling);
-  this.renderer.setClearColor(0x000000);
-  this.renderer.autoClear = false;
-
-  this.domElement.css({
-    width: this.width,
-    height: this.height
-  });
+  this.renderer.setClearColor(0xFFFFFF);
+  this.renderer.autoClear = true;
+  this.renderer.sortObjects = false;
+  this.renderer.shadowMapEnabled = false;
 };
 
 Client.prototype.onWindowResize = function () {
@@ -268,7 +278,7 @@ Client.prototype.checkForPortalCollision = function () {
 };
 
 Client.prototype.onPopState = function (e) {
-  window.location.reload();
+  this.consoleLog('Changed scene. Reload to reconnect...');
 };
 
 Client.prototype.promotePortal = function () {
@@ -392,11 +402,7 @@ Client.prototype.addMessageInput = function () {
 
     if (e.keyCode === 13) {
       if (input.val() !== '') {
-        self.addChatMessage({
-          name: 'You'
-        }, input.val());
-
-        self.connector.sendChat(input.val());
+        self.postChatMessage(input.val());
       }
 
       self.enableControls();
@@ -408,6 +414,36 @@ Client.prototype.addMessageInput = function () {
   });
 
   this.chatMessages = $("<div id='messages' />").hide().appendTo('body');
+};
+
+Client.prototype.startProfiling = function () {
+  this.consoleLog('Started profiling...');
+  this.profilingStartedAt = new Date().valueOf();
+  this.profiler = new Profiler();
+};
+
+Client.prototype.stopProfiling = function () {
+  console.log(this.profiler.table());
+  delete this.profilingStartedAt;
+  //delete this.profiler;
+};
+
+Client.prototype.isProfiling = function () {
+  if (this.profilingStartedAt && (new Date().valueOf() - this.profilingStartedAt) < this.environment.getProfilePeriod() * 1000) {
+    return true;
+  } else if (this.profilingStartedAt) {
+    this.stopProfiling();
+  }
+
+  return false;
+};
+
+Client.prototype.postChatMessage = function (message) {
+  this.addChatMessage({
+    name: 'You'
+  }, message);
+
+  this.connector.sendChat(message);
 };
 
 Client.prototype.addChatMessage = function (player, message) {
@@ -673,6 +709,10 @@ Client.prototype.tickPhysics = function () {
 
   this.stats.physics.begin();
 
+  if (this.isProfiling()) {
+    this.profiler.start('tickPhysics', { bodycount: this.connector.physicsWorld.bodies.length });
+  }
+
   this.connector.physicsWorld.step(timeStep);
 
   TWEEN.update();
@@ -684,6 +724,11 @@ Client.prototype.tickPhysics = function () {
 
   this.controls.update(timeStep * 1000);
   this.trigger('controls:update', [this.controls]);
+
+  if (this.isProfiling()) {
+    this.profiler.end('tickPhysics');
+  }
+
   this.stats.physics.end();
 };
 
@@ -693,6 +738,10 @@ Client.prototype.tick = function () {
   }
 
   this.stats.rendering.begin();
+
+  if (this.isProfiling()) {
+    this.profiler.start('tick', { children: this.scene.children.length });
+  }
 
   if (environment.isDebug()) {
     var q = new THREE.Quaternion();
@@ -705,6 +754,10 @@ Client.prototype.tick = function () {
 
   if (this.connector.isPortalOpen()) {
     this.checkForPortalCollision();
+  }
+
+  if (this.isProfiling()) {
+    this.profiler.end('tick');
   }
 
   this.stats.rendering.end();

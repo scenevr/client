@@ -21,7 +21,7 @@ Billboard.create = function (connector, el) {
   var div = $('<div />').html(el.text()).css({
     zIndex: 50,
     position: 'absolute',
-    left: 1000,
+    left: 4000,
     top: 0,
     background: 'white',
     width: SIZE,
@@ -33,7 +33,6 @@ Billboard.create = function (connector, el) {
 
   div.find('img').each(function (index, img) {
     img.src = URI.resolve(URI.serialize(connector.uri), img.getAttribute('src'));
-    // img.crossOrigin = true;
   });
 
   geometry = new THREE.BoxGeometry(1, 1, 1);

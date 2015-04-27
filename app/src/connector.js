@@ -502,6 +502,11 @@ Connector.prototype.tick = function () {
     var rotation = this.client.getRotation();
     var velocity = this.client.getVelocity();
 
+    if (isNaN(position.length()) || isNaN(THREE.Vector3.prototype.length.apply(rotation)) || isNaN(velocity.length())) {
+      // Should log this
+      return;
+    }
+
     this.sendMessage(
       $('<player />').
         attr('position', this.vectorToWire(position)).

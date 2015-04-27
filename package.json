@@ -24,6 +24,6 @@
     "test": "semistandard && browserify -t browserify-jade index.js >/dev/null"
   },
   "semistandard": {
-    "ignore": "vendor/**"
+    "ignore": ["build/**", "vendor/**"]
   }
 }

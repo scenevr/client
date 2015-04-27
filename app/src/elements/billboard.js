@@ -21,7 +21,7 @@ Billboard.create = function (connector, el) {
   var div = $('<div />').html(el.text()).css({
     zIndex: 50,
     position: 'absolute',
-    left: 0,
+    left: 1000,
     top: 0,
     background: 'white',
     width: SIZE,

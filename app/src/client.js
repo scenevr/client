@@ -703,7 +703,7 @@ Client.prototype.tickPhysics = function () {
     }
 
     if ((timeStep < 1000) && (this.controls.enabled)) {
-      this.connector.physicsWorld.step(timeStep / 1000.0);
+      this.connector.physicsWorld.step(Math.min(40, timeStep) / 1000.0);
     }
 
     TWEEN.update();

@@ -3,6 +3,6 @@
 var Client = require('./app/src/client');
 
 jQuery(function () {
-  var client = new Client();
-  client.initialize();
+  window.client = new Client();
+  window.client.initialize();
 });

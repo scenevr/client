@@ -377,7 +377,7 @@ function PointerLockControls (camera, client, mobile, supportsPointerLock) {
       inputVelocity.z = direction.y * velocityFactor * delta;
       inputVelocity.x = direction.x * velocityFactor * delta;
     } else {
-      velocityFactor = (isRunning ? runSpeed : walkSpeed) / 25;
+      velocityFactor = (isRunning ? runSpeed : walkSpeed) / 50;
     }
 
     if (moveForward) {

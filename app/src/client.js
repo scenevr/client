@@ -10,7 +10,6 @@ var EventEmitter = require('wolfy87-eventemitter');
 var Authentication = require('./authentication');
 var Preferences = require('./preferences');
 var AssetManager = require('./asset_manager');
-var Profiler = require('./profiler');
 var PointerLockControls = require('./controls');
 
 var Templates = {
@@ -404,28 +403,6 @@ Client.prototype.addMessageInput = function () {
   this.chatMessages = $("<div id='messages' />").hide().appendTo('body');
 };
 
-Client.prototype.startProfiling = function () {
-  this.consoleLog('Started profiling...');
-  this.profilingStartedAt = new Date().valueOf();
-  this.profiler = new Profiler();
-};
-
-Client.prototype.stopProfiling = function () {
-  console.log(this.profiler.table());
-  delete this.profilingStartedAt;
-  //delete this.profiler;
-};
-
-Client.prototype.isProfiling = function () {
-  if (this.profilingStartedAt && (new Date().valueOf() - this.profilingStartedAt) < this.environment.getProfilePeriod() * 1000) {
-    return true;
-  } else if (this.profilingStartedAt) {
-    this.stopProfiling();
-  }
-
-  return false;
-};
-
 Client.prototype.postChatMessage = function (message) {
   this.addChatMessage({
     name: 'You'
@@ -698,10 +675,6 @@ Client.prototype.tickPhysics = function () {
   var timeStep = now - this.lastTime; // 1.0 / environment.physicsHertz();
 
   if (this.lastTime) {
-    if (this.isProfiling()) {
-      this.profiler.start('tickPhysics', { bodycount: this.connector.physicsWorld.bodies.length });
-    }
-
     if ((timeStep < 1000) && (this.controls.enabled)) {
       this.connector.physicsWorld.step(Math.min(40, timeStep) / 1000.0);
     }
@@ -715,10 +688,6 @@ Client.prototype.tickPhysics = function () {
 
     this.controls.update(timeStep);
     this.trigger('controls:update', [this.controls]);
-
-    if (this.isProfiling()) {
-      this.profiler.end('tickPhysics');
-    }
   }
 
   this.lastTime = now;
@@ -731,10 +700,6 @@ Client.prototype.tick = function () {
 
   this.stats.rendering.begin();
 
-  if (this.isProfiling()) {
-    this.profiler.start('tick', { children: this.scene.children.length });
-  }
-
   if (environment.isDebug()) {
     var q = new THREE.Quaternion();
     q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), this.controls.getYaw());
@@ -746,10 +711,6 @@ Client.prototype.tick = function () {
 
   if (this.connector.isPortalOpen()) {
     this.checkForPortalCollision();
-  }
-
-  if (this.isProfiling()) {
-    this.profiler.end('tick');
   }
 
   this.stats.rendering.end();

@@ -697,12 +697,14 @@ Client.prototype.tickPhysics = function () {
 
   var timeStep = now - this.lastTime; // 1.0 / environment.physicsHertz();
 
-  if (this.lastTime && (timeStep < 1000)) {
+  if (this.lastTime) {
     if (this.isProfiling()) {
       this.profiler.start('tickPhysics', { bodycount: this.connector.physicsWorld.bodies.length });
     }
 
-    this.connector.physicsWorld.step(timeStep / 1000.0);
+    if ((timeStep < 1000) && (this.controls.enabled)) {
+      this.connector.physicsWorld.step(timeStep / 1000.0);
+    }
 
     TWEEN.update();
 
@@ -752,9 +754,7 @@ Client.prototype.tick = function () {
 
   this.stats.rendering.end();
 
-  if (this.controls.enabled) {
-    this.tickPhysics();
-  }
+  this.tickPhysics();
 
   if (environment.isLowPowerMode()) {
     setTimeout(this.tick.bind(this), 1000 / 12);

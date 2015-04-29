@@ -5,7 +5,6 @@ all:
 		../vendor/three.js \
 		../vendor/jquery.js \
 		../vendor/stats.js \
-		../vendor/pointer-lock-controls.js \
 		../vendor/mtl-loader.js \
 		./bundle.js \
 		--source-map "scenevr.min.js.map" \

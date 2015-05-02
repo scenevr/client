@@ -7,7 +7,7 @@ Environment.prototype.getProfilePeriod = function () {
 };
 
 Environment.prototype.getWalkSpeed = function () {
-  return 1.8;
+  return 2.7;
 };
 
 Environment.prototype.getRunSpeed = function () {

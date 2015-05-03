@@ -676,6 +676,13 @@ Connector.prototype.addElement = function (el) {
       });
     }
 
+    if (el.is('sphere,box,plane') && styles.opacity) {
+      obj.material.setValues({
+        opacity: parseFloat(styles.opacity),
+        transparent: true
+      });
+    }
+
     if (el.is('sphere,box,plane') && styles.emissiveColor) {
       obj.material.setValues({
         color: 0x000000,

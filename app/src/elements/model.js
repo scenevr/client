@@ -20,7 +20,7 @@ Model.create = function (connector, el) {
     }
 
     if (styles.lightMap || styles.textureMap) {
-      material = styles.textureMap ? new THREE.MeshLambertMaterial({ color: 0x808080 }) : new THREE.MeshBasicMaterial({ color: 0x808080 });
+      material = styles.textureMap ? new THREE.MeshLambertMaterial({ color: 0x808080 }) : new THREE.MeshBasicMaterial({ });
 
       var texture = new THREE.Texture();
       var loader = new THREE.ImageLoader(this.manager);

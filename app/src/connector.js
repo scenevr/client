@@ -238,7 +238,7 @@ Connector.prototype.unpublishOpentok = function () {
 };
 
 Connector.prototype.addFloor = function () {
-  var floorTexture = THREE.ImageUtils.loadTexture('/images/grid.png');
+  var floorTexture = THREE.ImageUtils.loadTexture(environment.getBaseUrl() + '/images/grid.png');
   floorTexture.wrapS = floorTexture.wrapT = THREE.RepeatWrapping;
   floorTexture.repeat.set(1000, 1000);
 

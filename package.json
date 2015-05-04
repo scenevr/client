@@ -22,7 +22,7 @@
   },
   "scripts": {
     "start": "node server.js",
-    "test": "semistandard && browserify -t browserify-jade index.js >/dev/null"
+    "test": "semistandard && browserify -t browserify-jade -t stringify index.js >/dev/null"
   },
   "semistandard": {
     "ignore": [

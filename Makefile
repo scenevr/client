@@ -1,6 +1,6 @@
 
 all:
-	browserify --debug -t browserify-jade index.js --outfile build/bundle.js
+	browserify --debug -t browserify-jade -t stringify index.js --outfile build/bundle.js
 	cd build && uglifyjs \
 		../vendor/three.js \
 		../vendor/jquery.js \

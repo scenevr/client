@@ -3,7 +3,8 @@
 var util = require('util');
 var EventEmitter = require('wolfy87-eventemitter');
 var URI = require('uri-js');
-
+var environment = require('./environment');
+var objLoaderWorker = require('./workers/objloader.js.txt');
 var $ = window.jQuery;
 
 function Asset (callback, processor, args) {
@@ -55,8 +56,11 @@ function AssetManager () {
 
 AssetManager.prototype.initObjLoader = function () {
   var self = this;
+  var blob = new Blob([objLoaderWorker]);
+  var blobUrl = window.URL.createObjectURL(blob);
 
-  this.objLoader = new Worker('/workers/objloader.js');
+  this.objLoader = new Worker(blobUrl);
+  // this.objLoader = new Worker(environment.getBaseUrl() + '/workers/objloader.js');
 
   this.objLoader.onmessage = function (e) {
     var asset = self.assets[e.data[0]];

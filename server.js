@@ -3,9 +3,10 @@ var express = require('express');
 var app = express();
 var fs = require('fs');
 var expressLess = require('express-less');
+var stringify = require('stringify');
 
 app.use('/js/bundle.js', browserify('./index.js', {
-  transform: ['browserify-jade']
+  transform: ['browserify-jade', 'stringify']
 }));
 
 app.use('/css', expressLess(__dirname + '/css'));

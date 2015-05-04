@@ -6,6 +6,10 @@ Environment.prototype.getProfilePeriod = function () {
   return 0.5;
 };
 
+Environment.prototype.getBaseUrl = function () {
+  return 'http://client.scenevr.com';
+};
+
 Environment.prototype.getWalkSpeed = function () {
   return 3.0;
 };

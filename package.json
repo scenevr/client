@@ -1,5 +1,5 @@
 {
-  "name": "scenevr-web",
+  "name": "scene-client",
   "version": "1.0.1",
   "dependencies": {
     "browserify-jade": "~0.1.2",
@@ -9,6 +9,7 @@
     "express-less": "0.0.6",
     "howler": "^1.1.25",
     "html2canvas": "^0.5.0-alpha2",
+    "stringify": "^3.1.0",
     "three": "^0.69.0",
     "tween.js": "~0.14.0",
     "uri-js": "~1.4.2",
@@ -24,6 +25,9 @@
     "test": "semistandard && browserify -t browserify-jade index.js >/dev/null"
   },
   "semistandard": {
-    "ignore": ["build/**", "vendor/**"]
+    "ignore": [
+      "build/**",
+      "vendor/**"
+    ]
   }
 }

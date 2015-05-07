@@ -26,8 +26,6 @@ window.CANNON = CANNON;
 function Client (container, options) {
   this.container = $(container);
   this.options = options;
-
-  this.initialize();
 }
 
 util.inherits(Client, EventEmitter);

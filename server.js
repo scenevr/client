@@ -4,7 +4,11 @@ var app = express();
 var fs = require('fs');
 var expressLess = require('express-less');
 
-app.use('/js/bundle.js', browserify('./index.js', {
+app.use('/scenevr.min.js', browserify('./index.js', {
+  transform: ['browserify-jade', 'stringify']
+}));
+
+app.use('/scenevr.js', browserify('./index.js', {
   transform: ['browserify-jade', 'stringify']
 }));
 

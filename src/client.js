@@ -1,5 +1,5 @@
-/* globals $, Stats, THREE */
-
+var $ = require('jQuery');
+var THREE = require('three');
 var util = require('util');
 var Connector = require('./connector');
 var environment = require('./environment');
@@ -11,6 +11,7 @@ var Authentication = require('./authentication');
 var Preferences = require('./preferences');
 var AssetManager = require('./asset_manager');
 var PointerLockControls = require('./controls');
+var Stats = require('stats-js');
 
 var Templates = {
   inQueue: require('../templates/in_queue.jade'),
@@ -22,45 +23,26 @@ var Templates = {
 // Not sure why this has to be global
 window.CANNON = CANNON;
 
-function Client () {
+function Client (container, options) {
+  this.container = $(container);
+  this.options = options;
+
+  this.initialize();
 }
 
 util.inherits(Client, EventEmitter);
 
 Client.prototype.initialize = function () {
-  var self = this;
-
   $('.sk-spinner').remove();
 
   this.assetManager = new AssetManager(this);
   this.preferences = new Preferences(this);
-  this.environment = environment;
-
-  this.container = $('#scene-view');
-  this.width = this.container.width();
-  this.height = this.container.height();
-  window.addEventListener('resize', this.onWindowResize.bind(this), false);
-
-  this.createStats();
-
-  this.authentication = new Authentication(this);
-
-  // Register event handlers
-  this.on('click', this.onClick.bind(this));
-
   this.scene = new THREE.Scene();
-
-  var aspect = this.width / this.height;
-  this.camera = new THREE.PerspectiveCamera(environment.getViewAngle(), aspect, environment.getNear(), environment.getFar());
-
+  this.createCamera();
+  this.createStats();
+  this.authentication = new Authentication(this);
   this.initializeRenderer();
   this.addControls();
-
-  if (environment.isDebug()) {
-    this.addDirectionArrow();
-  }
-
-  this.addDot();
 
   // Init physics
   this.world = new CANNON.World();
@@ -68,8 +50,22 @@ Client.prototype.initialize = function () {
   this.world.broadphase = new CANNON.NaiveBroadphase();
   this.addPlayerBody();
 
+  // Register event handlers
+  this.on('click', this.onClick.bind(this));
+};
+
+Client.prototype.createCamera = function () {
+  var width = this.container.width();
+  var height = this.container.height();
+  var aspect = width / height;
+  this.camera = new THREE.PerspectiveCamera(environment.getViewAngle(), aspect, environment.getNear(), environment.getFar());
+};
+
+Client.prototype.loadScene = function (url) {
+  var self = this;
+
   // Init connector
-  this.connector = new Connector(this, this.scene, this.world, this.getUrlFromLocation());
+  this.connector = new Connector(this, this.scene, this.world, url);
   this.connector.connect();
   this.addConnecting();
 
@@ -148,12 +144,15 @@ Client.prototype.initializeRenderer = function () {
     throw new Error('Cannot reinitialize');
   }
 
+  var width = this.container.width();
+  var height = this.container.height();
+
   this.domElement = $('<canvas />');
   this.container.append(this.domElement);
 
   this.domElement.css({
-    width: this.width,
-    height: this.height,
+    width: width,
+    height: height,
     position: 'absolute',
     left: 0,
     top: 0,
@@ -167,24 +166,26 @@ Client.prototype.initializeRenderer = function () {
     canvas: this.domElement[0]
   });
 
-  this.renderer.setSize(this.width / this.preferences.getState().downSampling, this.height / this.preferences.getState().downSampling);
+  this.renderer.setSize(width / this.preferences.getState().downSampling, height / this.preferences.getState().downSampling);
   this.renderer.setClearColor(0xFFFFFF);
   this.renderer.autoClear = true;
   this.renderer.sortObjects = false;
   this.renderer.shadowMapEnabled = false;
+
+  window.addEventListener('resize', this.onWindowResize.bind(this), false);
 };
 
 Client.prototype.onWindowResize = function () {
-  this.width = this.container.width();
-  this.height = this.container.height();
+  var width = this.container.width();
+  var height = this.container.height();
 
-  this.camera.aspect = this.width / this.height;
+  this.camera.aspect = width / height;
   this.camera.updateProjectionMatrix();
-  this.renderer.setSize(this.width / this.preferences.getState().downSampling, this.height / this.preferences.getState().downSampling);
+  this.renderer.setSize(width / this.preferences.getState().downSampling, height / this.preferences.getState().downSampling);
 
   this.domElement.css({
-    width: this.width,
-    height: this.height
+    width: width,
+    height: height
   });
 
   this.centerOverlay();
@@ -269,10 +270,15 @@ Client.prototype.onPopState = function (e) {
 };
 
 Client.prototype.promotePortal = function () {
+  this.trigger('enterportal', [{
+    url: URI.serialize(this.portal.connector.uri),
+    position: this.getPlayerObject().position,
+    rotation: this.getRotation()
+  }]);
+
   this.portal = this.connector.portal;
 
   this.connector.sendChat('/entered ' + URI.serialize(this.portal.connector.uri).slice(0, 30) + '...');
-  window.history.pushState({}, 'SceneVR', '?connect=' + URI.serialize(this.portal.connector.uri).replace(/^\/\//, ''));
 
   var controlObject = this.controls.getObject();
 
@@ -322,21 +328,6 @@ Client.prototype.onClick = function (e) {
 
   this.raycaster.set(position, direction);
   this.raycaster.far = 5.0;
-
-  if (environment.isDebug()) {
-    // Add an arrow showing where the click ray is being cast.
-    var material = new THREE.LineBasicMaterial({
-        color: 0x0000ff,
-        linewidth: 5
-    });
-
-    var geometry = new THREE.Geometry();
-    geometry.vertices.push(position.clone());
-    geometry.vertices.push(position.clone().add(direction.multiplyScalar(5.0)));
-
-    var line = new THREE.Line(geometry, material);
-    this.scene.add(line);
-  }
 
   var _i, _len, _ref = this.raycaster.intersectObjects(this.getAllClickableObjects());
 
@@ -636,6 +627,8 @@ Client.prototype.addControls = function () {
   this.controls.enabled = false;
   this.scene.add(this.controls.getObject());
 
+  this.addDot();
+
   $('body').keydown(function (e) {
     if ($('input:focus')[0] === undefined) {
       if ((e.keyCode === 84) || (e.keyCode === 86)) {
@@ -700,13 +693,6 @@ Client.prototype.tick = function () {
 
   this.stats.rendering.begin();
 
-  if (environment.isDebug()) {
-    var q = new THREE.Quaternion();
-    q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), this.controls.getYaw());
-    this.directionArrow.quaternion.copy(q);
-    this.directionArrow.position.copy(this.controls.getPosition()).setY(0.1);
-  }
-
   this.renderer.render(this.scene, this.camera);
 
   if (this.connector.isPortalOpen()) {
@@ -722,49 +708,6 @@ Client.prototype.tick = function () {
   } else {
     window.requestAnimationFrame(this.tick.bind(this));
   }
-};
-
-Client.prototype.renderPortals = function () {
-  var gl = this.renderer.context;
-  var originalCameraMatrixWorld = new THREE.Matrix4();
-  var originalCameraProjectionMatrix = new THREE.Matrix4();
-
-  originalCameraMatrixWorld.copy(this.camera.matrixWorld);
-  originalCameraProjectionMatrix.copy(this.camera.projectionMatrix);
-  this.renderer.clear(true, true, true);
-
-  gl.colorMask(false, false, false, false);
-  gl.depthMask(false);
-  gl.enable(gl.STENCIL_TEST);
-  gl.stencilMask(0xFF);
-  gl.stencilFunc(gl.NEVER, 0, 0xFF);
-  gl.stencilOp(gl.INCR, gl.KEEP, gl.KEEP);
-  this.renderer.render(this.connector.stencilScene, this.camera);
-
-  gl.colorMask(true, true, true, true);
-  gl.depthMask(true);
-  gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
-
-  this.renderer.clear(false, true, false);
-  gl.stencilFunc(gl.LESS, 0, 0xff);
-  this.renderer.render(this.connector.portal.scene, this.camera);
-  gl.disable(gl.STENCIL_TEST);
-
-  this.renderer.clear(false, false, true);
-  this.camera.matrixWorld.copy(originalCameraMatrixWorld);
-  this.camera.projectionMatrix.copy(originalCameraProjectionMatrix);
-  this.renderer.clear(false, true, false);
-
-  gl.colorMask(false, false, false, false);
-  gl.depthMask(true);
-
-  this.renderer.render(this.connector.stencilScene, this.camera);
-
-  gl.colorMask(true, true, true, true);
-  gl.depthMask(true);
-  gl.enable(gl.DEPTH_TEST);
-  this.renderer.render(this.scene, this.camera);
-  this.camera.projectionMatrix.copy(originalCameraProjectionMatrix);
 };
 
 module.exports = Client;

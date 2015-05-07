@@ -2,8 +2,7 @@ var SERVER = 'http://login.scenevr.com';
 var Template = require('../templates/login.jade');
 var util = require('util');
 var EventEmitter = require('wolfy87-eventemitter');
-
-var $ = window.jQuery;
+var $ = require('jQuery');
 
 function Authentication (client) {
   this._client = client;

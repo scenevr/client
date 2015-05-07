@@ -1,4 +1,4 @@
-var THREE = window.THREE;
+var THREE = require('three');
 
 var Utils = {
   parseVector: function (value) {

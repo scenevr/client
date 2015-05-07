@@ -1,4 +1,4 @@
-/* globals THREE */
+var THREE = require('three');
 var environment = require('../environment');
 
 function Player () {

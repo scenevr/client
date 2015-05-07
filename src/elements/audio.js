@@ -1,8 +1,7 @@
 var util = require('util');
 var Element = require('./element');
 var Howl = require('howler').Howl;
-
-var THREE = window.THREE;
+var THREE = require('three');
 
 function Audio (connector, el) {
   this.connector = connector;

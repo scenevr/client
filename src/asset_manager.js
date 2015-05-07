@@ -1,10 +1,11 @@
-/* globals THREE, Worker, Blob */
-
+/* globals Worker, Blob */
+var THREE = require('three');
+var MTLLoader = require('./mtl_loader');
 var util = require('util');
 var EventEmitter = require('wolfy87-eventemitter');
 var URI = require('uri-js');
 var objLoaderWorker = require('./workers/objloader.js.txt');
-var $ = window.jQuery;
+var $ = require('jquery');
 
 function Asset (callback, processor, args) {
   for (var key in args) {
@@ -59,7 +60,6 @@ AssetManager.prototype.initObjLoader = function () {
   var blobUrl = window.URL.createObjectURL(blob);
 
   this.objLoader = new Worker(blobUrl);
-  // this.objLoader = new Worker(environment.getBaseUrl() + '/workers/objloader.js');
 
   this.objLoader.onmessage = function (e) {
     var asset = self.assets[e.data[0]];
@@ -130,7 +130,7 @@ AssetManager.prototype.loadMtl = function (url, callback) {
   var baseUrl = url.substr(0, url.lastIndexOf('/') + 1);
 
   this.load(url, function (data, callback) {
-    var mtlLoader = new THREE.MTLLoader(baseUrl, null, true, URI.resolve);
+    var mtlLoader = new MTLLoader(baseUrl, null, true, URI.resolve);
     callback(mtlLoader.parse(data));
   }, function (materialCreator) {
     callback(materialCreator);

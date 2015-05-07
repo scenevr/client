@@ -1,4 +1,7 @@
-/* globals $, THREE, CANNON */
+var $ = require('jQuery');
+var THREE = require('three');
+var CANNON = require('cannon');
+var environment = require('./environment');
 
 /**
  * @author mrdoob / http://mrdoob.com/
@@ -7,9 +10,9 @@
 function PointerLockControls (camera, client, mobile, supportsPointerLock) {
   var scope = this;
 
-  var walkSpeed = client.environment.getWalkSpeed();
-  var runSpeed = client.environment.getRunSpeed();
-  var jumpVelocity = client.environment.getJumpImpulse();
+  var walkSpeed = environment.getWalkSpeed();
+  var runSpeed = environment.getRunSpeed();
+  var jumpVelocity = environment.getJumpImpulse();
   var dampingFactor = 0.7;
   var cannonBody = null;
   var velocity = new THREE.Vector3();

@@ -1,5 +1,5 @@
-/* globals $, THREE */
-
+var $ = require('jQuery');
+var THREE = require('three');
 var util = require('util');
 var Utils = require('./utils');
 var URI = require('uri-js');

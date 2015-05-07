@@ -1,10 +1,11 @@
-/* globals THREE, $ */
-
+var THREE = require('three');
+var $ = require('jquery');
 var Utils = require('../utils');
 var URI = require('uri-js');
 var CANNON = require('cannon');
 var html2canvas = require('html2canvas');
 
+// fixme - this sucks.
 if (!window.html2canvas) {
   window.html2canvas = html2canvas;
 }

@@ -1,7 +1,6 @@
 var URI = require('uri-js');
 var Utils = require('../utils');
-
-var THREE = window.THREE;
+var THREE = require('three');
 
 function Element () {
 }

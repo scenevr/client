@@ -11,46 +11,50 @@ Model.create = function (connector, el) {
   var styles = new StyleMap(el.attr('style'));
   var material = null;
 
-  if (el.attr('style')) {
-    if (styles['color']) {
-      material = new THREE.MeshLambertMaterial({
-        color: styles['color']
-      });
-    }
+  if (!styles.color && !styles.lightMap && !styles.textureMap) {
+    material = new THREE.MeshLambertMaterial({
+      color: '#cccccc'
+    });
+  }
 
-    if (styles.lightMap || styles.textureMap) {
-      material = styles.textureMap ? new THREE.MeshLambertMaterial({ color: 0x808080 }) : new THREE.MeshBasicMaterial({ });
+  if (styles.color) {
+    material = new THREE.MeshLambertMaterial({
+      color: styles['color']
+    });
+  }
 
-      var texture = new THREE.Texture();
-      var loader = new THREE.ImageLoader(this.manager);
+  if (styles.lightMap || styles.textureMap) {
+    material = styles.textureMap ? new THREE.MeshLambertMaterial({ color: 0x808080 }) : new THREE.MeshBasicMaterial({ });
 
-      loader.crossOrigin = true;
+    var texture = new THREE.Texture();
+    var loader = new THREE.ImageLoader(this.manager);
 
-      loader.load(connector.getAssetHost() + StyleMap.parseUrl(styles.lightMap || styles.textureMap), function (image) {
-        texture.image = image;
-        texture.needsUpdate = true;
-        texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+    loader.crossOrigin = true;
 
-        var repeatX = 1,
-          repeatY = 1;
+    loader.load(connector.getAssetHost() + StyleMap.parseUrl(styles.lightMap || styles.textureMap), function (image) {
+      texture.image = image;
+      texture.needsUpdate = true;
+      texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
 
-        if (styles.textureRepeat) {
-          repeatX = parseFloat(styles.textureRepeat.split(' ')[0]);
-          repeatY = parseFloat(styles.textureRepeat.split(' ')[1]);
-        }
-        if (styles.textureRepeatX) {
-          repeatX = parseFloat(styles.textureRepeatX);
-        }
-        if (styles.textureRepeatY) {
-          repeatY = parseFloat(styles.textureRepeatY);
-        }
+      var repeatX = 1,
+        repeatY = 1;
 
-        texture.repeat.set(repeatX, repeatY);
+      if (styles.textureRepeat) {
+        repeatX = parseFloat(styles.textureRepeat.split(' ')[0]);
+        repeatY = parseFloat(styles.textureRepeat.split(' ')[1]);
+      }
+      if (styles.textureRepeatX) {
+        repeatX = parseFloat(styles.textureRepeatX);
+      }
+      if (styles.textureRepeatY) {
+        repeatY = parseFloat(styles.textureRepeatY);
+      }
 
-        material.map = texture;
-        material.needsUpdate = true;
-      });
-    }
+      texture.repeat.set(repeatX, repeatY);
+
+      material.map = texture;
+      material.needsUpdate = true;
+    });
   }
 
   connector.client.assetManager.loadObj(connector.getAssetHost() + el.attr('src'), function (object) {

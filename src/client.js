@@ -124,7 +124,7 @@ Client.prototype.promotePortal = function () {
   this.portal = this.connector.portal;
 
   this.trigger('enterportal', [{
-    url: this.getSceneUrl(),
+    url: this.portal.connector.getUrl(),
     position: this.getPlayerObject().position,
     rotation: this.getRotation()
   }]);

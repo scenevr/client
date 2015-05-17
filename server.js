@@ -14,7 +14,7 @@ app.use('/scenevr.js', browserify('./index.js', {
 
 app.use('/css', expressLess(__dirname + '/css'));
 
-app.use(express.static(__dirname));
+app.use(express.static('/public'));
 
 app.get('/connect/*', function (req, res) {
   res.send(fs.readFileSync(__dirname + '/index.html').toString());

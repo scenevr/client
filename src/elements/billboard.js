@@ -33,7 +33,7 @@ Billboard.create = function (connector, el) {
   });
 
   div.find('img').each(function (index, img) {
-    img.src = URI.resolve(URI.serialize(connector.uri), img.getAttribute('src'));
+    img.src = URI.resolve(URI.serialize(connector.assetUri), img.getAttribute('src'));
   });
 
   geometry = new THREE.BoxGeometry(1, 1, 1);

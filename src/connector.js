@@ -33,6 +33,10 @@ function Connector (client, scene, physicsWorld, uri, isPortal, referrer) {
   this.scene = scene;
   this.physicsWorld = physicsWorld;
   this.uri = URI.parse(uri);
+
+  this.assetUri = URI.parse(uri);
+  this.assetUri.scheme = 'http';
+
   this.isPortal = isPortal || false;
   this.referrer = referrer || null;
   this.elementMap = {};
@@ -81,6 +85,14 @@ Connector.prototype.destroy = function () {
   delete this.physicsWorld;
   delete this.scene;
   delete this.client;
+};
+
+Connector.prototype.getUrl = function () {
+  return URI.serialize(this.uri);
+};
+
+Connector.prototype.getTitle = function () {
+  return this.uri.path.split('/').slice(-1)[0];
 };
 
 // Round all numbers to 6dp, works on eulers too
@@ -930,16 +942,12 @@ Connector.prototype.processMessage = function (el) {
 };
 
 Connector.prototype.onMessage = function (e) {
-  this.client.stats.connector.begin();
-
   var self = this;
   var children = $($.parseXML(e.data).firstChild).children();
 
   children.each(function (index, el) {
     self.processMessage($(el));
   });
-
-  this.client.stats.connector.end();
 };
 
 module.exports = Connector;

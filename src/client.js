@@ -35,37 +35,15 @@ Client.prototype.initialize = function () {
 
   this.assetManager = new AssetManager(this);
   this.preferences = new Preferences(this);
-  this.scene = new THREE.Scene();
-  this.createCamera();
+  this.raycaster = new THREE.Raycaster();
   this.createStats();
   this.authentication = new Authentication(this);
+  this.createCamera();
   this.initializeRenderer();
   this.addControls();
 
-  // Init physics
-  this.world = new CANNON.World();
-  this.world.gravity.set(0, -20, 0);
-  this.world.broadphase = new CANNON.NaiveBroadphase();
-  this.addPlayerBody();
-
   // Register event handlers
   this.on('click', this.onClick.bind(this));
-};
-
-Client.prototype.createCamera = function () {
-  var width = this.container.width();
-  var height = this.container.height();
-  var aspect = width / height;
-  this.camera = new THREE.PerspectiveCamera(environment.getViewAngle(), aspect, environment.getNear(), environment.getFar());
-};
-
-Client.prototype.loadScene = function (url) {
-  var self = this;
-
-  // Init connector
-  this.connector = new Connector(this, this.scene, this.world, url);
-  this.connector.connect();
-  this.addConnecting();
 
   if (environment.isMobile()) {
     $('body').addClass('mobile');
@@ -78,12 +56,59 @@ Client.prototype.loadScene = function (url) {
     this.addPointLockGrab();
   }
 
+  // Start renderer
+  this.tick();
+};
+
+Client.prototype.createCamera = function () {
+  var width = this.container.width();
+  var height = this.container.height();
+  var aspect = width / height;
+  this.camera = new THREE.PerspectiveCamera(environment.getViewAngle(), aspect, environment.getNear(), environment.getFar());
+};
+
+Client.prototype.unloadScene = function () {
+  this.scene.remove(this.controls.getObject());
+  this.world.remove(this.playerBody);
+
+  // Todo - do we need to iterate over children and remove them?
+
+  delete this.scene;
+  delete this.world;
+};
+
+Client.prototype.loadScene = function (url) {
+  var self = this;
+
+  if (this.connector) {
+    this.unloadScene();
+    this.connector.destroy();
+    delete this.connector;
+  }
+
+  // Init scene
+  this.scene = new THREE.Scene();
+  this.scene.add(this.controls.getObject());
+
+  // Init physics
+  this.world = new CANNON.World();
+  this.world.gravity.set(0, -20, 0);
+  this.world.broadphase = new CANNON.NaiveBroadphase();
+  this.addPlayerBody();
+
+  // Init connector
+  this.connector = new Connector(this, this.scene, this.world, url);
+  this.connector.connect();
+  this.addConnecting();
+
   this.connector.on('connected', function () {
     if (environment.isMobile()) {
       self.enableControls();
     } else {
       self.addInstructions();
     }
+
+    self.setTitle();
   });
 
   this.connector.on('disconnected', function () {
@@ -93,19 +118,55 @@ Client.prototype.loadScene = function (url) {
   this.connector.on('restarting', function () {
     self.showMessage('Reconnecting...');
   });
+};
 
-  this.raycaster = new THREE.Raycaster();
+Client.prototype.promotePortal = function () {
+  this.portal = this.connector.portal;
 
-  $(window).on('popstate', this.onPopState.bind(this));
+  this.trigger('enterportal', [{
+    url: this.getSceneUrl(),
+    position: this.getPlayerObject().position,
+    rotation: this.getRotation()
+  }]);
 
-  // Start renderer
-  this.tick();
+  this.connector.sendChat('/entered ' + URI.serialize(this.portal.connector.uri).slice(0, 30) + '...');
+
+  this.unloadScene();
+
+  var controlObject = this.controls.getObject();
+  this.world = this.portal.world;
+  this.scene = this.portal.scene;
+  this.scene.add(controlObject);
+
+  this.connector.destroy();
+  delete this.connector;
+
+  this.connector = this.portal.connector;
+  this.connector.isPortal = false;
+
+  delete this.portal;
+  delete this.playerBody;
+
+  this.world.gravity.set(0, -20, 0);
+  this.world.broadphase = new CANNON.NaiveBroadphase();
+  this.addPlayerBody();
+  this.connector.setPosition(this.connector.spawnPosition);
+
+  this.setTitle();
 };
 
 Client.prototype.updateVolume = function () {
   this.connector.getAudioElements().forEach(function (el) {
     el.updateVolume();
   });
+};
+
+Client.prototype.isConnected = function () {
+  return this.connector && this.connector.isConnected();
+};
+
+Client.prototype.getSceneUrl = function () {
+  return this.isConnected() ? this.connector.getUrl() : null;
 };
 
 Client.prototype.stop = function () {
@@ -192,28 +253,12 @@ Client.prototype.onWindowResize = function () {
 Client.prototype.enableControls = function () {
   this.controls.enabled = true;
   this.hideInstructions();
+  this.reticule.show();
 };
 
 Client.prototype.disableControls = function () {
   this.controls.enabled = false;
-};
-
-Client.prototype.getUrlFromLocation = function () {
-  if (window.location.search.match(/connect.+/)) {
-    var url = window.location.search.split(/[=]/)[1];
-    var components = url.split('/');
-
-    // fix me this is so gross, need a better uri parsing library
-    if (components.length === 1) {
-      url += '/index.xml';
-    } else if ((components.length === 2) && (components.slice(-1)[0] === '')) {
-      url += 'index.xml';
-    }
-
-    return '//' + url;
-  } else {
-    return '//home.scenevr.hosting/home.xml';
-  }
+  this.reticule.hide();
 };
 
 Client.prototype.removeAllObjectsFromScene = function () {
@@ -262,43 +307,8 @@ Client.prototype.checkForPortalCollision = function () {
   }
 };
 
-Client.prototype.onPopState = function (e) {
-  console.log(e);
-  this.consoleLog('Changed scene. Reload to reconnect...');
-};
-
-Client.prototype.promotePortal = function () {
-  this.trigger('enterportal', [{
-    url: URI.serialize(this.portal.connector.uri),
-    position: this.getPlayerObject().position,
-    rotation: this.getRotation()
-  }]);
-
-  this.portal = this.connector.portal;
-
-  this.connector.sendChat('/entered ' + URI.serialize(this.portal.connector.uri).slice(0, 30) + '...');
-
-  var controlObject = this.controls.getObject();
-
-  this.scene.remove(controlObject);
-  this.world.remove(this.playerBody);
-  this.world = this.portal.world;
-  this.scene = this.portal.scene;
-  this.scene.add(controlObject);
-
-  this.connector.destroy();
-  delete this.connector;
-
-  this.connector = this.portal.connector;
-  this.connector.isPortal = false;
-
-  delete this.portal;
-  delete this.playerBody;
-
-  this.world.gravity.set(0, -20, 0);
-  this.world.broadphase = new CANNON.NaiveBroadphase();
-  this.addPlayerBody();
-  this.connector.setPosition(this.connector.spawnPosition);
+Client.prototype.setTitle = function () {
+  document.title = 'Scene :: ' + this.connector.getTitle();
 };
 
 Client.prototype.inspect = function (el) {
@@ -339,7 +349,7 @@ Client.prototype.onClick = function (e) {
     var obj = intersection.object;
 
     while (obj.parent) {
-      if (obj.userData instanceof window.jQuery) {
+      if (obj.userData instanceof $) {
         this.connector.onClick({
           uuid: obj.name,
           point: intersection.point
@@ -614,8 +624,8 @@ Client.prototype.addPlayerBody = function () {
   });
 };
 
-Client.prototype.addDot = function () {
-  $('<div />').addClass('aiming-point').appendTo('body');
+Client.prototype.addReticule = function () {
+  this.reticule = $('<div />').addClass('aiming-point').appendTo('body');
 };
 
 Client.prototype.addControls = function () {
@@ -623,9 +633,8 @@ Client.prototype.addControls = function () {
 
   this.controls = new PointerLockControls(this.camera, this, environment.isMobile(), this.supportsPointerLock());
   this.controls.enabled = false;
-  this.scene.add(this.controls.getObject());
 
-  this.addDot();
+  this.addReticule();
 
   $('body').keydown(function (e) {
     if ($('input:focus')[0] === undefined) {
@@ -663,7 +672,15 @@ Client.prototype.getVelocity = function () {
 Client.prototype.tickPhysics = function () {
   var now = new Date().valueOf();
 
-  var timeStep = now - this.lastTime; // 1.0 / environment.physicsHertz();
+  var timeStep = now - this.lastTime;
+
+  if (this.stopped) {
+    return;
+  }
+
+  if (!this.world) {
+    return;
+  }
 
   if (this.lastTime) {
     if ((timeStep < 1000) && (this.controls.enabled)) {
@@ -685,21 +702,19 @@ Client.prototype.tickPhysics = function () {
 };
 
 Client.prototype.tick = function () {
-  if (this.stopped) {
-    return;
+  if (!this.stopped && this.scene) {
+    this.stats.rendering.begin();
+
+    this.renderer.render(this.scene, this.camera);
+
+    if (this.connector.isPortalOpen()) {
+      this.checkForPortalCollision();
+    }
+
+    this.stats.rendering.end();
+
+    this.tickPhysics();
   }
-
-  this.stats.rendering.begin();
-
-  this.renderer.render(this.scene, this.camera);
-
-  if (this.connector.isPortalOpen()) {
-    this.checkForPortalCollision();
-  }
-
-  this.stats.rendering.end();
-
-  this.tickPhysics();
 
   if (environment.isLowPowerMode()) {
     setTimeout(this.tick.bind(this), 1000 / 12);

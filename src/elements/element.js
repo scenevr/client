@@ -6,7 +6,7 @@ function Element () {
 }
 
 Element.prototype.resolveURI = function (url) {
-  return URI.resolve(URI.serialize(this.connector.uri), url);
+  return URI.resolve(URI.serialize(this.connector.assetUri), url);
 };
 
 Element.prototype.getPosition = function () {

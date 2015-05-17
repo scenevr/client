@@ -7,7 +7,8 @@ Environment.prototype.getProfilePeriod = function () {
 };
 
 Environment.prototype.getBaseUrl = function () {
-  return 'http://client.scenevr.com';
+  // You must serve image assets
+  return '';
 };
 
 Environment.prototype.getWalkSpeed = function () {

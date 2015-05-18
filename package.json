@@ -25,7 +25,7 @@
   },
   "scripts": {
     "start": "node server.js",
-    "test": "semistandard && tape test/*.js"
+    "test": "semistandard"
   },
   "browserify": {
     "transform": ["browserify-jade", "stringify"]

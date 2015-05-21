@@ -14,10 +14,17 @@ var PointerLockControls = require('./controls');
 var Stats = require('stats-js');
 
 var Templates = {
-  inQueue: require('../templates/in_queue.jade'),
-  unableToConnect: require('../templates/unable_to_connect.jade'),
-  instructions: require('../templates/instructions.jade'),
-  connecting: require('../templates/connecting.jade')
+  unableToConnect: function (args) {
+    return '<div class="unable-to-connect"><h1>Unable to connect</h1><p>Scene is unable to connect to <b>' + args.host + '</b><p>The server may be down, or you may be experiencing connection difficulties. Reload this page to try and reconnect.';
+  },
+  instructions: function (args) {
+    return '<div id="instructions"><h1>Click on the scene to join</h1><p>' +
+      (args.supportsPointerLock ? 'W, A, S, D = Move, SPACE = jump, MOUSE = Look around' : 'Hold shift to run. Hold V or T for voice chat.') +
+      '</p><p>Arrow keys = Move, SPACE = jump<.p><p>Click the orange globes to open portals.';
+  },
+  connecting: function (args) {
+    return '<div class="connecting"><h1>Connecting</h1><p>SceneVR is connecting to <b>' + args.host + '</b>';
+  }
 };
 
 // Not sure why this has to be global

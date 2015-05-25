@@ -1,6 +1,6 @@
 /* globals WebSocket */
 
-var $ = require('jQuery');
+var $ = require('jquery');
 var THREE = require('three');
 var util = require('util');
 var Utils = require('./utils');
@@ -524,10 +524,7 @@ Connector.prototype.tick = function () {
     }
 
     this.sendMessage(
-      $('<player />').
-        attr('position', this.vectorToWire(position)).
-        attr('rotation', this.vectorToWire(rotation)).
-        attr('velocity', this.vectorToWire(velocity))
+      $('<player />').attr('position', this.vectorToWire(position)).attr('rotation', this.vectorToWire(rotation)).attr('velocity', this.vectorToWire(velocity))
     );
   }
 };

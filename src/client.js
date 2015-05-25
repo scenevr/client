@@ -1,4 +1,4 @@
-var $ = require('jQuery');
+var $ = require('jquery');
 var THREE = require('three');
 var util = require('util');
 var Connector = require('./connector');

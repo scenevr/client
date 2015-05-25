@@ -4,7 +4,7 @@ var Template = function (args) {
 };
 var util = require('util');
 var EventEmitter = require('wolfy87-eventemitter');
-var $ = require('jQuery');
+var $ = require('jquery');
 
 function Authentication (client) {
   this._client = client;

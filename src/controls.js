@@ -1,4 +1,4 @@
-var $ = require('jQuery');
+var $ = require('jquery');
 var THREE = require('three');
 var CANNON = require('cannon');
 var environment = require('./environment');

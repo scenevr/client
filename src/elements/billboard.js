@@ -68,7 +68,9 @@ Billboard.create = function (connector, el) {
     html2canvas(div[0], {
       useCORS: true,
       taintTest: false,
-      letterRendering: false
+      letterRendering: false,
+      removeContainer: false,
+      javascriptEnabled: false
     }).then(function (canvas) {
       var texture;
       texture = new THREE.Texture(canvas);
@@ -85,6 +87,8 @@ Billboard.create = function (connector, el) {
       div.remove();
 
       finished();
+    }).catch(function (err) {
+      console.log('Error creating billboard: ' + err);
     });
   });
 

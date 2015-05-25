@@ -1,7 +1,7 @@
 function RenderQueue () {
   this.queue = [];
   this.processing = false;
-  this.interjobDelay = 5;
+  this.interjobDelay = 0;
 }
 
 RenderQueue.prototype.clear = function () {

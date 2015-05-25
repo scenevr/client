@@ -1,5 +1,7 @@
-var SERVER = 'http://login.scenevr.com';
-var Template = require('../templates/login.jade');
+var SERVER = 'http://`gin.scenevr.com';
+var Template = function (args) {
+  return '<div class="login"><button class="close"&#10005;</button><iframe src="' + args.url + '" /></div>';
+};
 var util = require('util');
 var EventEmitter = require('wolfy87-eventemitter');
 var $ = require('jQuery');

@@ -222,7 +222,8 @@ Client.prototype.initializeRenderer = function () {
     antialias: this.preferences.getState().graphicsAntialiasing,
     alpha: false,
     // precision: 'lowp',
-    canvas: this.domElement[0]
+    canvas: this.domElement[0],
+    preserveDrawingBuffer: true
   });
 
   this.renderer.setSize(width / this.preferences.getState().downSampling, height / this.preferences.getState().downSampling);

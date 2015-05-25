@@ -1,3 +1,5 @@
+/* globals WebSocket */
+
 var $ = require('jQuery');
 var THREE = require('three');
 var util = require('util');
@@ -450,7 +452,7 @@ Connector.prototype.connect = function () {
     this.uri.port = '8080';
   }
 
-  this.ws = new window.WebSocket('ws://' + this.uri.host + ':' + (this.uri.port || 80) + this.uri.path, 'scenevr');
+  this.ws = new WebSocket(URI.serialize(this.uri), 'scenevr');
   this.ws.binaryType = 'arraybuffer';
 
   var self = this;

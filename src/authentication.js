@@ -1,4 +1,4 @@
-var SERVER = 'http://`gin.scenevr.com';
+var SERVER = 'http://login.scenevr.com';
 var Template = function (args) {
   return '<div class="login"><button class="close"&#10005;</button><iframe src="' + args.url + '" /></div>';
 };

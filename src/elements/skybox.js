@@ -1,4 +1,4 @@
-var StyleMap = require('../style_map');
+var StyleMap = require('../style-map');
 var THREE = require('three');
 
 function Skybox () {

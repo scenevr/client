@@ -1,5 +1,5 @@
 var Utils = require('../utils');
-var StyleMap = require('../style_map');
+var StyleMap = require('../style-map');
 var CANNON = require('cannon');
 var THREE = require('three');
 

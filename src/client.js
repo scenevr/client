@@ -9,7 +9,7 @@ var CANNON = require('cannon');
 var EventEmitter = require('wolfy87-eventemitter');
 var Authentication = require('./authentication');
 var Preferences = require('./preferences');
-var AssetManager = require('./asset_manager');
+var AssetManager = require('./asset-manager');
 var PointerLockControls = require('./controls');
 var Stats = require('stats-js');
 

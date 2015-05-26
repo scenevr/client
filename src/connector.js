@@ -6,7 +6,7 @@ var util = require('util');
 var Utils = require('./utils');
 var URI = require('uri-js');
 var environment = require('./environment');
-var StyleMap = require('./style_map');
+var StyleMap = require('./style-map');
 var TWEEN = require('tween.js');
 var CANNON = require('cannon');
 var EventEmitter = require('wolfy87-eventemitter');
@@ -21,7 +21,7 @@ var Plane = require('./elements/plane');
 var Player = require('./elements/player');
 var Model = require('./elements/model');
 var Element = require('./elements/element');
-var RenderQueue = require('./render_queue');
+var RenderQueue = require('./render-queue');
 
 // Constants
 var PLAYER_MAX_HEAD_ANGLE = Math.PI / 4;

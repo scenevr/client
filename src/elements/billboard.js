@@ -4,6 +4,7 @@ var Utils = require('../utils');
 var URI = require('uri-js');
 var CANNON = require('cannon');
 var html2canvas = require('html2canvas');
+var environment = require('../environment');
 
 // fixme - this sucks.
 if (!window.html2canvas) {
@@ -14,6 +15,20 @@ var SIZE = 512;
 
 function Billboard () {
 }
+
+Billboard.getLoadingMaterial = function () {
+  if (!this._loadingMaterial) {
+    var texture = THREE.ImageUtils.loadTexture(environment.getBaseUrl() + '/images/spinner.png');
+
+    this._loadingMaterial = new THREE.MeshBasicMaterial({
+      fog: true,
+      map: texture,
+      side: THREE.DoubleSide
+    });
+  }
+
+  return this._loadingMaterial;
+};
 
 Billboard.create = function (connector, el) {
   var box, boxBody, boxShape, geometry, material, mesh, newScale;
@@ -46,7 +61,8 @@ Billboard.create = function (connector, el) {
     color: '#ffffff'
   });
   mesh = new THREE.Mesh(new THREE.PlaneBufferGeometry(1, 1), material);
-  mesh.position.setZ(0.52);
+  mesh.position.setZ(0.502);
+  mesh.material = this.getLoadingMaterial();
 
   obj.add(box);
   obj.add(mesh);
@@ -72,8 +88,7 @@ Billboard.create = function (connector, el) {
       removeContainer: false,
       javascriptEnabled: false
     }).then(function (canvas) {
-      var texture;
-      texture = new THREE.Texture(canvas);
+      var texture = new THREE.Texture(canvas);
       texture.needsUpdate = true;
 
       material = new THREE.MeshBasicMaterial({

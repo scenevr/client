@@ -13,6 +13,7 @@ var EventEmitter = require('wolfy87-eventemitter');
 var Billboard = require('./elements/billboard');
 var Audio = require('./elements/audio');
 var Box = require('./elements/box');
+var Voxel = require('./elements/voxel');
 var Sphere = require('./elements/sphere');
 var Skybox = require('./elements/skybox');
 var Fog = require('./elements/fog');
@@ -618,6 +619,8 @@ Connector.prototype.addElement = function (el) {
     obj = Billboard.create(this, el);
   } else if (el.is('box')) {
     obj = Box.create(this, el);
+  } else if (el.is('voxel')) {
+    obj = Voxel.create(this, el);
   } else if (el.is('sphere')) {
     obj = Sphere.create(this, el);
   } else if (el.is('plane')) {

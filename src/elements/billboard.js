@@ -61,7 +61,7 @@ Billboard.create = function (connector, el) {
     color: '#ffffff'
   });
   mesh = new THREE.Mesh(new THREE.PlaneBufferGeometry(1, 1), material);
-  mesh.position.setZ(0.502);
+  mesh.position.setZ(0.510);
   mesh.material = this.getLoadingMaterial();
 
   obj.add(box);

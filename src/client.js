@@ -3,7 +3,6 @@ var THREE = require('three');
 var util = require('util');
 var Connector = require('./connector');
 var environment = require('./environment');
-var URI = require('uri-js');
 var TWEEN = require('tween.js');
 var CANNON = require('cannon');
 var EventEmitter = require('wolfy87-eventemitter');
@@ -128,37 +127,32 @@ Client.prototype.loadScene = function (url) {
 };
 
 Client.prototype.promotePortal = function () {
-  this.portal = this.connector.portal;
+  var portal = this.connector.portal;
 
   this.trigger('enterportal', [{
-    url: this.portal.connector.getUrl(),
+    url: portal.connector.getUrl(),
     position: this.getPlayerObject().position,
     rotation: this.getRotation()
   }]);
 
-  this.connector.sendChat('/entered ' + URI.serialize(this.portal.connector.uri).slice(0, 30) + '...');
-
+  this.connector.sendChat('/entered ' + portal.connector.getTitle().slice(0, 30) + '...');
   this.unloadScene();
 
-  var controlObject = this.controls.getObject();
-  this.world = this.portal.world;
-  this.scene = this.portal.scene;
-  this.scene.add(controlObject);
+  this.world = portal.world;
+  this.scene = portal.scene;
+  this.scene.add(this.controls.getObject());
 
   this.connector.destroy();
   delete this.connector;
 
-  this.connector = this.portal.connector;
+  this.connector = portal.connector;
   this.connector.isPortal = false;
-
-  delete this.portal;
-  delete this.playerBody;
 
   this.world.gravity.set(0, -20, 0);
   this.world.broadphase = new CANNON.NaiveBroadphase();
   this.addPlayerBody();
-  this.connector.setPosition(this.connector.spawnPosition);
 
+  this.connector.setPosition(this.connector.spawnPosition);
   this.setTitle();
 };
 
@@ -235,7 +229,7 @@ Client.prototype.initializeRenderer = function () {
 
   this.renderer.setSize(width / this.preferences.getState().downSampling, height / this.preferences.getState().downSampling);
   this.renderer.setClearColor(0xFFFFFF);
-  this.renderer.autoClear = true;
+  this.renderer.autoClear = false;
   this.renderer.sortObjects = false;
   this.renderer.shadowMapEnabled = false;
 
@@ -709,14 +703,69 @@ Client.prototype.tickPhysics = function () {
   this.lastTime = now;
 };
 
+Client.prototype.renderWithPortals = function () {
+  var gl = this.renderer.context;
+  var originalCameraMatrixWorld = new THREE.Matrix4();
+  var originalCameraProjectionMatrix = new THREE.Matrix4();
+  var originalCameraPosition = this.camera.position.clone();
+
+  originalCameraMatrixWorld.copy(this.camera.matrixWorld);
+  originalCameraProjectionMatrix.copy(this.camera.projectionMatrix);
+  this.renderer.clear(true, true, true);
+
+  gl.colorMask(false, false, false, false);
+  gl.depthMask(false);
+  gl.enable(gl.STENCIL_TEST);
+  gl.stencilMask(0xFF);
+  gl.stencilFunc(gl.NEVER, 0, 0xFF);
+  gl.stencilOp(gl.INCR, gl.KEEP, gl.KEEP);
+  this.renderer.render(this.connector.stencilScene, this.camera);
+
+  gl.colorMask(true, true, true, true);
+  gl.depthMask(true);
+  gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
+
+  this.renderer.clear(false, true, false);
+  gl.stencilFunc(gl.LESS, 0, 0xff);
+
+  // Offset camera to be at spawn
+  var v = this.controls.getPosition().clone().sub(this.connector.portal.obj.position.clone());
+  v.add(this.connector.portal.connector.spawnPosition);
+  v.y += 1.0;
+
+  this.camera.matrixWorld.setPosition(v);
+
+  this.renderer.render(this.connector.portal.scene, this.camera);
+  gl.disable(gl.STENCIL_TEST);
+  this.camera.position.copy(originalCameraPosition);
+
+  this.renderer.clear(false, false, true);
+  this.camera.matrixWorld.copy(originalCameraMatrixWorld);
+  this.camera.projectionMatrix.copy(originalCameraProjectionMatrix);
+  this.renderer.clear(false, true, false);
+
+  gl.colorMask(false, false, false, false);
+  gl.depthMask(true);
+
+  this.renderer.render(this.connector.stencilScene, this.camera);
+
+  gl.colorMask(true, true, true, true);
+  gl.depthMask(true);
+  gl.enable(gl.DEPTH_TEST);
+  this.renderer.render(this.scene, this.camera);
+  this.camera.projectionMatrix.copy(originalCameraProjectionMatrix);
+};
+
 Client.prototype.tick = function () {
   if (!this.stopped && this.scene) {
     this.stats.rendering.begin();
 
-    this.renderer.render(this.scene, this.camera);
-
-    if (this.connector.isPortalOpen()) {
+    if (this.connector.isPortalSceneReady()) {
+      this.renderWithPortals();
       this.checkForPortalCollision();
+    } else {
+      this.renderer.clear(true, true, true);
+      this.renderer.render(this.scene, this.camera);
     }
 
     this.stats.rendering.end();

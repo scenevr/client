@@ -83,6 +83,7 @@ Connector.prototype.destroy = function () {
     }, 1000);
   }
 
+  this.portal = null;
   delete this.renderQueue;
   delete this.physicsWorld;
   delete this.scene;
@@ -240,8 +241,6 @@ Connector.prototype.stopTalking = function () {
 };
 
 Connector.prototype.unpublishOpentok = function () {
-  console.log('Unpublishing...');
-
   clearTimeout(this.unpublishTimeout);
 
   if ((this.session) && (this.publisher)) {
@@ -291,8 +290,16 @@ Connector.prototype.addLights = function () {
   this.scene.add(ambientLight);
 };
 
+Connector.prototype.getPortalObject = function () {
+  return this.portal.obj;
+};
+
 Connector.prototype.isPortalOpen = function () {
   return !!this.portal;
+};
+
+Connector.prototype.isPortalSceneReady = function () {
+  return !!(this.isPortalOpen() && this.portal.connector.isConnected() && this.portal.connector.spawnPosition);
 };
 
 Connector.prototype.loadPortal = function (el, obj) {
@@ -324,6 +331,7 @@ Connector.prototype.closePortal = function () {
   this.portal.connector.disconnect();
   this.portal.connector.destroy();
 
+  delete this.openLink;
   delete this.portal.scene;
   delete this.portal.world;
   delete this.portal.connector;
@@ -338,7 +346,7 @@ Connector.prototype.createPortal = function (el, obj) {
     obj.remove(obj.children[0]);
   }
 
-  var glowTexture = THREE.ImageUtils.loadTexture('/images/portal.png');
+  var glowTexture = THREE.ImageUtils.loadTexture('/images/portal-transparent.png');
   glowTexture.wrapS = glowTexture.wrapT = THREE.RepeatWrapping;
   glowTexture.repeat.set(1, 1);
 
@@ -365,7 +373,7 @@ Connector.prototype.createPortal = function (el, obj) {
   var portalClone = portal.clone();
 
   portalClone.position.copy(position);
-  portalClone.position.z += 0.1;
+  portalClone.position.z += 0.01;
   portalClone.quaternion.copy(obj.quaternion);
   portalClone.visible = true;
   portalClone.updateMatrix();

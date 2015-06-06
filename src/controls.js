@@ -265,6 +265,13 @@ function PointerLockControls (camera, client, mobile, supportsPointerLock) {
     return e;
   };
 
+  // fix me add pitch
+  this.getQuaternion = function () {
+    var q = new THREE.Quaternion();
+    q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), this.getYaw());
+    return q;
+  };
+
   this.getDirection = function (targetVec) {
     var m1 = new THREE.Matrix4();
     var m2 = new THREE.Matrix4();

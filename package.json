@@ -1,6 +1,6 @@
 {
   "name": "scene-client",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "dependencies": {
     "browserify": "^9.0.7",
     "cannon": "git://github.com/schteppe/cannon.js.git#master",

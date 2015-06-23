@@ -12,11 +12,11 @@ Environment.prototype.getBaseUrl = function () {
 };
 
 Environment.prototype.getWalkSpeed = function () {
-  return 3.0;
+  return 2.5;
 };
 
 Environment.prototype.getRunSpeed = function () {
-  return 4.0;
+  return 5.0;
 };
 
 Environment.prototype.getJumpImpulse = function () {

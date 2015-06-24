@@ -322,8 +322,6 @@ Connector.prototype.loadPortal = function (el, obj) {
   if (el.attr('backlink') === 'true') {
     this.portal.connector.isPreviousPortal = true;
   }
-
-  this.stencilScene = new THREE.Scene();
 };
 
 Connector.prototype.closePortal = function () {
@@ -336,7 +334,6 @@ Connector.prototype.closePortal = function () {
   delete this.portal.world;
   delete this.portal.connector;
   delete this.portal;
-  delete this.stencilScene;
 };
 
 Connector.prototype.createPortal = function (el, obj) {
@@ -358,29 +355,7 @@ Connector.prototype.createPortal = function (el, obj) {
 
   var glowGeometry = new THREE.PlaneBufferGeometry(2, 2, 1, 1);
   var glow = new THREE.Mesh(glowGeometry, glowMaterial);
-  var portalMaterial = new THREE.MeshBasicMaterial({
-    color: '#000000',
-    side: THREE.DoubleSide
-  });
-  var portalGeometry = new THREE.CircleGeometry(1 * 0.75, 40);
-
-  var portal = new THREE.Mesh(portalGeometry, portalMaterial);
-  portal.position.z = 0.001;
   obj.add(glow);
-  obj.add(portal);
-
-  var position = el.attr('position') && Utils.parseVector(el.attr('position'));
-  var portalClone = portal.clone();
-
-  portalClone.position.copy(position);
-  portalClone.position.z += 0.01;
-  portalClone.quaternion.copy(obj.quaternion);
-  portalClone.visible = true;
-  portalClone.updateMatrix();
-  portalClone.updateMatrixWorld(true);
-  portalClone.matrixAutoUpdate = false;
-  portalClone.frustumCulled = false;
-  this.stencilScene.add(portalClone);
 
   return obj;
 };

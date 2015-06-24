@@ -12,6 +12,12 @@ var AssetManager = require('./asset-manager');
 var PointerLockControls = require('./controls');
 var Stats = require('stats-js');
 
+var Effects = {
+  Vanilla: require('./effects/vanilla'),
+  Stereoscopic: require('./effects/stereoscopic'),
+  Portal: require('./effects/portal')
+};
+
 var Templates = {
   unableToConnect: function (args) {
     return '<div class="unable-to-connect"><h1>Unable to connect</h1><p>Scene is unable to connect to <b>' + args.host + '</b><p>The server may be down, or you may be experiencing connection difficulties. Reload this page to try and reconnect.';
@@ -45,7 +51,7 @@ Client.prototype.initialize = function () {
   this.createStats();
   this.authentication = new Authentication(this);
   this.createCamera();
-  this.initializeRenderer();
+  this.createRenderer();
   this.addControls();
 
   // Register event handlers
@@ -199,7 +205,7 @@ Client.prototype.createStats = function () {
   this.container.append(this.stats.connector.domElement);
 };
 
-Client.prototype.initializeRenderer = function () {
+Client.prototype.createRenderer = function () {
   if (this.renderer) {
     throw new Error('Cannot reinitialize');
   }
@@ -232,8 +238,9 @@ Client.prototype.initializeRenderer = function () {
   this.renderer.autoClear = false;
   this.renderer.sortObjects = false;
   this.renderer.shadowMapEnabled = false;
-
   window.addEventListener('resize', this.onWindowResize.bind(this), false);
+
+  this.effect = new Effects.Vanilla(this, this.renderer);
 };
 
 Client.prototype.onWindowResize = function () {
@@ -294,19 +301,6 @@ Client.prototype.consoleLog = function (msg) {
   this.addChatMessage({
     name: 'Client'
   }, msg);
-};
-
-Client.prototype.checkForPortalCollision = function () {
-  var position = this.controls.getObject().position;
-  var direction = this.controls.getDirection(new THREE.Vector3());
-  this.raycaster.set(position, direction);
-  this.raycaster.far = 0.5;
-
-  var ints = this.raycaster.intersectObject(this.connector.stencilScene.children[0], false);
-
-  if ((ints.length > 0) && (this.connector.portal.connector.hasSpawned())) {
-    return this.promotePortal();
-  }
 };
 
 Client.prototype.setTitle = function () {
@@ -703,70 +697,22 @@ Client.prototype.tickPhysics = function () {
   this.lastTime = now;
 };
 
-Client.prototype.renderWithPortals = function () {
-  var gl = this.renderer.context;
-  var originalCameraMatrixWorld = new THREE.Matrix4();
-  var originalCameraProjectionMatrix = new THREE.Matrix4();
-  var originalCameraPosition = this.camera.position.clone();
-
-  originalCameraMatrixWorld.copy(this.camera.matrixWorld);
-  originalCameraProjectionMatrix.copy(this.camera.projectionMatrix);
-  this.renderer.clear(true, true, true);
-
-  gl.colorMask(false, false, false, false);
-  gl.depthMask(false);
-  gl.enable(gl.STENCIL_TEST);
-  gl.stencilMask(0xFF);
-  gl.stencilFunc(gl.NEVER, 0, 0xFF);
-  gl.stencilOp(gl.INCR, gl.KEEP, gl.KEEP);
-  this.renderer.render(this.connector.stencilScene, this.camera);
-
-  gl.colorMask(true, true, true, true);
-  gl.depthMask(true);
-  gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
-
-  this.renderer.clear(false, true, false);
-  gl.stencilFunc(gl.LESS, 0, 0xff);
-
-  // Offset camera to be at spawn
-  var v = this.controls.getPosition().clone().sub(this.connector.portal.obj.position.clone());
-  v.add(this.connector.portal.connector.spawnPosition);
-  v.y += 1.0;
-
-  this.camera.matrixWorld.setPosition(v);
-
-  this.renderer.render(this.connector.portal.scene, this.camera);
-  gl.disable(gl.STENCIL_TEST);
-  this.camera.position.copy(originalCameraPosition);
-
-  this.renderer.clear(false, false, true);
-  this.camera.matrixWorld.copy(originalCameraMatrixWorld);
-  this.camera.projectionMatrix.copy(originalCameraProjectionMatrix);
-  this.renderer.clear(false, true, false);
-
-  gl.colorMask(false, false, false, false);
-  gl.depthMask(true);
-
-  this.renderer.render(this.connector.stencilScene, this.camera);
-
-  gl.colorMask(true, true, true, true);
-  gl.depthMask(true);
-  gl.enable(gl.DEPTH_TEST);
-  this.renderer.render(this.scene, this.camera);
-  this.camera.projectionMatrix.copy(originalCameraProjectionMatrix);
-};
-
 Client.prototype.tick = function () {
+  if (this.connector) {
+    if ((this.effect instanceof Effects.Vanilla) && (this.connector.isPortalSceneReady())) {
+      var portal = this.connector.portal;
+      this.effect = new Effects.Portal(this, this.renderer, portal, portal.scene);
+    }
+
+    if ((this.effect instanceof Effects.Portal) && (!this.connector.isPortalOpen())) {
+      this.effect = new Effects.Vanilla(this, this.renderer);
+    }
+  }
+
   if (!this.stopped && this.scene) {
     this.stats.rendering.begin();
 
-    if (this.connector.isPortalSceneReady()) {
-      this.renderWithPortals();
-      this.checkForPortalCollision();
-    } else {
-      this.renderer.clear(true, true, true);
-      this.renderer.render(this.scene, this.camera);
-    }
+    this.effect.render(this.scene, this.camera);
 
     this.stats.rendering.end();
 

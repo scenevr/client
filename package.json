@@ -31,7 +31,8 @@
   },
   "semistandard": {
     "ignore": [
-      "build/**"
+      "build/**",
+      "vendor/**"
     ]
   }
 }

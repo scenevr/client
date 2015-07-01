@@ -264,6 +264,7 @@ Connector.prototype.addFloor = function () {
   var floor = new THREE.Mesh(floorGeometry, floorMaterial);
   floor.position.y = 0;
   floor.rotation.x = -Math.PI / 2;
+  floor.receiveShadow = true;
   this.scene.add(floor);
 
   var groundBody = new CANNON.Body({
@@ -278,13 +279,17 @@ Connector.prototype.addFloor = function () {
 };
 
 Connector.prototype.addLights = function () {
-  var dirLight = new THREE.DirectionalLight(0xffffff, 1.1);
-  dirLight.position.set(1, 0.75, -0.5);
-  this.scene.add(dirLight);
+  var light = new THREE.SpotLight(0xffffff, 1.1);
+  light.position.copy(new THREE.Vector3(0.75, 1, 0.5).multiplyScalar(100));
+  light.lookAt(new THREE.Vector3(0, 0, 0));
+  light.castShadow = true;
+  light.shadowDarkness = 0.5;
+  light.shadowCameraVisible = true;
+  this.scene.add(light);
 
-  dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
-  dirLight.position.set(1, 0.75, 0.5);
-  this.scene.add(dirLight);
+  // dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
+  // dirLight.position.set(1, 0.75, 0.5);
+  // this.scene.add(dirLight);
 
   var ambientLight = new THREE.AmbientLight(0x101010);
   this.scene.add(ambientLight);

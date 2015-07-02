@@ -215,7 +215,21 @@ function PointerLockControls (camera, client, mobile, supportsPointerLock) {
         );
 
         direction.multiplyScalar(0.1);
-        direction.clampscalar(-1, 1);
+
+        if (direction.x < -1) {
+          direction.x = -1;
+        }
+        if (direction.y < -1) {
+          direction.y = -1;
+        }
+        if (direction.x > 1) {
+          direction.x = 1;
+        }
+        if (direction.y > 1) {
+          direction.y = 1;
+        }
+        
+        // direction.clampscalar(-1, 1);
       }
     }
 

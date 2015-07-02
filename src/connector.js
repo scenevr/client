@@ -925,7 +925,14 @@ Connector.prototype.processMessage = function (el) {
 
 Connector.prototype.onMessage = function (e) {
   var self = this;
-  var children = $($.parseXML(e.data).firstChild).children();
+  var xml = $.parseXML(e.data);
+
+  if (xml.nodeName !== 'packet') {
+    console.log('Invalid packet from server');
+    return;
+  }
+
+  var children = $(xml.firstChild).children();
 
   children.each(function (index, el) {
     self.processMessage($(el));

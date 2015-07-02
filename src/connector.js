@@ -1,9 +1,9 @@
-/* globals WebSocket */
+/* globals THREE, WebSocket */
 
 var $ = require('jquery');
-var THREE = require('three');
 var util = require('util');
 var Utils = require('./utils');
+var THREE = require('THREE');
 var URI = require('uri-js');
 var environment = require('./environment');
 var StyleMap = require('./style-map');
@@ -278,13 +278,23 @@ Connector.prototype.addFloor = function () {
   this.physicsWorld.add(groundBody);
 };
 
+Connector.prototype.addSky = function () {
+  // Add Sky Mesh
+  this.sky = new THREE.Sky();
+  this.sky.uniforms.sunPosition.value.set(10, 10, 10);
+
+  this.scene.add(this.sky.mesh);
+};
+
 Connector.prototype.addLights = function () {
+  this.addSky();
+
   var light = new THREE.SpotLight(0xffffff, 1.1);
   light.position.copy(new THREE.Vector3(0.75, 1, 0.5).multiplyScalar(100));
   light.lookAt(new THREE.Vector3(0, 0, 0));
   light.castShadow = true;
   light.shadowDarkness = 0.5;
-  light.shadowCameraVisible = true;
+  light.shadowCameraVisible = false;
   this.scene.add(light);
 
   // dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
@@ -611,9 +621,10 @@ Connector.prototype.addElement = function (el) {
   } else if (el.is('plane')) {
     obj = Plane.create(this, el);
   } else if (el.is('skybox')) {
-    obj = Skybox.create(this, el);
+    // obj = Skybox.create(this, el);
+    return;
   } else if (el.is('fog')) {
-    Fog.create(this, el);
+    // Fog.create(this, el);
     return;
   } else if (el.is('model')) {
     obj = Model.create(this, el);

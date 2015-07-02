@@ -21,6 +21,7 @@ require('../vendor/MaskPass.js');
 require('../vendor/RenderPass.js');
 require('../vendor/SSAOShader.js');
 require('../vendor/ShaderPass.js');
+require('../vendor/SkyShader.js');
 
 var Effects = {
   Vanilla: require('./effects/vanilla'),

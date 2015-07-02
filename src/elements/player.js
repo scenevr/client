@@ -17,11 +17,15 @@ Player.create = function (connetor, el) {
 
   var geometry1 = new THREE.CylinderGeometry(0.02, 0.5, 1.3, 10);
   var body = new THREE.Mesh(geometry1, bodyMaterial);
+  body.castShadow = true;
+  body.recieveShadow = true;
 
   var geometry2 = new THREE.SphereGeometry(0.3, 10, 10);
   var head = new THREE.Mesh(geometry2, headMaterial);
   head.position.y = 0.6;
   head.rotation.y = Math.PI / 2;
+  head.castShadow = true;
+  head.recieveShadow = true;
 
   var obj = new THREE.Object3D();
   obj.add(head);

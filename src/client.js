@@ -12,6 +12,17 @@ var AssetManager = require('./asset-manager');
 var PointerLockControls = require('./controls');
 var Stats = require('stats-js');
 
+// sadface
+window.THREE = THREE;
+
+require('../vendor/CopyShader.js');
+require('../vendor/EffectComposer.js');
+require('../vendor/MaskPass.js');
+require('../vendor/RenderPass.js');
+require('../vendor/SSAOShader.js');
+require('../vendor/ShaderPass.js');
+require('../vendor/SkyShader.js');
+
 var Effects = {
   Vanilla: require('./effects/vanilla'),
   Stereoscopic: require('./effects/stereoscopic'),
@@ -52,6 +63,7 @@ Client.prototype.initialize = function () {
   this.authentication = new Authentication(this);
   this.createCamera();
   this.createRenderer();
+  this.createScene();
   this.addControls();
 
   // Register event handlers
@@ -70,6 +82,33 @@ Client.prototype.initialize = function () {
 
   // Start renderer
   this.tick();
+};
+
+Client.prototype.createScene = function () {
+  this.setScene(new THREE.Scene());
+};
+
+Client.prototype.setScene = function (scene) {
+  this.scene = scene;
+
+  if (environment.ambientOcclusionEnabled()) {
+    var width = this.container.width();
+    var height = this.container.height();
+
+    this.composer = new THREE.EffectComposer(this.renderer);
+    this.composer.addPass(new THREE.RenderPass(this.scene, this.camera));
+
+    this.depthTarget = new THREE.WebGLRenderTarget(width, height, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, format: THREE.RGBAFormat });
+
+    var effect = new THREE.ShaderPass(THREE.SSAOShader);
+    effect.uniforms['tDepth'].value = this.depthTarget;
+    effect.uniforms['size'].value.set(width, height);
+    effect.uniforms['cameraNear'].value = this.camera.near;
+    effect.uniforms['cameraFar'].value = this.camera.far;
+    effect.renderToScreen = true;
+
+    this.composer.addPass(effect);
+  }
 };
 
 Client.prototype.createCamera = function () {
@@ -99,7 +138,7 @@ Client.prototype.loadScene = function (url) {
   }
 
   // Init scene
-  this.scene = new THREE.Scene();
+  this.setScene(new THREE.Scene());
   this.scene.add(this.controls.getObject());
 
   // Init physics
@@ -145,7 +184,7 @@ Client.prototype.promotePortal = function () {
   this.unloadScene();
 
   this.world = portal.world;
-  this.scene = portal.scene;
+  this.setScene(portal.scene);
   this.scene.add(this.controls.getObject());
 
   this.connector.destroy();
@@ -226,18 +265,32 @@ Client.prototype.createRenderer = function () {
   });
 
   this.renderer = new THREE.WebGLRenderer({
-    antialias: this.preferences.getState().graphicsAntialiasing,
+    antialias: environment.antiAliasingEnabled(),
     alpha: false,
     // precision: 'lowp',
     canvas: this.domElement[0],
     preserveDrawingBuffer: true
   });
 
+  if (environment.ambientOcclusionEnabled()) {
+    // depth
+    var depthShader = THREE.ShaderLib['depthRGBA'];
+    var depthUniforms = THREE.UniformsUtils.clone(depthShader.uniforms);
+
+    this.depthMaterial = new THREE.ShaderMaterial({ fragmentShader: depthShader.fragmentShader, vertexShader: depthShader.vertexShader, uniforms: depthUniforms });
+    this.depthMaterial.blending = THREE.NoBlending;
+
+    // postprocessing
+    this.composer = new THREE.EffectComposer(this.renderer);
+  }
+
   this.renderer.setSize(width / this.preferences.getState().downSampling, height / this.preferences.getState().downSampling);
   this.renderer.setClearColor(0xFFFFFF);
   this.renderer.autoClear = false;
   this.renderer.sortObjects = false;
-  this.renderer.shadowMapEnabled = false;
+  this.renderer.shadowMapEnabled = true;
+  this.renderer.shadowMapType = THREE.PCFSoftShadowMap;
+
   window.addEventListener('resize', this.onWindowResize.bind(this), false);
 
   this.effect = new Effects.Vanilla(this, this.renderer);

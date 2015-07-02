@@ -31,7 +31,6 @@ Billboard.getLoadingMaterial = function () {
 };
 
 Billboard.create = function (connector, el) {
-  var box, boxBody, boxShape, geometry, material, mesh, newScale;
   var obj = new THREE.Object3D();
 
   var div = $('<div />').html(el.text()).css({
@@ -51,27 +50,41 @@ Billboard.create = function (connector, el) {
     img.src = URI.resolve(URI.serialize(connector.assetUri), img.getAttribute('src'));
   });
 
-  geometry = new THREE.BoxGeometry(1, 1, 1);
-  material = new THREE.MeshLambertMaterial({
+  var geometry = new THREE.BoxGeometry(1, 1, 1);
+  var material = new THREE.MeshLambertMaterial({
     color: '#eeeeee',
     ambient: '#eeeeee'
   });
-  box = new THREE.Mesh(geometry, material);
+
+  var nullMaterial = new THREE.MeshBasicMaterial({ visible: false });
+  var box = new THREE.Mesh(geometry, new THREE.MeshFaceMaterial([material, nullMaterial]));
+  box.castShadow = true;
+  box.recieveShadow = true;
+
+  geometry.faces.forEach(function (face) {
+    face.materialIndex = 0;
+  });
+  geometry.faces[8].materialIndex = 1;
+  geometry.faces[9].materialIndex = 1;
+
   material = new THREE.MeshLambertMaterial({
     color: '#ffffff'
   });
-  mesh = new THREE.Mesh(new THREE.PlaneBufferGeometry(1, 1), material);
-  mesh.position.setZ(0.510);
+
+  var mesh = new THREE.Mesh(new THREE.PlaneBufferGeometry(1, 1), material);
+  mesh.position.setZ(0.5);
   mesh.material = this.getLoadingMaterial();
+  mesh.castShadow = true;
+  mesh.recieveShadow = true;
 
   obj.add(box);
   obj.add(mesh);
 
-  newScale = el.attr('scale') ? Utils.parseVector(el.attr('scale')) : new THREE.Vector3(2, 2, 0.5);
+  var newScale = el.attr('scale') ? Utils.parseVector(el.attr('scale')) : new THREE.Vector3(2, 2, 0.5);
   obj.scale.copy(newScale);
 
-  boxShape = new CANNON.Box(new CANNON.Vec3().copy(newScale.multiplyScalar(0.5)));
-  boxBody = new CANNON.Body({
+  var boxShape = new CANNON.Box(new CANNON.Vec3().copy(newScale.multiplyScalar(0.5)));
+  var boxBody = new CANNON.Body({
     mass: 0
   });
   boxBody.addShape(boxShape);

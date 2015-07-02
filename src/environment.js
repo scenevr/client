@@ -11,6 +11,14 @@ Environment.prototype.getBaseUrl = function () {
   return '';
 };
 
+Environment.prototype.ambientOcclusionEnabled = function () {
+  return true;
+};
+
+Environment.prototype.antiAliasingEnabled = function () {
+  return true;
+};
+
 Environment.prototype.getWalkSpeed = function () {
   return 2.5;
 };

@@ -942,13 +942,14 @@ Connector.prototype.processMessage = function (el) {
 Connector.prototype.onMessage = function (e) {
   var self = this;
   var xml = $.parseXML(e.data);
+  var packet = xml.firstChild;
 
-  if (xml.nodeName !== 'packet') {
+  if (packet.nodeName !== 'packet') {
     console.log('Invalid packet from server');
     return;
   }
 
-  var children = $(xml.firstChild).children();
+  var children = $(packet).children();
 
   children.each(function (index, el) {
     self.processMessage($(el));

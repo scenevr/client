@@ -16,7 +16,7 @@ util.inherits(Authentication, EventEmitter);
 Authentication.prototype.initialize = function () {
   this._isLoggedIn = null;
   this._user = null;
-  this._div = $('<div id=\'authentication\' />').appendTo('body');
+  this._div = $('<div id=\'authentication\' />').appendTo(this._client.container);
   this.checkStatus();
 
   var self = this;

@@ -12,11 +12,11 @@ Environment.prototype.getBaseUrl = function () {
 };
 
 Environment.prototype.ambientOcclusionEnabled = function () {
-  return true;
+  return false;
 };
 
 Environment.prototype.antiAliasingEnabled = function () {
-  return true;
+  return false;
 };
 
 Environment.prototype.getWalkSpeed = function () {

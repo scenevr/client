@@ -47,7 +47,6 @@ var Templates = {
 window.CANNON = CANNON;
 
 function Client (container, options) {
-  console.log(container);
   this.container = $(container);
   this.options = options;
 }
@@ -129,7 +128,7 @@ Client.prototype.unloadScene = function () {
   delete this.world;
 };
 
-Client.prototype.loadScene = function (url) {
+Client.prototype.loadScene = function (sceneProxy) {
   var self = this;
 
   if (this.connector) {
@@ -149,8 +148,14 @@ Client.prototype.loadScene = function (url) {
   this.addPlayerBody();
 
   // Init connector
-  this.connector = new Connector(this, this.scene, this.world, url);
-  this.connector.connect();
+  if (sceneProxy.scene) {
+    this.connector = new Connector(this, this.scene, this.world, 'http://localhost/');
+    this.connector.directConnect(sceneProxy);
+  } else {
+    this.connector = new Connector(this, this.scene, this.world, sceneProxy);
+    this.connector.connect();
+  }
+
   this.addConnecting();
 
   this.connector.on('connected', function () {

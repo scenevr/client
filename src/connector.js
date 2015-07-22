@@ -440,6 +440,20 @@ Connector.prototype.addViewSourceButton = function () {
   });
 };
 
+Connector.prototype.directConnect = function (sceneNode) {
+  var self = this;
+
+  this.addLights();
+  this.addFloor();
+
+  setTimeout(function () {
+    self.trigger('connected');
+  }, 100);
+
+  // var packet = "<packet>" + sceneNode.scene.childNodes.map(function (node) { node.outerXML }).join("\n") + "</packet>";
+  // this.onMessage(packet);
+};
+
 Connector.prototype.connect = function () {
   if (!this.uri.host || !this.uri.path.match(/^\//)) {
     throw new Error('Invalid uri ' + URI.serialize(this.uri));

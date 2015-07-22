@@ -128,7 +128,7 @@ Client.prototype.unloadScene = function () {
   delete this.world;
 };
 
-Client.prototype.loadScene = function (url) {
+Client.prototype.loadScene = function (sceneProxy) {
   var self = this;
 
   if (this.connector) {
@@ -148,8 +148,14 @@ Client.prototype.loadScene = function (url) {
   this.addPlayerBody();
 
   // Init connector
-  this.connector = new Connector(this, this.scene, this.world, url);
-  this.connector.connect();
+  if (sceneProxy.scene) {
+    this.connector = new Connector(this, this.scene, this.world, 'http://localhost/');
+    this.connector.directConnect(sceneProxy);
+  } else {
+    this.connector = new Connector(this, this.scene, this.world, sceneProxy);
+    this.connector.connect();
+  }
+
   this.addConnecting();
 
   this.connector.on('connected', function () {
@@ -414,7 +420,7 @@ Client.prototype.onClick = function (e) {
 Client.prototype.addMessageInput = function () {
   var self = this;
 
-  this.chatForm = $('<div id=\'message-input\'> <input type=\'text\' placeholder=\'Press enter to start chatting...\' /> </div>').appendTo('body');
+  this.chatForm = $('<div id=\'message-input\'> <input type=\'text\' placeholder=\'Press enter to start chatting...\' /> </div>').appendTo(this.container);
 
   var input = this.chatForm.find('input');
 
@@ -448,7 +454,7 @@ Client.prototype.addMessageInput = function () {
     }
   });
 
-  this.chatMessages = $("<div id='messages' />").hide().appendTo('body');
+  this.chatMessages = $("<div id='messages' />").hide().appendTo(this.container);
 };
 
 Client.prototype.postChatMessage = function (message) {
@@ -674,7 +680,7 @@ Client.prototype.addPlayerBody = function () {
 };
 
 Client.prototype.addReticule = function () {
-  this.reticule = $('<div />').addClass('aiming-point').appendTo('body');
+  this.reticule = $('<div />').addClass('aiming-point').appendTo(this.container);
 };
 
 Client.prototype.addControls = function () {

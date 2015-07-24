@@ -425,7 +425,7 @@ Client.prototype.addMessageInput = function () {
   var input = this.chatForm.find('input');
 
   $('body').on('keydown', function (e) {
-    if (e.keyCode === 13 && !input.is(':focus')) {
+    if (e.keyCode === 13 && self.controls.enabled && !input.is(':focus')) {
       self.chatForm.find('input').focus();
       self.controls.enabled = false;
     }

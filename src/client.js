@@ -329,6 +329,13 @@ Client.prototype.disableControls = function () {
   this.reticule.hide();
 };
 
+Client.prototype.getDropPosition = function () {
+  var player = this.controls.getObject().position;
+  var direction = this.controls.getDirection(new THREE.Vector3());
+
+  return player.clone().add(direction.multiplyScalar(2));
+};
+
 Client.prototype.removeAllObjectsFromScene = function () {
   var self = this;
   var children = Array.prototype.slice.apply(this.scene.children);

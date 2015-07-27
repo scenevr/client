@@ -18,6 +18,9 @@ Box.create = function (connector, el) {
   var scale = el.attr('scale') ? Utils.parseVector(el.attr('scale')) : new THREE.Vector3(1, 1, 1);
   obj.scale.copy(scale);
 
+  obj.castShadow = true;
+  obj.recieveShadow = true;
+
   if (styles.collision === 'none') {
     // No collision at all
   } else {

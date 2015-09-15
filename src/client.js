@@ -658,6 +658,8 @@ Client.prototype.addDirectionArrow = function () {
 Client.prototype.addPlayerBody = function () {
   var self = this;
 
+  this.world.defaultContactMaterial.friction = 0.0
+
   this.playerBody = new CANNON.Body({
     mass: 100
   });
@@ -762,11 +764,6 @@ Client.prototype.tickPhysics = function () {
     }
 
     TWEEN.update();
-
-    // Get click event from the gamepad
-    if (this.controls.getObject().click) {
-      this.onClick();
-    }
 
     this.controls.update(timeStep);
     this.trigger('controls:update', [this.controls]);

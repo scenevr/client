@@ -94,8 +94,8 @@ function PointerLockControls (camera, client, mobile, supportsPointerLock) {
       return;
     }
 
-    var movementX = event.movementX || event.mozMovementX || event.webkitMovementX || 0;
-    var movementY = event.movementY || event.mozMovementY || event.webkitMovementY || 0;
+    var movementX = event.movementX || event.mozMovementX || 0;
+    var movementY = event.movementY || event.mozMovementY || 0;
 
     yawObject.rotation.y -= movementX * 0.002;
     pitchObject.rotation.x -= movementY * 0.002;
@@ -300,85 +300,11 @@ function PointerLockControls (camera, client, mobile, supportsPointerLock) {
     return targetVec.normalize();
   };
 
-  var pollGamePad = function () {
-    var gamepads = navigator.getGamepads ? navigator.getGamepads() : (navigator.webkitGetGamepads ? navigator.webkitGetGamepads : []);
-    var gp = gamepads[0];
-
-    if (!gp) {
-      return;
-    }
-
-    // look
-    // xbox 360 controller right analog
-    // gp.axes[2]
-    // gp.axes[3]
-
-    if (Math.abs(gp.axes[2]) > 0.2) {
-      yawObject.rotation.y -= gp.axes[2] * 0.02;
-    }
-    if (Math.abs(gp.axes[3]) > 0.2) {
-      pitchObject.rotation.x -= gp.axes[3] * 0.02;
-      pitchObject.rotation.x = Math.max(-PI_2, Math.min(PI_2, pitchObject.rotation.x));
-    }
-
-    // movement
-    // xbox 360 controller left analog
-    // gp.axes[0]
-    // gp.axes[1]
-
-    if (gp.axes[0] < -0.3) {
-      moveLeft = true;
-    } else {
-      moveLeft = false;
-    }
-
-    if (gp.axes[0] > 0.3) {
-      moveRight = true;
-    } else {
-      moveRight = false;
-    }
-
-    if (gp.axes[1] < -0.3) {
-      moveForward = true;
-    } else {
-      moveForward = false;
-    }
-
-    if (gp.axes[1] > 0.3) {
-      moveBackward = true;
-    } else {
-      moveBackward = false;
-    }
-
-    // click
-    // Xbox 360 'A' button
-    // gp.buttons[0]
-
-    if (gp.buttons[0].pressed) {
-      yawObject.click = true;
-    } else {
-      yawObject.click = false;
-    }
-
-    // jumping
-    // Xbox 360 'B' button
-    // gp.buttons[1]
-
-    if (gp.buttons[1].pressed) {
-      if (canJump === true) {
-        velocity.y = jumpVelocity;
-      }
-      canJump = false;
-    }
-  };
-
   // Moves the camera to the Cannon.js object position and adds velocity to the object if the run key is down
   var inputVelocity = new THREE.Vector3();
   var euler = new THREE.Euler();
 
   this.update = function (delta) {
-    pollGamePad();
-
     yawObject.rotation.y -= movementX * 0.002;
     pitchObject.rotation.x -= movementY * 0.002;
     pitchObject.rotation.x = Math.max(-PI_2, Math.min(PI_2, pitchObject.rotation.x));

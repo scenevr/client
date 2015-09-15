@@ -13,6 +13,7 @@ var EventEmitter = require('wolfy87-eventemitter');
 var Billboard = require('./elements/billboard');
 var Audio = require('./elements/audio');
 var Box = require('./elements/box');
+var Voxel = require('./elements/voxel');
 var Sphere = require('./elements/sphere');
 var Skybox = require('./elements/skybox');
 var Fog = require('./elements/fog');
@@ -48,6 +49,7 @@ function Connector (client, scene, physicsWorld, uri, isPortal, referrer) {
 }
 
 util.inherits(Connector, EventEmitter);
+
 
 Connector.prototype.initialize = function () {
   this.messageQueue = [];
@@ -521,7 +523,13 @@ Connector.prototype.onCollide = function (e) {
 };
 
 Connector.prototype.onClick = function (e) {
-  this.sendMessage($('<event />').attr('name', 'click').attr('uuid', e.uuid).attr('point', this.vectorToWire(e.point)));
+  this.sendMessage(
+    $('<event />')
+      .attr('name', 'click')
+      .attr('uuid', e.uuid)
+      .attr('point', this.vectorToWire(e.point))
+      .attr('direction', this.vectorToWire(e.direction))
+    )
 };
 
 Connector.prototype.tick = function () {
@@ -630,6 +638,8 @@ Connector.prototype.addElement = function (el) {
     obj = Billboard.create(this, el);
   } else if (el.is('box')) {
     obj = Box.create(this, el);
+  } else if (el.is('voxel')) {
+    obj = Voxel.create(this, el);
   } else if (el.is('sphere')) {
     obj = Sphere.create(this, el);
   } else if (el.is('plane')) {

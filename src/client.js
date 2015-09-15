@@ -404,8 +404,19 @@ Client.prototype.onClick = function (e) {
   for (_i = 0, _len = _ref.length; _i < _len; _i++) {
     var intersection = _ref[_i];
 
+    var iEvent = {
+      position: position,
+      direction: direction,
+      intersection: intersection,
+      target: intersection.object.userData
+    }
+
     if (intersection.object && intersection.object.parent && intersection.object.parent.userData.is && intersection.object.parent.userData.is('link')) {
-      intersection.object.parent.onClick();
+      intersection.object.parent.onClick(iEvent);
+    }
+
+    if (intersection.object && intersection.object.onClick) {
+      intersection.object.onClick(iEvent);
     }
 
     var obj = intersection.object;
@@ -414,7 +425,8 @@ Client.prototype.onClick = function (e) {
       if (obj.userData instanceof $) {
         this.connector.onClick({
           uuid: obj.name,
-          point: intersection.point
+          point: intersection.point,
+          direction: direction
         });
 
         return;

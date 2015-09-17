@@ -529,6 +529,8 @@ Connector.prototype.onClick = function (e) {
       .attr('uuid', e.uuid)
       .attr('point', this.vectorToWire(e.point))
       .attr('direction', this.vectorToWire(e.direction))
+      .attr('normal', this.vectorToWire(e.normal))
+      .attr('button', e.button)
     )
 };
 

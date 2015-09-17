@@ -5,6 +5,7 @@
     "ao-mesher": "^0.2.10",
     "browserify": "^9.0.7",
     "cannon": "git://github.com/schteppe/cannon.js.git#master",
+    "glslify": "^2.3.1",
     "howler": "^1.1.25",
     "html2canvas": "scenevr/html2canvas",
     "jquery": "^2.1.4",
@@ -31,7 +32,7 @@
   },
   "browserify": {
     "transform": [
-      "stringify"
+      "stringify", "glslify"
     ]
   },
   "semistandard": {

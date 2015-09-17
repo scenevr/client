@@ -426,7 +426,9 @@ Client.prototype.onClick = function (e) {
         this.connector.onClick({
           uuid: obj.name,
           point: intersection.point,
-          direction: direction
+          direction: direction,
+          normal: intersection.face.normal,
+          button: e.button
         });
 
         return;

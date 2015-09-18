@@ -16,7 +16,7 @@ Environment.prototype.ambientOcclusionEnabled = function () {
 };
 
 Environment.prototype.antiAliasingEnabled = function () {
-  return true;
+  return false;
 };
 
 Environment.prototype.getWalkSpeed = function () {

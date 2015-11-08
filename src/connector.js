@@ -32,6 +32,9 @@ var Y_AXIS = new THREE.Vector3(0, 1, 0);
 var Z_AXIS = new THREE.Vector3(0, 0, 1);
 
 function Connector (client, scene, physicsWorld, uri, isPortal, referrer) {
+  // The version of the scene from the server
+  this.version = { scene: 1.0 };
+
   this.client = client;
   this.scene = scene;
   this.physicsWorld = physicsWorld;
@@ -267,7 +270,7 @@ Connector.prototype.addFloor = function () {
   floor.position.y = 0;
   floor.rotation.x = -Math.PI / 2;
   floor.receiveShadow = true;
-  this.scene.add(floor);
+  // this.scene.add(floor);
 
   var groundBody = new CANNON.Body({
     mass: 0
@@ -289,8 +292,6 @@ Connector.prototype.addSky = function () {
 };
 
 Connector.prototype.addLights = function () {
-  this.addSky();
-
   var light = new THREE.SpotLight(0xffffff, 1.1);
   light.position.copy(new THREE.Vector3(0.75, 1, 0.5).multiplyScalar(100));
   light.lookAt(new THREE.Vector3(0, 0, 0));
@@ -442,11 +443,24 @@ Connector.prototype.addViewSourceButton = function () {
   });
 };
 
-Connector.prototype.directConnect = function (sceneNode) {
-  var self = this;
-
+Connector.prototype.addDefaultSceneElements = function () {
   this.addLights();
   this.addFloor();
+  return;
+  
+  if (this.version.scene === 1.0) {
+    this.addLights();
+    this.addFloor();
+  } else if (this.version.scene === 2.0) {
+    this.addSky();
+    this.addLights();
+  } else {
+    console.error('Unknown scene version');
+  }
+};
+
+Connector.prototype.directConnect = function (sceneNode) {
+  var self = this;
 
   setTimeout(function () {
     self.trigger('connected');
@@ -482,9 +496,6 @@ Connector.prototype.connect = function () {
     self.messageQueue.forEach(function (message) {
       self.sendMessage(message);
     });
-
-    self.addLights();
-    self.addFloor();
   };
 
   this.ws.onclose = function () {
@@ -531,7 +542,8 @@ Connector.prototype.onClick = function (e) {
       .attr('direction', this.vectorToWire(e.direction))
       .attr('normal', this.vectorToWire(e.normal))
       .attr('button', e.button)
-    )
+      .attr('selectedColor', e.selectedColor)
+    );
 };
 
 Connector.prototype.tick = function () {
@@ -631,6 +643,9 @@ Connector.prototype.addElement = function (el) {
       } else {
         this.setPosition(position);
       }
+
+      this.addDefaultSceneElements();
+
       this.spawned = true;
     }
   } else if (el.is('audio')) {
@@ -647,8 +662,11 @@ Connector.prototype.addElement = function (el) {
   } else if (el.is('plane')) {
     obj = Plane.create(this, el);
   } else if (el.is('skybox')) {
-    // obj = Skybox.create(this, el);
-    return;
+    obj = Skybox.create(this, el);
+    // if (this.version.scene === 1.0) {
+    // } else {
+    //   return
+    // }
   } else if (el.is('fog')) {
     // Fog.create(this, el);
     return;
@@ -787,6 +805,12 @@ Connector.prototype.getAudioElements = function () {
 
 Connector.prototype.processMessage = function (el) {
   var obj;
+
+  if (el.is('version')) {
+    this.version = {
+      scene: el.attr('scene')
+    }
+  }
 
   if (el.is('event')) {
     var name = el.attr('name');

@@ -11,6 +11,7 @@ var Preferences = require('./preferences');
 var AssetManager = require('./asset-manager');
 var PointerLockControls = require('./controls');
 var Stats = require('stats-js');
+var Editor = require('./editor');
 
 // sadface
 window.THREE = THREE;
@@ -65,6 +66,7 @@ Client.prototype.initialize = function () {
   this.createRenderer();
   this.createScene();
   this.addControls();
+  this.addEditor();
 
   // Register event handlers
   this.on('click', this.onClick.bind(this));
@@ -82,6 +84,10 @@ Client.prototype.initialize = function () {
 
   // Start renderer
   this.tick();
+};
+
+Client.prototype.addEditor = function () {
+  this.editor = new Editor(this);
 };
 
 Client.prototype.createScene = function () {
@@ -428,7 +434,8 @@ Client.prototype.onClick = function (e) {
           point: intersection.point,
           direction: direction,
           normal: intersection.face.normal,
-          button: e.button
+          button: e.button,
+          selectedColor: this.editor.selectedIndex
         });
 
         return;

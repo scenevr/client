@@ -270,7 +270,7 @@ Connector.prototype.addFloor = function () {
   floor.position.y = 0;
   floor.rotation.x = -Math.PI / 2;
   floor.receiveShadow = true;
-  // this.scene.add(floor);
+  this.scene.add(floor);
 
   var groundBody = new CANNON.Body({
     mass: 0
@@ -446,17 +446,17 @@ Connector.prototype.addViewSourceButton = function () {
 Connector.prototype.addDefaultSceneElements = function () {
   this.addLights();
   this.addFloor();
-  return;
+  // return;
   
-  if (this.version.scene === 1.0) {
-    this.addLights();
-    this.addFloor();
-  } else if (this.version.scene === 2.0) {
-    this.addSky();
-    this.addLights();
-  } else {
-    console.error('Unknown scene version');
-  }
+  // if (this.version.scene === 1.0) {
+  //   this.addLights();
+  //   this.addFloor();
+  // } else if (this.version.scene === 2.0) {
+  //   this.addSky();
+  //   this.addLights();
+  // } else {
+  //   console.error('Unknown scene version');
+  // }
 };
 
 Connector.prototype.directConnect = function (sceneNode) {
@@ -644,8 +644,6 @@ Connector.prototype.addElement = function (el) {
         this.setPosition(position);
       }
 
-      this.addDefaultSceneElements();
-
       this.spawned = true;
     }
   } else if (el.is('audio')) {
@@ -809,7 +807,9 @@ Connector.prototype.processMessage = function (el) {
   if (el.is('version')) {
     this.version = {
       scene: el.attr('scene')
-    }
+    };
+    this.addDefaultSceneElements();
+    return;
   }
 
   if (el.is('event')) {

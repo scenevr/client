@@ -2,6 +2,7 @@ var $ = require('jquery');
 var THREE = require('three');
 var CANNON = require('cannon');
 var environment = require('./environment');
+var Utilities = require('../vendor/webvr-manager/util');
 
 /**
  * @author mrdoob / http://mrdoob.com/
@@ -33,6 +34,11 @@ function PointerLockControls (camera, client, mobile, supportsPointerLock) {
 
   this.enabled = false;
 
+  if (Utilities.isMobile()) {
+    this.vrcontrols = new THREE.VRControls(yawObject);
+    yawObject.useQuaternion = true;
+  }
+
   this.setCannonBody = function (x) {
     cannonBody = x;
 
@@ -59,8 +65,8 @@ function PointerLockControls (camera, client, mobile, supportsPointerLock) {
   var PI_2 = Math.PI / 2;
 
   if (mobile) {
-    $('<div />').addClass('direction dpad').appendTo('body');
-    $('<div />').addClass('movement dpad').appendTo('body');
+    $('<div />').addClass('direction dpad').hide().appendTo('body');
+    $('<div />').addClass('movement dpad').hide().appendTo('body');
   }
 
   document.addEventListener('click', function (event) {
@@ -358,6 +364,10 @@ function PointerLockControls (camera, client, mobile, supportsPointerLock) {
     velocity.z = velocity.z * dampingFactor + inputVelocity.z;
 
     yawObject.position.copy(cannonBody.position).add(new THREE.Vector3(0, 0.9, 0));
+
+    if (this.vrcontrols) {
+      this.vrcontrols.update();
+    }
   };
 };
 

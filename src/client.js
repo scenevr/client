@@ -12,9 +12,11 @@ var AssetManager = require('./asset-manager');
 var PointerLockControls = require('./controls');
 var Stats = require('stats-js');
 var Editor = require('./editor');
+var Utilities = require('../vendor/webvr-manager/util');
 
 // sadface
 window.THREE = THREE;
+window.WebVRConfig = {};
 
 require('../vendor/CopyShader.js');
 require('../vendor/EffectComposer.js');
@@ -23,6 +25,11 @@ require('../vendor/RenderPass.js');
 require('../vendor/SSAOShader.js');
 require('../vendor/ShaderPass.js');
 require('../vendor/SkyShader.js');
+require('../vendor/vr-controls.js');
+require('../vendor/vr-effect.js');
+require('webvr-polyfill');
+
+// var WebVRManager = require('../vendor/webvr-manager/webvr-manager');
 
 var Effects = {
   Vanilla: require('./effects/vanilla'),
@@ -66,17 +73,21 @@ Client.prototype.initialize = function () {
   this.createRenderer();
   this.createScene();
   this.addControls();
-  this.addEditor();
+  // this.addEditor();
 
   // Register event handlers
   this.on('click', this.onClick.bind(this));
 
-  if (environment.isMobile()) {
+  if (Utilities.isMobile()) {
     $('body').addClass('mobile');
     $('html,body').on('touchstart touchmove', function (e) {
       // prevent native touch activity like scrolling
       e.preventDefault();
     });
+
+    // Apply VR stereo rendering to renderer.
+    this.vreffect = new THREE.VREffect(this.renderer);
+    this.vreffect.setSize(window.innerWidth, window.innerHeight);
   } else {
     this.addMessageInput();
     this.addPointLockGrab();
@@ -223,6 +234,10 @@ Client.prototype.isConnected = function () {
   return this.connector && this.connector.isConnected();
 };
 
+Client.prototype.isCardboard = function () {
+  return Utilities.isMobile();
+};
+
 Client.prototype.getSceneUrl = function () {
   return this.isConnected() ? this.connector.getUrl() : null;
 };
@@ -298,17 +313,18 @@ Client.prototype.createRenderer = function () {
 
   this.renderer.setSize(width / this.preferences.getState().downSampling, height / this.preferences.getState().downSampling);
   this.renderer.setClearColor(0xFFFFFF);
-  this.renderer.autoClear = false;
+  this.renderer.autoClear = true;
   this.renderer.sortObjects = false;
   this.renderer.shadowMapEnabled = true;
   this.renderer.shadowMapType = THREE.PCFSoftShadowMap;
 
-  window.addEventListener('resize', this.onWindowResize.bind(this), false);
-
   this.effect = new Effects.Vanilla(this, this.renderer);
+
+  window.addEventListener('resize', this.onWindowResize.bind(this), false);
 };
 
 Client.prototype.onWindowResize = function () {
+  var self = this;
   var width = this.container.width();
   var height = this.container.height();
 
@@ -435,7 +451,7 @@ Client.prototype.onClick = function (e) {
           direction: direction,
           normal: intersection.face.normal,
           button: e.button,
-          selectedColor: this.editor.selectedIndex
+          selectedColor: this.editor && this.editor.selectedIndex
         });
 
         return;
@@ -791,6 +807,10 @@ Client.prototype.tick = function () {
     if ((this.effect instanceof Effects.Portal) && (!this.connector.isPortalOpen())) {
       this.effect = new Effects.Vanilla(this, this.renderer);
     }
+  }
+
+  if (Utilities.isMobile()) {
+    this.effect = this.vreffect;
   }
 
   if (!this.stopped && this.scene) {

@@ -557,9 +557,13 @@ Connector.prototype.tick = function () {
       return;
     }
 
-    this.sendMessage(
-      $('<player />').attr('position', this.vectorToWire(position)).attr('rotation', this.vectorToWire(rotation)).attr('velocity', this.vectorToWire(velocity))
-    );
+    var el = $('<player />').attr('position', this.vectorToWire(position)).attr('rotation', this.vectorToWire(rotation)).attr('velocity', this.vectorToWire(velocity))
+
+    if (this.client.isCardboard()) {
+      el.attr('hmd', 'cardboard');
+    }
+
+    this.sendMessage(el);
   }
 };
 
@@ -923,6 +927,11 @@ Connector.prototype.processMessage = function (el) {
   if (el.is('spawn')) {
     obj.position.copy(position);
     return;
+  }
+
+  // Don't display players on a cardboard because they get in the way
+  if (el.is(('player')) && el.attr('hmd') === 'cardboard') {
+    obj.visible = false;
   }
 
   // If we've got to here, check if the position / rotation has changed

@@ -4,8 +4,15 @@ var MTLLoader = require('./mtl-loader');
 var util = require('util');
 var EventEmitter = require('wolfy87-eventemitter');
 var URI = require('uri-js');
-var objLoaderWorker = require('./workers/objloader.js.txt');
+var objLoaderWorker = require('./workers/objloader.txt');
 var $ = require('jquery');
+
+if (objLoaderWorker.match(/module.exports/)) {
+  // some stupid bug with stringify / browserify middleware
+  var text = objLoaderWorker.replace(/module.exports = /, '');
+  text = text.substring(0, text.length - 2);
+  objLoaderWorker = JSON.parse(text);
+}
 
 function Asset (callback, processor, args) {
   for (var key in args) {

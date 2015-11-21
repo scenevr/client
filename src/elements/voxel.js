@@ -6,8 +6,6 @@ var crunch = require('voxel-crunch')
 var environment = require('../environment')
 var palette = require('../data/palette')
 
-console.log(palette)
-
 function Voxel () {
 }
 

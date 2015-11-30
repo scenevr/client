@@ -65,7 +65,7 @@ THREE.VRControls = function ( object, onError ) {
 	this.scale = 1;
 
 	var offset = new THREE.Quaternion
-	offset.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2)
+	offset.setFromAxisAngle(new THREE.Vector3(0, -1, 0), Math.PI / 2)
 
 	this.update = function () {
 
@@ -77,7 +77,9 @@ THREE.VRControls = function ( object, onError ) {
 
 			if ( state.orientation !== null ) {
 
-				object.quaternion.copy( state.orientation );
+				offset.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2)
+				object.quaternion.copy(offset.multiply(state.orientation))
+				// object.quaternion.copy( state.orientation );
 				// object.quaternion.multiply(offset);
 
 			}

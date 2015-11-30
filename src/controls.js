@@ -74,7 +74,7 @@ function PointerLockControls (camera, client, mobile, supportsPointerLock) {
       return;
     }
 
-    client.trigger('click', [event]);
+    client.onClick(event);
   }, false);
 
   document.addEventListener('mousedown', function (event) {
@@ -83,7 +83,7 @@ function PointerLockControls (camera, client, mobile, supportsPointerLock) {
     }
 
     event.preventDefault();
-    client.trigger('mousedown', [event]);
+    //client.trigger('mousedown', [event]);
   }, false);
 
   document.addEventListener('mouseup', function (event) {
@@ -92,7 +92,7 @@ function PointerLockControls (camera, client, mobile, supportsPointerLock) {
     }
 
     event.preventDefault();
-    client.trigger('mouseup', [event]);
+    //client.trigger('mouseup', [event]);
   }, false);
 
   document.addEventListener('mousemove', function (event) {

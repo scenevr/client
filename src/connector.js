@@ -23,6 +23,7 @@ var Player = require('./elements/player');
 var Model = require('./elements/model');
 var Element = require('./elements/element');
 var RenderQueue = require('./render-queue');
+var grid = require('./data/grid.js');
 
 // Constants
 var PLAYER_MAX_HEAD_ANGLE = Math.PI / 4;
@@ -256,7 +257,7 @@ Connector.prototype.unpublishOpentok = function () {
 };
 
 Connector.prototype.addFloor = function () {
-  var floorTexture = THREE.ImageUtils.loadTexture('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAIAAADTED8xAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAgpJREFUeNrs1UENACAMBEEg6DrvdYaBYgBmvv1dsumsqgG/WiZAACAAEAAIAAQAAoC37dshiXXwAUAAIAAQAAgABAACAAGAAEAAIAAQAAgABAACAAGAAEAAIAAQAAgABAACAAGAAEAAIAAQAAgABAACAAGAAEAAIAAQAAgABAACAAGAAEAAIAAQAAgABIAAQAAgABAACAAEAAIAAYAAQAAgABAACAAEAAIAAYAAQAAgABAACAAEAAIAAYAAQAAgABAACAAEAAIAAYAAQAAgABAACAAEAAIAAYAAQAAgABAACAAEAAIAAYAAQAAgAAQAAgABgABAACAAEAAIAAQAAgABgABAACAAEAAIAAQAAgABgABAACAAEAAIAAQAAgABgABAACAAEAAIAAQAAgABgABAACAAEAAIAAQAAgABgABAACAAEAAIAAQAAgABgAAQAAgABAACAAGAAEAAIAAQAAgABAACAAGAAEAAIAAQAAgABAACAAGAAEAAIAAQAAgABAACAAGAAEAAIAAQAAgABAACAAGAAEAAIAAQAAgABAACAAGAAEAAIAAQAAgABIAATIAAQAAgABAACAAEAAIAAYAAQAAgABAACAAEAAIAAYAAQAAgABAACAAEAAIAAYAAQAAgABAACAAEAAIAAYAAQAAgABAACAAEAAIAAYAAQAAgABAACAAEAL0jwAD15AT/wpxqJwAAAABJRU5ErkJggg==');
+  var floorTexture = THREE.ImageUtils.loadTexture(grid);
   floorTexture.wrapS = floorTexture.wrapT = THREE.RepeatWrapping;
   floorTexture.repeat.set(1000, 1000);
 
@@ -298,13 +299,15 @@ Connector.prototype.addLights = function () {
   light.castShadow = true;
   light.shadowDarkness = 0.5;
   light.shadowCameraVisible = false;
+  light.shadowMapWidth = environment.getShadowMapSize()
+  light.shadowMapHeight = environment.getShadowMapSize()
   this.scene.add(light);
 
   // dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
   // dirLight.position.set(1, 0.75, 0.5);
   // this.scene.add(dirLight);
 
-  var ambientLight = new THREE.AmbientLight(0x101010);
+  var ambientLight = new THREE.AmbientLight(0x303030);
   this.scene.add(ambientLight);
 };
 

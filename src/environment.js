@@ -71,4 +71,8 @@ Environment.prototype.getFar = function () {
   return 5000;
 };
 
+Environment.prototype.getShadowMapSize = function () {
+  return 1024;
+};
+
 module.exports = new Environment();

@@ -19,7 +19,7 @@ Box.create = function (connector, el) {
   obj.scale.copy(scale);
 
   obj.castShadow = true;
-  obj.recieveShadow = true;
+  obj.receiveShadow = true;
 
   if (styles.collision === 'none') {
     // No collision at all

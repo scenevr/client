@@ -75,15 +75,13 @@ Client.prototype.initialize = function () {
   this.addControls();
   // this.addEditor();
 
-  // Register event handlers
-  this.on('click', this.onClick.bind(this));
-
   if (Utilities.isMobile()) {
     $('body').addClass('mobile');
     $('html,body').on('touchstart touchmove', function (e) {
       // prevent native touch activity like scrolling
       e.preventDefault();
     });
+    $('#stats, #view-source, header').hide()
 
     // Apply VR stereo rendering to renderer.
     this.vreffect = new THREE.VREffect(this.renderer);
@@ -148,6 +146,8 @@ Client.prototype.unloadScene = function () {
 Client.prototype.loadScene = function (sceneProxy) {
   var self = this;
 
+  this.url = sceneProxy;
+  
   if (this.connector) {
     this.unloadScene();
     this.connector.destroy();
@@ -259,16 +259,16 @@ Client.prototype.createStats = function () {
   this.stats.rendering.domElement.style.right = '10px';
   this.container.append(this.stats.rendering.domElement);
 
-  this.stats.connector = new Stats();
-  this.stats.connector.setMode(1);
-  this.stats.connector.domElement.style.position = 'absolute';
-  this.stats.connector.domElement.style.bottom = '70px';
-  this.stats.connector.domElement.style.zIndex = 110;
-  this.stats.connector.domElement.style.right = '10px';
-  if (environment.isMobile()) {
-    this.stats.connector.domElement.style.display = 'none';
-  }
-  this.container.append(this.stats.connector.domElement);
+  // this.stats.connector = new Stats();
+  // this.stats.connector.setMode(1);
+  // this.stats.connector.domElement.style.position = 'absolute';
+  // this.stats.connector.domElement.style.bottom = '70px';
+  // this.stats.connector.domElement.style.zIndex = 110;
+  // this.stats.connector.domElement.style.right = '10px';
+  // if (environment.isMobile()) {
+  //   this.stats.connector.domElement.style.display = 'none';
+  // }
+  // this.container.append(this.stats.connector.domElement);
 };
 
 Client.prototype.createRenderer = function () {
@@ -343,12 +343,16 @@ Client.prototype.onWindowResize = function () {
 Client.prototype.enableControls = function () {
   this.controls.enabled = true;
   this.hideInstructions();
-  this.reticule.show();
+
+  if (!Utilities.isMobile()) {
+    this.reticule.show();
+  }
 };
 
 Client.prototype.disableControls = function () {
   this.controls.enabled = false;
   this.reticule.hide();
+  this.exitPointerLock();
 };
 
 Client.prototype.getDropPosition = function () {
@@ -415,22 +419,23 @@ Client.prototype.inspectResult = function (el) {
 };
 
 Client.prototype.onClick = function (e) {
+  var self = this;
   var position = this.controls.getObject().position;
   var direction = this.controls.getDirection(new THREE.Vector3());
 
   this.raycaster.set(position, direction);
   this.raycaster.far = 5.0;
 
-  var _i, _len, _ref = this.raycaster.intersectObjects(this.getAllClickableObjects());
-
-  for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-    var intersection = _ref[_i];
-
+  this.raycaster.intersectObjects(this.getAllClickableObjects()).forEach(function (intersection) {
     var iEvent = {
       position: position,
       direction: direction,
       intersection: intersection,
       target: intersection.object.userData
+    }
+
+    if (iEvent.target.attr('uuid')) {
+      self.emit('click', iEvent);
     }
 
     if (intersection.object && intersection.object.parent && intersection.object.parent.userData.is && intersection.object.parent.userData.is('link')) {
@@ -445,7 +450,7 @@ Client.prototype.onClick = function (e) {
 
     while (obj.parent) {
       if (obj.userData instanceof $) {
-        this.connector.onClick({
+        self.connector.onClick({
           uuid: obj.name,
           point: intersection.point,
           direction: direction,
@@ -458,7 +463,7 @@ Client.prototype.onClick = function (e) {
       }
       obj = obj.parent;
     }
-  }
+  });
 };
 
 Client.prototype.addMessageInput = function () {
@@ -726,7 +731,7 @@ Client.prototype.addPlayerBody = function () {
 };
 
 Client.prototype.addReticule = function () {
-  this.reticule = $('<div />').addClass('aiming-point').appendTo(this.container);
+  this.reticule = $('<div />').addClass('aiming-point').hide().appendTo(this.container);
 };
 
 Client.prototype.addControls = function () {

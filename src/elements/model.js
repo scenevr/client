@@ -23,6 +23,12 @@ Model.create = function (connector, el) {
     });
   }
 
+  if (styles.metal) {
+    material = new THREE.MeshPhongMaterial({
+      color: styles['color']
+    });
+  }
+
   if (styles.lightMap || styles.textureMap) {
     material = styles.textureMap ? new THREE.MeshLambertMaterial({ color: 0x808080 }) : new THREE.MeshBasicMaterial({ });
 
@@ -76,7 +82,9 @@ Model.create = function (connector, el) {
       object.traverse(function (child) {
         if (child instanceof THREE.Mesh) {
           child.material = material;
-        };
+          child.castShadow = true;
+          child.receiveShadow = true;
+          };
       });
     }
 

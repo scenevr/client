@@ -628,8 +628,6 @@ Connector.prototype.addElement = function (el) {
   var element;
 
   if (el.is('spawn')) {
-    console.log('wut?');
-
     this.addDefaultSceneElements();
 
     obj = new THREE.Object3D();

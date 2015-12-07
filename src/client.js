@@ -426,6 +426,7 @@ Client.prototype.onClick = function (e) {
   this.raycaster.set(position, direction);
   this.raycaster.far = 5.0;
 
+  // fixme - the search for the userData node is pretty ganky
   this.raycaster.intersectObjects(this.getAllClickableObjects()).forEach(function (intersection) {
     var iEvent = {
       position: position,
@@ -434,7 +435,7 @@ Client.prototype.onClick = function (e) {
       target: intersection.object.userData
     }
 
-    if (iEvent.target.attr('uuid')) {
+    if (iEvent.target && iEvent.target.attr && iEvent.target.attr('uuid')) {
       self.emit('click', iEvent);
     }
 

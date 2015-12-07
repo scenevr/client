@@ -299,8 +299,6 @@ Connector.prototype.addLights = function () {
   light.castShadow = true;
   light.shadowDarkness = 0.5;
   light.shadowCameraVisible = false;
-  light.shadowMapWidth = environment.getShadowMapSize()
-  light.shadowMapHeight = environment.getShadowMapSize()
   this.scene.add(light);
 
   // dirLight = new THREE.DirectionalLight(0xffffff, 0.5);

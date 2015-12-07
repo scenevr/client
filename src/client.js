@@ -311,7 +311,7 @@ Client.prototype.createRenderer = function () {
     this.composer = new THREE.EffectComposer(this.renderer);
   }
 
-  this.renderer.setSize(width / this.preferences.getState().downSampling, height / this.preferences.getState().downSampling);
+  this.renderer.setSize(width / environment.getDownsampling(), height / environment.getDownsampling());
   this.renderer.setClearColor(0xFFFFFF);
   this.renderer.autoClear = true;
   this.renderer.sortObjects = false;
@@ -330,7 +330,7 @@ Client.prototype.onWindowResize = function () {
 
   this.camera.aspect = width / height;
   this.camera.updateProjectionMatrix();
-  this.renderer.setSize(width / this.preferences.getState().downSampling, height / this.preferences.getState().downSampling);
+  this.renderer.setSize(width / environment.getDownsampling(), height / environment.getDownsampling());
 
   this.domElement.css({
     width: width,

@@ -19,6 +19,10 @@ Environment.prototype.antiAliasingEnabled = function () {
   return true;
 };
 
+Environment.prototype.getDownsampling = function () {
+  return 1.0;
+};
+
 Environment.prototype.getWalkSpeed = function () {
   return 2.5;
 };
@@ -72,7 +76,7 @@ Environment.prototype.getFar = function () {
 };
 
 Environment.prototype.getShadowMapSize = function () {
-  return 1024;
+  return 512;
 };
 
 module.exports = new Environment();

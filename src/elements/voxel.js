@@ -7,12 +7,23 @@ var environment = require('../environment')
 var palette = require('../data/palette')
 var grid = require('../data/grid.js')
 
+var SIZE = 32
+
 function Voxel () {
 }
 
 Voxel.create = function (connector, el) {
   //Voxel resolution
-  var resolution = [32, 32, 32]
+  var resolution = [SIZE, SIZE, SIZE]
+
+  if (el.attr('resolution')) {
+    resolution = el.attr('resolution').split(' ').map(function (x) {
+      return parseInt(x, 10)
+    })
+  }
+
+  console.log(el.attr('resolution'))
+  console.log(resolution)
 
   var src = el.attr('src').replace(/^data:/, '')
   var voxels = new Uint8Array(atob(src).split("").map(function(c) { return c.charCodeAt(0) }))

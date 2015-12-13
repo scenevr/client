@@ -36,7 +36,7 @@ Environment.prototype.getJumpImpulse = function () {
 };
 
 Environment.prototype.updateHertz = function () {
-  return 10;
+  return 5;
 };
 
 Environment.prototype.isMobile = function () {

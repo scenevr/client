@@ -14,6 +14,7 @@ function Voxel () {
 
 Voxel.create = function (connector, el) {
   //Voxel resolution
+
   var resolution = [SIZE, SIZE, SIZE]
 
   if (el.attr('resolution')) {

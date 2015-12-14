@@ -299,6 +299,7 @@ Connector.prototype.addLights = function () {
   light.castShadow = true;
   light.shadowDarkness = 0.5;
   light.shadowCameraVisible = false;
+  light.shadowBias = -0.001;
   this.scene.add(light);
 
   // dirLight = new THREE.DirectionalLight(0xffffff, 0.5);

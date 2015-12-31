@@ -165,7 +165,7 @@ Client.prototype.loadScene = function (sceneProxy) {
   this.addPlayerBody();
 
   // Init connector
-  if (sceneProxy.scene) {
+  if (sceneProxy.isLocalServer) {
     this.connector = new Connector(this, this.scene, this.world, 'http://localhost/');
     this.connector.directConnect(sceneProxy);
   } else {

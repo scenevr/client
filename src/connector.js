@@ -112,6 +112,11 @@ Connector.prototype.vectorToWire = function (a) {
 };
 
 Connector.prototype.onAuthenticationReady = function () {
+  if (!this.client) {
+    console.log('Authentication not enabled.');
+    return;
+  }
+
   if (this.client.authentication.isLoggedIn()) {
     this.authenticate();
   } else {
@@ -412,11 +417,19 @@ Connector.prototype.isConnected = function () {
 };
 
 Connector.prototype.disconnect = function () {
-  this.ws.onopen = null;
-  this.ws.onclose = null;
-  this.ws.onmessage = null;
-  this.ws.close();
-  delete this.ws;
+  if (this.ws) {
+    this.ws.onopen = null;
+    this.ws.onclose = null;
+    this.ws.onmessage = null;
+    this.ws.close();
+    delete this.ws;
+  }
+
+  if (this.dc) {
+    // todo - disconnect somehow
+    this.dc.emit('close');
+    delete this.dc;
+  }
 };
 
 Connector.prototype.reconnect = function () {
@@ -461,15 +474,37 @@ Connector.prototype.addDefaultSceneElements = function () {
   // }
 };
 
-Connector.prototype.directConnect = function (sceneNode) {
+// LocalServer is defined in the hosting app
+Connector.prototype.directConnect = function (localServer) {
   var self = this;
 
-  setTimeout(function () {
-    self.trigger('connected');
-  }, 100);
+  this.dc = new EventEmitter()
 
-  // var packet = "<packet>" + sceneNode.scene.childNodes.map(function (node) { node.outerXML }).join("\n") + "</packet>";
-  // this.onMessage(packet);
+  this.dc.onopen = function () {
+    self.trigger('connected');
+    if (self.client) {
+      self.interval = setInterval(self.tick.bind(self), 1000 / environment.updateHertz());
+    }
+  }
+
+  this.dc.onclose = function () {
+    clearInterval(self.interval);
+    self.trigger('disconnected');
+  };
+
+  // this.dc.onmessage = function (e) {
+  //   self.onMessage(e);
+  // };
+
+  this.dc.send = function (e) {
+    self.onMessage({ data: e });
+  };
+
+  this.dc.close = function () {
+    console.log('Tried to close the direct connection');
+  }
+
+  localServer.emit('connection', this.dc);
 };
 
 Connector.prototype.connect = function () {
@@ -480,6 +515,11 @@ Connector.prototype.connect = function () {
   // fixme: Make all websockets connections on port 8080, instead of this hack for scenevr.hosting.
   if (this.uri.host.match(/scenevr\.hosting/)) {
     this.uri.port = '8080';
+  }
+
+  if (this.uri.scheme.match(/http/)) {
+    console.log('Not reconnecting to http...');
+    return;
   }
 
   this.ws = new WebSocket(URI.serialize(this.uri), 'scenevr');

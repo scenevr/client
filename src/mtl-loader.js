@@ -1,4 +1,4 @@
-var THREE = require('three');
+var THREE = require('three.js');
 
 /**
  * Loads a Wavefront .mtl file specifying materials

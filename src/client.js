@@ -1,5 +1,5 @@
 var $ = require('jquery');
-var THREE = require('three');
+var THREE = require('three.js');
 var util = require('util');
 var Connector = require('./connector');
 var environment = require('./environment');
@@ -13,6 +13,8 @@ var PointerLockControls = require('./controls');
 var Stats = require('stats-js');
 var Editor = require('./editor');
 var Utilities = require('../vendor/webvr-manager/util');
+var VrButton = require('./components/vr-button');
+var WebvrDetector = require('./lib/webvr-detector');
 
 // sadface
 window.THREE = THREE;
@@ -62,6 +64,8 @@ function Client (container, options) {
 util.inherits(Client, EventEmitter);
 
 Client.prototype.initialize = function () {
+  var self = this;
+
   $('.sk-spinner').remove();
 
   this.assetManager = new AssetManager(this);
@@ -73,6 +77,18 @@ Client.prototype.initialize = function () {
   this.createRenderer();
   this.createScene();
   this.addControls();
+
+  WebvrDetector(function (err, device) {
+    if (err) {
+      throw err;
+    }
+
+    if (device) {
+      self.addVRButton(self.onEnterVR.bind(self, device));
+      self.addVRHandlers();
+    }
+  });
+
   // this.addEditor();
 
   if (Utilities.isMobile()) {
@@ -81,7 +97,7 @@ Client.prototype.initialize = function () {
       // prevent native touch activity like scrolling
       e.preventDefault();
     });
-    $('#stats, #view-source, header').hide()
+    $('#stats, #view-source, header').hide();
 
     // Apply VR stereo rendering to renderer.
     this.vreffect = new THREE.VREffect(this.renderer);
@@ -93,6 +109,40 @@ Client.prototype.initialize = function () {
 
   // Start renderer
   this.tick();
+};
+
+Client.prototype.addVRButton = function (callback) {
+  this.vrButton = VrButton(callback);
+  this.container[0].appendChild(this.vrButton);
+};
+
+Client.prototype.addVRHandlers = function () {
+  var self = this;
+
+  function exitFullscreen () {
+    if (document.webkitFullscreenElement === null || document.mozFullScreenElement === null) {
+      self.effect = new Effects.Vanilla(self, self.renderer);
+      self.hmd = null;
+    }
+  }
+
+  document.addEventListener('webkitfullscreenchange', exitFullscreen);
+  document.addEventListener('mozfullscreenchange', exitFullscreen);
+};
+
+Client.prototype.onEnterVR = function (hmd) {
+  var body = document.body;
+
+  this.hmd = hmd;
+
+  this.vreffect = new THREE.VREffect(this.renderer);
+  this.vreffect.setSize(window.innerWidth, window.innerHeight);
+
+  if (body.mozRequestFullScreen) {
+    body.mozRequestFullScreen({vrDisplay: hmd});
+  } else if (body.webkitRequestFullscreen) {
+    body.webkitRequestFullscreen({vrDisplay: hmd});
+  }
 };
 
 Client.prototype.addEditor = function () {
@@ -165,13 +215,8 @@ Client.prototype.loadScene = function (sceneProxy) {
   this.addPlayerBody();
 
   // Init connector
-  if (sceneProxy.isLocalServer) {
-    this.connector = new Connector(this, this.scene, this.world, 'http://localhost/');
-    this.connector.directConnect(sceneProxy);
-  } else {
-    this.connector = new Connector(this, this.scene, this.world, sceneProxy);
-    this.connector.connect();
-  }
+  this.connector = new Connector(this, this.scene, this.world, sceneProxy);
+  this.connector.connect();
 
   this.addConnecting();
 
@@ -293,7 +338,7 @@ Client.prototype.createRenderer = function () {
 
   this.renderer = new THREE.WebGLRenderer({
     antialias: environment.antiAliasingEnabled(),
-    alpha: false,
+    alpha: true,
     // precision: 'lowp',
     canvas: this.domElement[0],
     preserveDrawingBuffer: true
@@ -819,6 +864,10 @@ Client.prototype.tick = function () {
     this.effect = this.vreffect;
   }
 
+  if (this.hmd) {
+    this.effect = this.vreffect;
+  }
+
   if (!this.stopped && this.scene) {
     this.stats.rendering.begin();
 
@@ -832,6 +881,11 @@ Client.prototype.tick = function () {
   if (environment.isLowPowerMode()) {
     setTimeout(this.tick.bind(this), 1000 / 12);
   } else {
+    // setTimeout(function () {
+    //   window.requestAnimationFrame(function () {
+    //     self.tick();
+    //   });
+    // }, 1000 / 60);
     window.requestAnimationFrame(this.tick.bind(this));
   }
 };

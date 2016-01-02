@@ -14,7 +14,7 @@
     "ndarray-ops": "^1.2.2",
     "stats-js": "^1.0.0-alpha1",
     "stringify": "^3.1.0",
-    "three": "^0.69.0",
+    "three": "mrdoob/three.js",
     "tween.js": "~0.14.0",
     "uri-js": "~1.4.2",
     "util": "^0.10.3",

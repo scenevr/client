@@ -3,7 +3,7 @@
 var $ = require('jquery');
 var util = require('util');
 var Utils = require('./utils');
-var THREE = require('three');
+var THREE = require('three.js');
 var URI = require('uri-js');
 var environment = require('./environment');
 var StyleMap = require('./style-map');
@@ -39,10 +39,16 @@ function Connector (client, scene, physicsWorld, uri, isPortal, referrer) {
   this.client = client;
   this.scene = scene;
   this.physicsWorld = physicsWorld;
-  this.uri = URI.parse(uri);
 
-  this.assetUri = URI.parse(uri);
-  this.assetUri.scheme = 'http';
+  if (uri.isLocalServer) {
+    this.uri = uri;
+    this.assetUri = URI.parse(window.location);
+    this.assetUri.scheme = 'http';
+  } else {
+    this.uri = URI.parse(uri);
+    this.assetUri = URI.parse(uri);
+    this.assetUri.scheme = 'http';
+  }
 
   this.isPortal = isPortal || false;
   this.referrer = referrer || null;
@@ -445,7 +451,7 @@ Connector.prototype.restartConnection = function () {
   }
 
   clearInterval(this.interval);
-  setTimeout(this.reconnect.bind(this), 500);
+  setTimeout(this.reconnect.bind(this), 100);
 };
 
 Connector.prototype.addViewSourceButton = function () {
@@ -475,7 +481,8 @@ Connector.prototype.addDefaultSceneElements = function () {
 };
 
 // LocalServer is defined in the hosting app
-Connector.prototype.directConnect = function (localServer) {
+Connector.prototype.directConnect = function () {
+  var localServer = this.uri;
   var self = this;
 
   this.dc = new EventEmitter()
@@ -508,6 +515,11 @@ Connector.prototype.directConnect = function (localServer) {
 };
 
 Connector.prototype.connect = function () {
+  if (this.uri.isLocalServer) {
+    this.directConnect();
+    return;
+  }
+
   if (!this.uri.host || !this.uri.path.match(/^\//)) {
     throw new Error('Invalid uri ' + URI.serialize(this.uri));
   }
@@ -515,11 +527,6 @@ Connector.prototype.connect = function () {
   // fixme: Make all websockets connections on port 8080, instead of this hack for scenevr.hosting.
   if (this.uri.host.match(/scenevr\.hosting/)) {
     this.uri.port = '8080';
-  }
-
-  if (this.uri.scheme.match(/http/)) {
-    console.log('Not reconnecting to http...');
-    return;
   }
 
   this.ws = new WebSocket(URI.serialize(this.uri), 'scenevr');
@@ -610,7 +617,7 @@ Connector.prototype.tick = function () {
 };
 
 Connector.prototype.getAssetHost = function () {
-  return 'http://' + this.uri.host + ':' + (this.uri.port || 80);
+  return 'http://' + this.assetUri.host + ':' + (this.assetUri.port || 80);
 };
 
 Connector.prototype.createLink = function (el) {

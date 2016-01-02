@@ -1,10 +1,11 @@
-var THREE = require('three');
+var THREE = require('three.js');
 var $ = require('jquery');
 var Utils = require('../utils');
 var URI = require('uri-js');
 var CANNON = require('cannon');
 var html2canvas = require('html2canvas');
 var environment = require('../environment');
+var spinner = require('../data/spinner.js');
 
 // fixme - this sucks.
 if (!window.html2canvas) {
@@ -18,7 +19,7 @@ function Billboard () {
 
 Billboard.getLoadingMaterial = function () {
   if (!this._loadingMaterial) {
-    var texture = THREE.ImageUtils.loadTexture(environment.getBaseUrl() + '/images/spinner.png');
+    var texture = THREE.ImageUtils.loadTexture(spinner);
 
     this._loadingMaterial = new THREE.MeshBasicMaterial({
       fog: true,

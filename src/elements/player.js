@@ -1,4 +1,4 @@
-var THREE = require('three');
+var THREE = require('three.js');
 var environment = require('../environment');
 
 function Player () {

@@ -1,5 +1,5 @@
 var StyleMap = require('../style-map');
-var THREE = require('three');
+var THREE = require('three.js');
 
 var DEFAULT_COLOR = '#ffffff';
 var DEFAULT_NEAR = 100;

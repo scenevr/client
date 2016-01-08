@@ -20,16 +20,21 @@ var WebvrDetector = require('./lib/webvr-detector');
 window.THREE = THREE;
 window.WebVRConfig = {};
 
-require('../vendor/CopyShader.js');
-require('../vendor/EffectComposer.js');
-require('../vendor/MaskPass.js');
-require('../vendor/RenderPass.js');
-require('../vendor/SSAOShader.js');
-require('../vendor/ShaderPass.js');
-require('../vendor/SkyShader.js');
+// require('../vendor/CopyShader.js');
+// require('../vendor/EffectComposer.js');
+// require('../vendor/MaskPass.js');
+// require('../vendor/RenderPass.js');
+// require('../vendor/SSAOShader.js');
+// require('../vendor/ShaderPass.js');
+// require('../vendor/SkyShader.js');
 require('../vendor/vr-controls.js');
 require('../vendor/vr-effect.js');
 require('webvr-polyfill');
+
+// For 3d text
+require('../vendor/font-utils.js');
+require('../vendor/text-geometry.js');
+require('./data/helvetiker-bold.js');
 
 // var WebVRManager = require('../vendor/webvr-manager/webvr-manager');
 
@@ -46,7 +51,7 @@ var Templates = {
   instructions: function (args) {
     return '<div id="instructions"><h1>Click on the scene to join</h1><p>' +
       (args.supportsPointerLock ? 'W, A, S, D = Move, SPACE = jump, MOUSE = Look around' : 'Hold shift to run. Hold V or T for voice chat.') +
-      '</p><p>Arrow keys = Move, SPACE = jump<.p><p>Click the orange globes to open portals.';
+      '</p><p>Arrow keys = Move, SPACE = jump</p><p>Click the orange globes to open portals.';
   },
   connecting: function (args) {
     return '<div class="connecting"><h1>Connecting</h1><p>SceneVR is connecting to <b>' + args.host + '</b>';
@@ -119,6 +124,9 @@ Client.prototype.addVRButton = function (callback) {
 Client.prototype.addVRHandlers = function () {
   var self = this;
 
+  this.vreffect = new THREE.VREffect(this.renderer);
+  this.vreffect.setSize(window.innerWidth, window.innerHeight);
+
   function exitFullscreen () {
     if (document.webkitFullscreenElement === null || document.mozFullScreenElement === null) {
       self.effect = new Effects.Vanilla(self, self.renderer);
@@ -131,18 +139,8 @@ Client.prototype.addVRHandlers = function () {
 };
 
 Client.prototype.onEnterVR = function (hmd) {
-  var body = document.body;
-
+  this.vreffect.setFullScreen(true);
   this.hmd = hmd;
-
-  this.vreffect = new THREE.VREffect(this.renderer);
-  this.vreffect.setSize(window.innerWidth, window.innerHeight);
-
-  if (body.mozRequestFullScreen) {
-    body.mozRequestFullScreen({vrDisplay: hmd});
-  } else if (body.webkitRequestFullscreen) {
-    body.webkitRequestFullscreen({vrDisplay: hmd});
-  }
 };
 
 Client.prototype.addEditor = function () {
@@ -155,25 +153,6 @@ Client.prototype.createScene = function () {
 
 Client.prototype.setScene = function (scene) {
   this.scene = scene;
-
-  if (environment.ambientOcclusionEnabled()) {
-    var width = this.container.width();
-    var height = this.container.height();
-
-    this.composer = new THREE.EffectComposer(this.renderer);
-    this.composer.addPass(new THREE.RenderPass(this.scene, this.camera));
-
-    this.depthTarget = new THREE.WebGLRenderTarget(width, height, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, format: THREE.RGBAFormat });
-
-    var effect = new THREE.ShaderPass(THREE.SSAOShader);
-    effect.uniforms['tDepth'].value = this.depthTarget;
-    effect.uniforms['size'].value.set(width, height);
-    effect.uniforms['cameraNear'].value = this.camera.near;
-    effect.uniforms['cameraFar'].value = this.camera.far;
-    effect.renderToScreen = true;
-
-    this.composer.addPass(effect);
-  }
 };
 
 Client.prototype.createCamera = function () {
@@ -193,11 +172,11 @@ Client.prototype.unloadScene = function () {
   delete this.world;
 };
 
-Client.prototype.loadScene = function (sceneProxy) {
+Client.prototype.loadScene = function (sceneProxy, position) {
   var self = this;
 
   this.url = sceneProxy;
-  
+
   if (this.connector) {
     this.unloadScene();
     this.connector.destroy();
@@ -215,12 +194,12 @@ Client.prototype.loadScene = function (sceneProxy) {
   this.addPlayerBody();
 
   // Init connector
-  this.connector = new Connector(this, this.scene, this.world, sceneProxy);
-  this.connector.connect();
-
+  var connector = new Connector(this, this.scene, this.world, sceneProxy);
+  connector.connect();
+  this.connector = connector;
   this.addConnecting();
 
-  this.connector.on('connected', function () {
+  connector.on('connected', function () {
     if (environment.isMobile()) {
       self.enableControls();
     } else {
@@ -230,11 +209,11 @@ Client.prototype.loadScene = function (sceneProxy) {
     self.setTitle();
   });
 
-  this.connector.on('disconnected', function () {
+  connector.on('disconnected', function () {
     self.addConnectionError();
   });
 
-  this.connector.on('restarting', function () {
+  connector.on('restarting', function () {
     self.showMessage('Reconnecting...');
   });
 };
@@ -338,23 +317,12 @@ Client.prototype.createRenderer = function () {
 
   this.renderer = new THREE.WebGLRenderer({
     antialias: environment.antiAliasingEnabled(),
-    alpha: true,
+    alpha: false,
     // precision: 'lowp',
     canvas: this.domElement[0],
     preserveDrawingBuffer: true
   });
-
-  if (environment.ambientOcclusionEnabled()) {
-    // depth
-    var depthShader = THREE.ShaderLib['depthRGBA'];
-    var depthUniforms = THREE.UniformsUtils.clone(depthShader.uniforms);
-
-    this.depthMaterial = new THREE.ShaderMaterial({ fragmentShader: depthShader.fragmentShader, vertexShader: depthShader.vertexShader, uniforms: depthUniforms });
-    this.depthMaterial.blending = THREE.NoBlending;
-
-    // postprocessing
-    this.composer = new THREE.EffectComposer(this.renderer);
-  }
+  this.renderer.setPixelRatio(window.devicePixelRatio);
 
   this.renderer.setSize(width / environment.getDownsampling(), height / environment.getDownsampling());
   this.renderer.setClearColor(0xFFFFFF);
@@ -369,7 +337,6 @@ Client.prototype.createRenderer = function () {
 };
 
 Client.prototype.onWindowResize = function () {
-  var self = this;
   var width = this.container.width();
   var height = this.container.height();
 
@@ -441,26 +408,11 @@ Client.prototype.consoleLog = function (msg) {
 };
 
 Client.prototype.setTitle = function () {
-  document.title = 'Scene :: ' + this.connector.getTitle();
+  document.title = 'SceneVR - ' + this.connector.getTitle();
 };
 
 Client.prototype.inspect = function (el) {
   this.connector.inspectElement(el);
-};
-
-Client.prototype.inspectResult = function (el) {
-  // var textarea = $('#editor textarea');
-  // var src = textarea.val();
-  // var startIndex = parseInt(el.attr('startindex'), 10);
-  // var newLines = src.substr(0, startIndex).match(/\n/g) || [];
-  // var lineNumber = newLines.length + 1;
-
-  // console.log(startIndex);
-  // console.log(lineNumber);
-
-  // textarea.focus();
-  // textarea[0].selectionStart = startIndex;
-  // this.client.exitPointerLock();
 };
 
 Client.prototype.onClick = function (e) {
@@ -734,7 +686,7 @@ Client.prototype.addDirectionArrow = function () {
 Client.prototype.addPlayerBody = function () {
   var self = this;
 
-  this.world.defaultContactMaterial.friction = 0.0
+  this.world.defaultContactMaterial.friction = 0.0;
 
   this.playerBody = new CANNON.Body({
     mass: 100
@@ -858,18 +810,22 @@ Client.prototype.tick = function () {
     if ((this.effect instanceof Effects.Portal) && (!this.connector.isPortalOpen())) {
       this.effect = new Effects.Vanilla(this, this.renderer);
     }
+
+    this.connector.update(this.getPlayerObject());
   }
 
   if (Utilities.isMobile()) {
     this.effect = this.vreffect;
   }
 
-  if (this.hmd) {
-    this.effect = this.vreffect;
-  }
-
   if (!this.stopped && this.scene) {
     this.stats.rendering.begin();
+
+    if (this.hmd) {
+      this.vreffect.render(this.scene, this.camera);
+    } else {
+      this.effect.render(this.scene, this.camera);
+    }
 
     this.effect.render(this.scene, this.camera);
 
@@ -881,11 +837,6 @@ Client.prototype.tick = function () {
   if (environment.isLowPowerMode()) {
     setTimeout(this.tick.bind(this), 1000 / 12);
   } else {
-    // setTimeout(function () {
-    //   window.requestAnimationFrame(function () {
-    //     self.tick();
-    //   });
-    // }, 1000 / 60);
     window.requestAnimationFrame(this.tick.bind(this));
   }
 };

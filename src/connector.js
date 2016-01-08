@@ -13,10 +13,12 @@ var EventEmitter = require('wolfy87-eventemitter');
 var Billboard = require('./elements/billboard');
 var Audio = require('./elements/audio');
 var Box = require('./elements/box');
+var Group = require('./elements/group');
 var Voxel = require('./elements/voxel');
 var Sphere = require('./elements/sphere');
 var Skybox = require('./elements/skybox');
 var Fog = require('./elements/fog');
+var Text = require('./elements/text');
 var Utils = require('./utils');
 var Plane = require('./elements/plane');
 var Player = require('./elements/player');
@@ -270,14 +272,14 @@ Connector.prototype.unpublishOpentok = function () {
 Connector.prototype.addFloor = function () {
   var floorTexture = THREE.ImageUtils.loadTexture(grid);
   floorTexture.wrapS = floorTexture.wrapT = THREE.RepeatWrapping;
-  floorTexture.repeat.set(1000, 1000);
+  floorTexture.repeat.set(128, 128);
 
   var floorMaterial = new THREE.MeshBasicMaterial({
     fog: true,
     map: floorTexture
   });
 
-  var floorGeometry = new THREE.PlaneBufferGeometry(1000, 1000, 1, 1);
+  var floorGeometry = new THREE.PlaneBufferGeometry(128, 128, 1, 1);
   var floor = new THREE.Mesh(floorGeometry, floorMaterial);
   floor.position.y = 0;
   floor.rotation.x = -Math.PI / 2;
@@ -303,15 +305,29 @@ Connector.prototype.addSky = function () {
   this.scene.add(this.sky.mesh);
 };
 
+Connector.prototype.update = function (player) {
+  var p = player.position;
+
+  if (this.sunlight) {
+    this.sunlight.position.copy(p.clone().add(new THREE.Vector3(0.75, 1, 0.5).multiplyScalar(100)));
+    this.sunlight.lookAt(p);
+  }
+};
+
 Connector.prototype.addLights = function () {
   var light = new THREE.SpotLight(0xffffff, 1.1);
   light.position.copy(new THREE.Vector3(0.75, 1, 0.5).multiplyScalar(100));
   light.lookAt(new THREE.Vector3(0, 0, 0));
   light.castShadow = true;
   light.shadowDarkness = 0.5;
-  light.shadowCameraVisible = false;
-  light.shadowBias = -0.001;
+  // light.shadowCameraVisible = true;
+
+  light.shadowCameraNear = 10;
+  light.shadowCameraFar = 200;
+  light.shadowCameraFov = 50;
+
   this.scene.add(light);
+  this.sunlight = light;
 
   // dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
   // dirLight.position.set(1, 0.75, 0.5);
@@ -668,7 +684,8 @@ Connector.prototype.getUrlFromStyle = function (value) {
   }
 };
 
-Connector.prototype.addElement = function (el) {
+Connector.prototype.addElement = function (el, parentObject) {
+  var self = this;
   var uuid = el.attr('uuid');
   var position = el.attr('position') && Utils.parseVector(el.attr('position'));
   var quaternion = el.attr('rotation') && new THREE.Quaternion().setFromEuler(Utils.parseEuler(el.attr('rotation')));
@@ -708,6 +725,15 @@ Connector.prototype.addElement = function (el) {
     obj = Billboard.create(this, el);
   } else if (el.is('box')) {
     obj = Box.create(this, el);
+  } else if (el.is('text')) {
+    obj = Text.create(this, el);
+  } else if (el.is('group')) {
+    console.log(el[0].outerHTML);
+    obj = Group.create(this, el);
+
+    el.children().each(function (index, child) {
+      self.addElement($(child), obj);
+    });
   } else if (el.is('voxel')) {
     obj = Voxel.create(this, el);
   } else if (el.is('sphere')) {
@@ -765,7 +791,7 @@ Connector.prototype.addElement = function (el) {
     }
   }
 
-  this.scene.add(obj);
+  parentObject.add(obj);
 
   if (el.attr('style')) {
     var styles = new StyleMap(el.attr('style'));
@@ -776,29 +802,31 @@ Connector.prototype.addElement = function (el) {
       obj.visible = true;
     }
 
-    if (el.is('sphere,box,plane') && styles.color) {
-      obj.material.setValues({
+    var material = (obj.material instanceof THREE.MultiMaterial) ? obj.material.materials[0] : obj.material;
+
+    if (el.is('sphere,box,plane,text') && styles.color) {
+      material.setValues({
         color: styles.color,
         ambient: styles.color
       });
     }
 
-    if (el.is('sphere,box,plane') && styles.opacity) {
-      obj.material.setValues({
+    if (el.is('sphere,box,plane,text') && styles.opacity) {
+      material.setValues({
         opacity: parseFloat(styles.opacity),
         transparent: true
       });
     }
 
-    if (el.is('sphere,box,plane') && styles.emissiveColor) {
-      obj.material.setValues({
+    if (el.is('sphere,box,plane,text') && styles.emissiveColor) {
+      material.setValues({
         color: 0x000000,
         emissive: styles.emissiveColor
       });
     }
 
-    if (el.is('sphere,box,plane') && styles.doubleSided) {
-      obj.material.setValues({
+    if (el.is('sphere,box,plane,text') && styles.doubleSided) {
+      material.setValues({
         side: THREE.DoubleSide
       });
     }
@@ -959,7 +987,7 @@ Connector.prototype.processMessage = function (el) {
   }
 
   if (!obj) {
-    obj = this.addElement(el);
+    obj = this.addElement(el, this.scene);
 
     // Not all elements are represented by an Object3D, so they don't return anything from #addElement
     if (obj && obj.body) {
@@ -1056,19 +1084,24 @@ Connector.prototype.processMessage = function (el) {
 
 Connector.prototype.onMessage = function (e) {
   var self = this;
-  var xml = $.parseXML(e.data);
-  var packet = xml.firstChild;
 
-  if (packet.nodeName !== 'packet') {
-    console.log('Invalid packet from server');
-    return;
+  if (e.data instanceof ArrayBuffer) {
+    // probably voice message - do something...
+  } else {
+    var xml = $.parseXML(e.data);
+    var packet = xml.firstChild;
+
+    if (packet.nodeName !== 'packet') {
+      console.log('Invalid packet from server');
+      return;
+    }
+
+    var children = $(packet).children();
+
+    children.each(function (index, el) {
+      self.processMessage($(el));
+    });
   }
-
-  var children = $(packet).children();
-
-  children.each(function (index, el) {
-    self.processMessage($(el));
-  });
 };
 
 module.exports = Connector;

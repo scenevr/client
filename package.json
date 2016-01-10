@@ -1,6 +1,6 @@
 {
   "name": "scene-client",
-  "version": "1.10.0",
+  "version": "1.11.0",
   "dependencies": {
     "ao-mesher": "^0.2.10",
     "browserify": "^9.0.7",

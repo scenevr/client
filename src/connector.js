@@ -320,7 +320,6 @@ Connector.prototype.addLights = function () {
   light.lookAt(new THREE.Vector3(0, 0, 0));
   light.castShadow = true;
   light.shadowDarkness = 0.5;
-  // light.shadowCameraVisible = true;
 
   light.shadowCameraNear = 10;
   light.shadowCameraFar = 200;

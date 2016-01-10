@@ -83,8 +83,8 @@ Model.create = function (connector, el) {
         if (child instanceof THREE.Mesh) {
           child.material = material;
           child.castShadow = true;
-          child.receiveShadow = true;
-          };
+          child.receiveShadow = !styles.lightMap;
+        }
       });
     }
 

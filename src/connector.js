@@ -1,4 +1,4 @@
-/* globals THREE, WebSocket */
+/* globals WebSocket */
 
 var $ = require('jquery');
 var util = require('util');
@@ -17,9 +17,7 @@ var Group = require('./elements/group');
 var Voxel = require('./elements/voxel');
 var Sphere = require('./elements/sphere');
 var Skybox = require('./elements/skybox');
-var Fog = require('./elements/fog');
 var Text = require('./elements/text');
-var Utils = require('./utils');
 var Plane = require('./elements/plane');
 var Player = require('./elements/player');
 var Model = require('./elements/model');
@@ -41,6 +39,7 @@ function Connector (client, scene, physicsWorld, uri, isPortal, referrer) {
   this.client = client;
   this.scene = scene;
   this.physicsWorld = physicsWorld;
+  this.coordinate = new THREE.Vector2(0, 0);
 
   if (uri.isLocalServer) {
     this.uri = uri;
@@ -61,7 +60,6 @@ function Connector (client, scene, physicsWorld, uri, isPortal, referrer) {
 }
 
 util.inherits(Connector, EventEmitter);
-
 
 Connector.prototype.initialize = function () {
   this.messageQueue = [];
@@ -272,14 +270,14 @@ Connector.prototype.unpublishOpentok = function () {
 Connector.prototype.addFloor = function () {
   var floorTexture = THREE.ImageUtils.loadTexture(grid);
   floorTexture.wrapS = floorTexture.wrapT = THREE.RepeatWrapping;
-  floorTexture.repeat.set(128, 128);
+  floorTexture.repeat.set(64, 64);
 
   var floorMaterial = new THREE.MeshBasicMaterial({
     fog: true,
     map: floorTexture
   });
 
-  var floorGeometry = new THREE.PlaneBufferGeometry(128, 128, 1, 1);
+  var floorGeometry = new THREE.PlaneBufferGeometry(64, 64, 1, 1);
   var floor = new THREE.Mesh(floorGeometry, floorMaterial);
   floor.position.y = 0;
   floor.rotation.x = -Math.PI / 2;
@@ -622,7 +620,7 @@ Connector.prototype.tick = function () {
       return;
     }
 
-    var el = $('<player />').attr('position', this.vectorToWire(position)).attr('rotation', this.vectorToWire(rotation)).attr('velocity', this.vectorToWire(velocity))
+    var el = $('<player />').attr('position', this.vectorToWire(position)).attr('rotation', this.vectorToWire(rotation)).attr('velocity', this.vectorToWire(velocity));
 
     if (this.client.isCardboard()) {
       el.attr('hmd', 'cardboard');

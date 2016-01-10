@@ -15,6 +15,7 @@ var Editor = require('./editor');
 var Utilities = require('../vendor/webvr-manager/util');
 var VrButton = require('./components/vr-button');
 var WebvrDetector = require('./lib/webvr-detector');
+var Grid = require('./grid');
 
 // sadface
 window.THREE = THREE;
@@ -64,6 +65,7 @@ window.CANNON = CANNON;
 function Client (container, options) {
   this.container = $(container);
   this.options = options;
+  this.connectors = [];
 }
 
 util.inherits(Client, EventEmitter);
@@ -172,10 +174,21 @@ Client.prototype.unloadScene = function () {
   delete this.world;
 };
 
-Client.prototype.loadScene = function (sceneProxy, position) {
+Client.prototype.connectToGrid = function (position) {
+  this.grid = new Grid();
+  this.getPlayerObject.position.copy(position);
+
+};
+
+Client.prototype.loadScene = function (sceneProxy) {
   var self = this;
 
   this.url = sceneProxy;
+
+  if (this.grid) {
+    this.grid.destroy();
+    delete this.grid;
+  }
 
   if (this.connector) {
     this.unloadScene();
@@ -194,26 +207,32 @@ Client.prototype.loadScene = function (sceneProxy, position) {
   this.addPlayerBody();
 
   // Init connector
-  var connector = new Connector(this, this.scene, this.world, sceneProxy);
+  var connectorScene = new THREE.Object3D();
+  connectorScene.position.set(0, 0, 0);
+  this.scene.add(connectorScene);
+
+  var connector = new Connector(this, connectorScene, this.world, sceneProxy);
   connector.connect();
+  this.connectors.push(connector);
+
   this.connector = connector;
   this.addConnecting();
 
-  connector.on('connected', function () {
+  connector.on('connected', () => {
     if (environment.isMobile()) {
-      self.enableControls();
+      this.enableControls();
     } else {
-      self.addInstructions();
+      this.addInstructions();
     }
 
-    self.setTitle();
+    this.setTitle();
   });
 
-  connector.on('disconnected', function () {
-    self.addConnectionError();
+  connector.on('disconnected', () => {
+    this.addConnectionError();
   });
 
-  connector.on('restarting', function () {
+  connector.on('restarting', () => {
     self.showMessage('Reconnecting...');
   });
 };
@@ -255,7 +274,7 @@ Client.prototype.updateVolume = function () {
 };
 
 Client.prototype.isConnected = function () {
-  return this.connector && this.connector.isConnected();
+  return this.grid || (this.connector && this.connector.isConnected());
 };
 
 Client.prototype.isCardboard = function () {
@@ -263,12 +282,18 @@ Client.prototype.isCardboard = function () {
 };
 
 Client.prototype.getSceneUrl = function () {
-  return this.isConnected() ? this.connector.getUrl() : null;
+  return this.grid ? (this.isConnected() && this.connector.getUrl()) : null;
 };
 
 Client.prototype.stop = function () {
   this.stopped = true;
-  this.connector.disconnect();
+
+  if (this.grid) {
+    this.grid.disconnect();
+  } else {
+    this.connector.disconnect();
+  }
+
   clearInterval(this.physicsInterval);
 };
 
@@ -282,17 +307,6 @@ Client.prototype.createStats = function () {
   this.stats.rendering.domElement.style.zIndex = 110;
   this.stats.rendering.domElement.style.right = '10px';
   this.container.append(this.stats.rendering.domElement);
-
-  // this.stats.connector = new Stats();
-  // this.stats.connector.setMode(1);
-  // this.stats.connector.domElement.style.position = 'absolute';
-  // this.stats.connector.domElement.style.bottom = '70px';
-  // this.stats.connector.domElement.style.zIndex = 110;
-  // this.stats.connector.domElement.style.right = '10px';
-  // if (environment.isMobile()) {
-  //   this.stats.connector.domElement.style.display = 'none';
-  // }
-  // this.container.append(this.stats.connector.domElement);
 };
 
 Client.prototype.createRenderer = function () {
@@ -407,12 +421,19 @@ Client.prototype.consoleLog = function (msg) {
   }, msg);
 };
 
+Client.prototype.getCurrentGridConnector = function () {
+  return this.grid && this.grid.getConnectorForPosition(this.getPlayerObject().position);
+};
+
 Client.prototype.setTitle = function () {
-  document.title = 'SceneVR - ' + this.connector.getTitle();
+  document.title = 'SceneVR - ' +
+    (this.connector ? this.connector : this.getCurrentGridConnector()).getTitle();
 };
 
 Client.prototype.inspect = function (el) {
-  this.connector.inspectElement(el);
+  if (this.connector) {
+    this.connector.inspectElement(el);
+  }
 };
 
 Client.prototype.onClick = function (e) {
@@ -430,7 +451,7 @@ Client.prototype.onClick = function (e) {
       direction: direction,
       intersection: intersection,
       target: intersection.object.userData
-    }
+    };
 
     if (iEvent.target && iEvent.target.attr && iEvent.target.attr('uuid')) {
       self.emit('click', iEvent);
@@ -801,6 +822,8 @@ Client.prototype.tickPhysics = function () {
 };
 
 Client.prototype.tick = function () {
+  var self = this;
+
   if (this.connector) {
     if ((this.effect instanceof Effects.Vanilla) && (this.connector.isPortalSceneReady())) {
       var portal = this.connector.portal;
@@ -824,10 +847,10 @@ Client.prototype.tick = function () {
     if (this.hmd) {
       this.vreffect.render(this.scene, this.camera);
     } else {
-      this.effect.render(this.scene, this.camera);
-    }
 
-    this.effect.render(this.scene, this.camera);
+      this.renderer.clear(true, true, true);
+      this.renderer.render(this.scene, this.camera);
+    }
 
     this.stats.rendering.end();
 

@@ -86,7 +86,7 @@ Environment.prototype.getShadowMapSize = function () {
 };
 
 Environment.prototype.shadowMappingEnabled = function () {
-  return false;
+  return true;
 };
 
 module.exports = new Environment();

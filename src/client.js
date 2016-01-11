@@ -21,9 +21,9 @@ window.THREE = THREE;
 window.WebVRConfig = {};
 
 // VR Controls
+require('webvr-polyfill');
 require('../vendor/vr-controls.js');
 require('../vendor/vr-effect.js');
-require('webvr-polyfill');
 
 var Effects = {
   Vanilla: require('./effects/vanilla'),
@@ -313,8 +313,12 @@ Client.prototype.createRenderer = function () {
   this.renderer.setClearColor(0xFFFFFF);
   this.renderer.autoClear = true;
   this.renderer.sortObjects = false;
-  this.renderer.shadowMapEnabled = true;
-  this.renderer.shadowMapType = THREE.PCFSoftShadowMap;
+  this.renderer.shadowMapEnabled = environment.shadowMappingEnabled();
+
+  if (environment.shadowMappingEnabled()) {
+    this.renderer.shadowMapType = THREE.PCFSoftShadowMap;
+    this.renderer.shadowBias = -0.0001;
+  }
 
   this.domElement[0].style.width = '100%';
   this.domElement[0].style.height = '100%';
@@ -331,6 +335,9 @@ Client.prototype.onWindowResize = function () {
   this.camera.aspect = width / height;
   this.camera.updateProjectionMatrix();
   this.renderer.setSize(width / environment.getDownsampling(), height / environment.getDownsampling());
+
+  this.domElement[0].style.width = '100%';
+  this.domElement[0].style.height = '100%';
 
   this.centerOverlay();
 };

@@ -20,7 +20,13 @@ Environment.prototype.antiAliasingEnabled = function () {
 };
 
 Environment.prototype.getDownsampling = function () {
-  return (window.devicePixelRatio && window.devicePixelRatio > 1) ? 2.0 : 1.0;
+  if (this.isMobile()) {
+    return 1.0;
+  } else if (window.devicePixelRatio && window.devicePixelRatio > 1) {
+    return 2.0;
+  } else {
+    return 1.0;
+  }
 };
 
 Environment.prototype.getWalkSpeed = function () {
@@ -77,6 +83,10 @@ Environment.prototype.getFar = function () {
 
 Environment.prototype.getShadowMapSize = function () {
   return 512;
+};
+
+Environment.prototype.shadowMappingEnabled = function () {
+  return false;
 };
 
 module.exports = new Environment();

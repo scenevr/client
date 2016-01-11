@@ -20,23 +20,10 @@ var WebvrDetector = require('./lib/webvr-detector');
 window.THREE = THREE;
 window.WebVRConfig = {};
 
-// require('../vendor/CopyShader.js');
-// require('../vendor/EffectComposer.js');
-// require('../vendor/MaskPass.js');
-// require('../vendor/RenderPass.js');
-// require('../vendor/SSAOShader.js');
-// require('../vendor/ShaderPass.js');
-// require('../vendor/SkyShader.js');
+// VR Controls
 require('../vendor/vr-controls.js');
 require('../vendor/vr-effect.js');
 require('webvr-polyfill');
-
-// For 3d text
-require('../vendor/font-utils.js');
-require('../vendor/text-geometry.js');
-require('./data/helvetiker-bold.js');
-
-// var WebVRManager = require('../vendor/webvr-manager/webvr-manager');
 
 var Effects = {
   Vanilla: require('./effects/vanilla'),

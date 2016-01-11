@@ -3,6 +3,9 @@ var StyleMap = require('../style-map');
 var CANNON = require('cannon');
 var THREE = require('three.js');
 
+// For 3d text
+var TextGeometry = require('../../vendor/text-geometry.js');
+
 function Text () {
 }
 
@@ -14,7 +17,7 @@ Text.create = function (connector, el) {
   });
 
   var depth = parseFloat(el.attr('depth') || 0.2);
-  var geometry = new THREE.TextGeometry(el.html(), {
+  var geometry = new TextGeometry(el.html(), {
     size: 1,
     height: depth,
     weight: 'bold',
@@ -44,6 +47,9 @@ Text.create = function (connector, el) {
 
     obj.body = boxBody;
   }
+
+  console.log('Created text');
+  console.log(obj);
 
   return obj;
 };

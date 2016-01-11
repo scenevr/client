@@ -1084,8 +1084,6 @@ Connector.prototype.processMessage = function (el) {
 Connector.prototype.onMessage = function (e) {
   var self = this;
 
-  console.log(e.data);
-
   if (e.data instanceof ArrayBuffer) {
     // probably voice message - do something...
   } else {

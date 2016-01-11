@@ -294,8 +294,6 @@ Client.prototype.createRenderer = function () {
   this.container.append(this.domElement);
 
   this.domElement.css({
-    width: width,
-    height: height,
     position: 'absolute',
     left: 0,
     top: 0,
@@ -318,6 +316,9 @@ Client.prototype.createRenderer = function () {
   this.renderer.shadowMapEnabled = true;
   this.renderer.shadowMapType = THREE.PCFSoftShadowMap;
 
+  this.domElement[0].style.width = '100%';
+  this.domElement[0].style.height = '100%';
+
   this.effect = new Effects.Vanilla(this, this.renderer);
 
   window.addEventListener('resize', this.onWindowResize.bind(this), false);
@@ -330,11 +331,6 @@ Client.prototype.onWindowResize = function () {
   this.camera.aspect = width / height;
   this.camera.updateProjectionMatrix();
   this.renderer.setSize(width / environment.getDownsampling(), height / environment.getDownsampling());
-
-  this.domElement.css({
-    width: width,
-    height: height
-  });
 
   this.centerOverlay();
 };
@@ -813,8 +809,6 @@ Client.prototype.tick = function () {
     } else {
       this.effect.render(this.scene, this.camera);
     }
-
-    this.effect.render(this.scene, this.camera);
 
     this.stats.rendering.end();
 

@@ -20,7 +20,7 @@ Environment.prototype.antiAliasingEnabled = function () {
 };
 
 Environment.prototype.getDownsampling = function () {
-  return 1.0;
+  return (window.devicePixelRatio && window.devicePixelRatio > 1) ? 2.0 : 1.0;
 };
 
 Environment.prototype.getWalkSpeed = function () {

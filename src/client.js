@@ -48,12 +48,24 @@ var Templates = {
 // Not sure why this has to be global
 window.CANNON = CANNON;
 
+var DEFAULT_OPTIONS = {
+  mouselook: true
+};
+
 function Client (container, options) {
   this.container = $(container);
-  this.options = options;
+  this.options = Object.assign(DEFAULT_OPTIONS, options);
 }
 
 util.inherits(Client, EventEmitter);
+
+Client.prototype.setOptions = function (options) {
+  Object.assign(this.options, options);
+
+  if (options.mouselook === false) {
+    this.releasePointerLock();
+  }
+};
 
 Client.prototype.initialize = function () {
   var self = this;
@@ -188,7 +200,7 @@ Client.prototype.loadScene = function (sceneProxy, position) {
 
   connector.on('connected', function () {
     if (environment.isMobile()) {
-      self.enableControls();
+      self.takePointerLock();
     } else {
       self.addInstructions();
     }
@@ -342,7 +354,11 @@ Client.prototype.onWindowResize = function () {
   this.centerOverlay();
 };
 
-Client.prototype.enableControls = function () {
+Client.prototype.takePointerLock = function () {
+  if (!this.options.mouselook) {
+    return;
+  }
+
   this.controls.enabled = true;
   this.hideInstructions();
 
@@ -351,7 +367,7 @@ Client.prototype.enableControls = function () {
   }
 };
 
-Client.prototype.disableControls = function () {
+Client.prototype.releasePointerLock = function () {
   this.controls.enabled = false;
   this.reticule.hide();
   this.exitPointerLock();
@@ -468,14 +484,14 @@ Client.prototype.addMessageInput = function () {
     }
 
     if (e.keyCode === 27) {
-      self.disableControls();
+      self.releasePointerLock();
     }
   });
 
   input.on('keydown', function (e) {
     if (e.keyCode === 27) {
       input.text('').blur();
-      self.enableControls();
+      self.takePointerLock();
     }
 
     if (e.keyCode === 13) {
@@ -483,7 +499,7 @@ Client.prototype.addMessageInput = function () {
         self.postChatMessage(input.val());
       }
 
-      self.enableControls();
+      self.takePointerLock();
       input.val('').blur();
 
       e.preventDefault();
@@ -605,8 +621,12 @@ Client.prototype.requestPointerLock = function () {
     el.mozRequestPointerLock();
   } else {
     this.domElement.click(function (e) {
+      if (!self.options.mouselook) {
+        return;
+      }
+
       if (!self.controls.enabled) {
-        self.enableControls();
+        self.takePointerLock();
       }
     });
   }
@@ -622,9 +642,9 @@ Client.prototype.pointerLockError = function (event) {
 
 Client.prototype.pointerLockChange = function (event) {
   if (this.hasPointerLock()) {
-    this.enableControls();
+    this.takePointerLock();
   } else {
-    this.disableControls();
+    this.releasePointerLock();
   }
 };
 
@@ -641,6 +661,10 @@ Client.prototype.addPointLockGrab = function () {
   var self = this;
 
   this.domElement.click(function () {
+    if (!self.options.mouselook) {
+      return;
+    }
+
     if (self.controls.enabled) {
       return;
     }
@@ -750,6 +774,10 @@ Client.prototype.addControls = function () {
     }
   });
 };
+
+Client.prototype.removeControls = function () {
+  delete this.controls;
+}
 
 Client.prototype.getPlayerObject = function () {
   return this.controls.getObject();

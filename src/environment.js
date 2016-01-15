@@ -82,7 +82,7 @@ Environment.prototype.getFar = function () {
 };
 
 Environment.prototype.getShadowMapSize = function () {
-  return 512;
+  return 2048;
 };
 
 Environment.prototype.shadowMappingEnabled = function () {

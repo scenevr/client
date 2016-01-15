@@ -325,7 +325,9 @@ Connector.prototype.addLights = function () {
 
     light.shadowCameraNear = 10;
     light.shadowCameraFar = 200;
-    light.shadowCameraFov = 50;
+    light.shadowCameraFov = 45;
+    light.shadowMapWidth = environment.getShadowMapSize();
+    light.shadowMapHeight = environment.getShadowMapSize();
   }
 
   this.scene.add(light);

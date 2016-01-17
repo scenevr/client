@@ -21,23 +21,10 @@ var Grid = require('./grid');
 window.THREE = THREE;
 window.WebVRConfig = {};
 
-// require('../vendor/CopyShader.js');
-// require('../vendor/EffectComposer.js');
-// require('../vendor/MaskPass.js');
-// require('../vendor/RenderPass.js');
-// require('../vendor/SSAOShader.js');
-// require('../vendor/ShaderPass.js');
-// require('../vendor/SkyShader.js');
+// VR Controls
+require('webvr-polyfill');
 require('../vendor/vr-controls.js');
 require('../vendor/vr-effect.js');
-require('webvr-polyfill');
-
-// For 3d text
-require('../vendor/font-utils.js');
-require('../vendor/text-geometry.js');
-require('./data/helvetiker-bold.js');
-
-// var WebVRManager = require('../vendor/webvr-manager/webvr-manager');
 
 var Effects = {
   Vanilla: require('./effects/vanilla'),
@@ -62,13 +49,25 @@ var Templates = {
 // Not sure why this has to be global
 window.CANNON = CANNON;
 
+var DEFAULT_OPTIONS = {
+  mouselook: true
+};
+
 function Client (container, options) {
   this.container = $(container);
-  this.options = options;
+  this.options = Object.assign(DEFAULT_OPTIONS, options);
   this.connectors = [];
 }
 
 util.inherits(Client, EventEmitter);
+
+Client.prototype.setOptions = function (options) {
+  Object.assign(this.options, options);
+
+  if (options.mouselook === false) {
+    this.releasePointerLock();
+  }
+};
 
 Client.prototype.initialize = function () {
   var self = this;
@@ -220,7 +219,7 @@ Client.prototype.loadScene = function (sceneProxy) {
 
   connector.on('connected', () => {
     if (environment.isMobile()) {
-      this.enableControls();
+      this.takePointerLock();
     } else {
       this.addInstructions();
     }
@@ -321,8 +320,6 @@ Client.prototype.createRenderer = function () {
   this.container.append(this.domElement);
 
   this.domElement.css({
-    width: width,
-    height: height,
     position: 'absolute',
     left: 0,
     top: 0,
@@ -342,8 +339,15 @@ Client.prototype.createRenderer = function () {
   this.renderer.setClearColor(0xFFFFFF);
   this.renderer.autoClear = true;
   this.renderer.sortObjects = false;
-  this.renderer.shadowMapEnabled = true;
-  this.renderer.shadowMapType = THREE.PCFSoftShadowMap;
+  this.renderer.shadowMapEnabled = environment.shadowMappingEnabled();
+
+  if (environment.shadowMappingEnabled()) {
+    this.renderer.shadowMapType = THREE.PCFSoftShadowMap;
+    this.renderer.shadowBias = -0.0001;
+  }
+
+  this.domElement[0].style.width = '100%';
+  this.domElement[0].style.height = '100%';
 
   this.effect = new Effects.Vanilla(this, this.renderer);
 
@@ -358,15 +362,17 @@ Client.prototype.onWindowResize = function () {
   this.camera.updateProjectionMatrix();
   this.renderer.setSize(width / environment.getDownsampling(), height / environment.getDownsampling());
 
-  this.domElement.css({
-    width: width,
-    height: height
-  });
+  this.domElement[0].style.width = '100%';
+  this.domElement[0].style.height = '100%';
 
   this.centerOverlay();
 };
 
-Client.prototype.enableControls = function () {
+Client.prototype.takePointerLock = function () {
+  if (!this.options.mouselook) {
+    return;
+  }
+
   this.controls.enabled = true;
   this.hideInstructions();
 
@@ -375,7 +381,7 @@ Client.prototype.enableControls = function () {
   }
 };
 
-Client.prototype.disableControls = function () {
+Client.prototype.releasePointerLock = function () {
   this.controls.enabled = false;
   this.reticule.hide();
   this.exitPointerLock();
@@ -499,14 +505,14 @@ Client.prototype.addMessageInput = function () {
     }
 
     if (e.keyCode === 27) {
-      self.disableControls();
+      self.releasePointerLock();
     }
   });
 
   input.on('keydown', function (e) {
     if (e.keyCode === 27) {
       input.text('').blur();
-      self.enableControls();
+      self.takePointerLock();
     }
 
     if (e.keyCode === 13) {
@@ -514,7 +520,7 @@ Client.prototype.addMessageInput = function () {
         self.postChatMessage(input.val());
       }
 
-      self.enableControls();
+      self.takePointerLock();
       input.val('').blur();
 
       e.preventDefault();
@@ -636,8 +642,12 @@ Client.prototype.requestPointerLock = function () {
     el.mozRequestPointerLock();
   } else {
     this.domElement.click(function (e) {
+      if (!self.options.mouselook) {
+        return;
+      }
+
       if (!self.controls.enabled) {
-        self.enableControls();
+        self.takePointerLock();
       }
     });
   }
@@ -653,9 +663,9 @@ Client.prototype.pointerLockError = function (event) {
 
 Client.prototype.pointerLockChange = function (event) {
   if (this.hasPointerLock()) {
-    this.enableControls();
+    this.takePointerLock();
   } else {
-    this.disableControls();
+    this.releasePointerLock();
   }
 };
 
@@ -672,6 +682,10 @@ Client.prototype.addPointLockGrab = function () {
   var self = this;
 
   this.domElement.click(function () {
+    if (!self.options.mouselook) {
+      return;
+    }
+
     if (self.controls.enabled) {
       return;
     }
@@ -782,6 +796,10 @@ Client.prototype.addControls = function () {
   });
 };
 
+Client.prototype.removeControls = function () {
+  delete this.controls;
+}
+
 Client.prototype.getPlayerObject = function () {
   return this.controls.getObject();
 };
@@ -822,8 +840,6 @@ Client.prototype.tickPhysics = function () {
 };
 
 Client.prototype.tick = function () {
-  var self = this;
-
   if (this.connector) {
     if ((this.effect instanceof Effects.Vanilla) && (this.connector.isPortalSceneReady())) {
       var portal = this.connector.portal;
@@ -847,11 +863,9 @@ Client.prototype.tick = function () {
     if (this.hmd) {
       this.vreffect.render(this.scene, this.camera);
     } else {
-
       this.renderer.clear(true, true, true);
       this.renderer.render(this.scene, this.camera);
     }
-
     this.stats.rendering.end();
 
     this.tickPhysics();

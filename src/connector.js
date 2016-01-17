@@ -314,22 +314,22 @@ Connector.prototype.update = function (player) {
 
 Connector.prototype.addLights = function () {
   var light = new THREE.SpotLight(0xffffff, 1.1);
-  light.position.copy(new THREE.Vector3(0.75, 1, 0.5).multiplyScalar(100));
+  light.position.copy(new THREE.Vector3(0.75, 1, 0.5).multiplyScalar(50));
   light.lookAt(new THREE.Vector3(0, 0, 0));
-  light.castShadow = true;
-  light.shadowDarkness = 0.5;
-  // light.shadowCameraVisible = true;
 
-  light.shadowCameraNear = 10;
-  light.shadowCameraFar = 200;
-  light.shadowCameraFov = 50;
+  if (environment.shadowMappingEnabled()) {
+    light.castShadow = true;
+    light.shadowDarkness = 0.5;
+
+    light.shadowCameraNear = 10;
+    light.shadowCameraFar = 200;
+    light.shadowCameraFov = 45;
+    light.shadowMapWidth = environment.getShadowMapSize();
+    light.shadowMapHeight = environment.getShadowMapSize();
+  }
 
   this.scene.add(light);
   this.sunlight = light;
-
-  // dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
-  // dirLight.position.set(1, 0.75, 0.5);
-  // this.scene.add(dirLight);
 
   var ambientLight = new THREE.AmbientLight(0x303030);
   this.scene.add(ambientLight);
@@ -745,7 +745,7 @@ Connector.prototype.addElement = function (el, parentObject) {
     //   return
     // }
   } else if (el.is('fog')) {
-    // Fog.create(this, el);
+    Fog.create(this, el);
     return;
   } else if (el.is('model')) {
     obj = Model.create(this, el);

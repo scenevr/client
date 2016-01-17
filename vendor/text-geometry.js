@@ -1,3 +1,5 @@
+var THREE = require('three.js');
+
 /**
  * @author zz85 / http://www.lab4games.net/zz85/blog
  * @author alteredq / http://alteredqualia.com/
@@ -35,12 +37,13 @@
 
 */
 
+var FontUtils = require('./font-utils');
 
-THREE.TextGeometry = function ( text, parameters ) {
+var TextGeometry = function ( text, parameters ) {
 
 	parameters = parameters || {};
 
-	var textShapes = THREE.FontUtils.generateShapes( text, parameters );
+	var textShapes = FontUtils.generateShapes( text, parameters );
 
 	// translate parameters to ExtrudeGeometry API
 
@@ -58,5 +61,7 @@ THREE.TextGeometry = function ( text, parameters ) {
 
 };
 
-THREE.TextGeometry.prototype = Object.create( THREE.ExtrudeGeometry.prototype );
-THREE.TextGeometry.prototype.constructor = THREE.TextGeometry;
+TextGeometry.prototype = Object.create( THREE.ExtrudeGeometry.prototype );
+TextGeometry.prototype.constructor = TextGeometry;
+
+module.exports = TextGeometry;

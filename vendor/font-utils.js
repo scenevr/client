@@ -15,7 +15,7 @@
  *
  */
 
-THREE.FontUtils = {
+ var FontUtils = {
 
 	faces: {},
 
@@ -233,7 +233,7 @@ THREE.FontUtils = {
 };
 
 
-THREE.FontUtils.generateShapes = function ( text, parameters ) {
+FontUtils.generateShapes = function ( text, parameters ) {
 
 	// Parameters
 
@@ -246,16 +246,16 @@ THREE.FontUtils.generateShapes = function ( text, parameters ) {
 	var weight = parameters.weight !== undefined ? parameters.weight : 'normal';
 	var style = parameters.style !== undefined ? parameters.style : 'normal';
 
-	THREE.FontUtils.size = size;
-	THREE.FontUtils.divisions = curveSegments;
+	FontUtils.size = size;
+	FontUtils.divisions = curveSegments;
 
-	THREE.FontUtils.face = font;
-	THREE.FontUtils.weight = weight;
-	THREE.FontUtils.style = style;
+	FontUtils.face = font;
+	FontUtils.weight = weight;
+	FontUtils.style = style;
 
 	// Get a Font data json object
 
-	var data = THREE.FontUtils.drawText( text );
+	var data = FontUtils.drawText( text );
 
 	var paths = data.paths;
 	var shapes = [];
@@ -272,5 +272,11 @@ THREE.FontUtils.generateShapes = function ( text, parameters ) {
 
 // To use the typeface.js face files, hook up the API
 
-THREE.typeface_js = { faces: THREE.FontUtils.faces, loadFace: THREE.FontUtils.loadFace };
-if ( typeof self !== 'undefined' ) self._typeface_js = THREE.typeface_js;
+var typeface_js = { faces: FontUtils.faces, loadFace: FontUtils.loadFace };
+if ( typeof self !== 'undefined' ) {
+	self._typeface_js = typeface_js;
+}
+
+require('./helvetiker-bold.js');
+
+module.exports = FontUtils;

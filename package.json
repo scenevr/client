@@ -33,10 +33,7 @@
     "test": "semistandard && browserify -t stringify src/client.js > /dev/null"
   },
   "browserify": {
-    "transform": [
-      "stringify",
-      "glslify"
-    ]
+    "transform": ["stringify", ["babelify", { "presets": ["es2015"] }]]
   },
   "semistandard": {
     "ignore": [

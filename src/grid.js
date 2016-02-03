@@ -56,24 +56,51 @@ class Grid {
     // unload any connectors that are far away from the current position
   }
 
+  getWorldOffset (coord) {
+    return new THREE.Vector3(coord.x * Grid.SIZE, 0, coord.y * Grid.SIZE);
+  }
+
   getGridCoordinate (position) {
-    return new THREE.Vector2(position.x / Grid.SIZE, position.y / Grid.SIZE).roundToZero();
+    return new THREE.Vector2(position.x / Grid.SIZE, position.z / Grid.SIZE).roundToZero();
   }
 
   getConnectorForPosition (position) {
     return this.getConnector(this.getGridCoordinate(position));
   }
 
+  // Get the current grid coordinate and the 8 surrounding ones
+  getAdjacentGridCoordinates (position) {
+    var coord = this.getGridCoordinate(position);
+    var results = [coord];
+
+    results.push(coord.clone().add(new THREE.Vector2(-1, -1)));
+    results.push(coord.clone().add(new THREE.Vector2(0, -1)));
+    results.push(coord.clone().add(new THREE.Vector2(1, -1)));
+    results.push(coord.clone().add(new THREE.Vector2(-1, 0)));
+    results.push(coord.clone().add(new THREE.Vector2(1, 0)));
+    results.push(coord.clone().add(new THREE.Vector2(-1, 1)));
+    results.push(coord.clone().add(new THREE.Vector2(0, 1)));
+    results.push(coord.clone().add(new THREE.Vector2(1, 1)));
+
+    return results;
+  }
+
   getConnectorUrl (coordinate, callback) {
-    var url = '/grid/' + [coordinate.x, coordinate.y].join('/') + '.xml';
+    var url = 'http://www.scenevr.com/scenes/grid.json?x=' + coordinate.x + '&y=' + coordinate.y;
 
     console.log(url);
 
     fetch(url).then((response) => {
-
+      return response.json();
+    }).then((json) => {
+      if (json.uri) {
+        callback(false, json.uri);
+      } else {
+        callback('Scene not found for this coordinate');
+      }
     });
 
-    callback(false, 'wss://scene-reddit.herokuapp.com/gallery.xml?subreddit=aww');
+    // callback(false, 'wss://scene-reddit.herokuapp.com/gallery.xml?subreddit=aww');
   }
 
   inspect () {

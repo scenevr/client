@@ -173,10 +173,39 @@ Client.prototype.unloadScene = function () {
   delete this.world;
 };
 
+Client.prototype.addConnectorToGrid = function (coord, url) {
+  var scene = new THREE.Object3D();
+  scene.position.set(this.grid.getWorldOffset(coord));
+  this.scene.add(scene);
+
+  var connector = new Connector(this, scene, this.world, url);
+  connector.connect();
+  this.connectors.push(connector);
+};
+
+Client.prototype.loadGridConnector = function (coord) {
+  this.grid.getConnectorUrl(coord, (err, url) => {
+    if (err) {
+      console.log(err);
+      return;
+    }
+
+    this.addConnectorToGrid(coord, url);
+  });
+};
+
+Client.prototype.loadGridConnectors = function () {
+  var coordinates = this.grid.getAdjacentGridCoordinates(this.getPlayerObject().position);
+
+  coordinates.forEach((coord) => {
+    this.loadGridConnector(coord);
+  });
+};
+
 Client.prototype.connectToGrid = function (position) {
   this.grid = new Grid();
-  this.getPlayerObject.position.copy(position);
-
+  this.getPlayerObject().position.copy(position);
+  this.loadGridConnectors();
 };
 
 Client.prototype.loadScene = function (sceneProxy) {

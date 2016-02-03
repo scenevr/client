@@ -9,6 +9,27 @@ var TextGeometry = require('../../vendor/text-geometry.js');
 function Text () {
 }
 
+function center (geometry) {
+  geometry.computeBoundingBox();
+
+  var bb = geometry.boundingBox;
+  var midpoint = bb.min.clone().add(bb.max).multiplyScalar(0.5);
+
+  // Center text on x axis
+
+  midpoint.y = 0;
+  midpoint.z = 0;
+  midpoint.negate();
+
+  geometry.vertices.forEach((v) => {
+    v.add(midpoint);
+  });
+
+  geometry.verticesNeedUpdate = true;
+
+  console.log(midpoint);
+}
+
 Text.create = function (connector, el) {
   var styles = new StyleMap(el.attr('style'));
 
@@ -25,6 +46,9 @@ Text.create = function (connector, el) {
     extrudeMaterial: 0,
     bevelEnabled: false
   });
+
+  center(geometry);
+
   var obj = new THREE.Mesh(geometry, new THREE.MeshFaceMaterial([material, material]));
 
   var scale = el.attr('scale') ? Utils.parseVector(el.attr('scale')) : new THREE.Vector3(1, 1, 1);

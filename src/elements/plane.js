@@ -12,6 +12,8 @@ Plane.create = function (connector, el) {
   var material = new THREE.MeshLambertMaterial();
 
   var obj = new THREE.Mesh(geometry, material);
+  obj.castShadow = true;
+  obj.receiveShadow = true;
 
   var scale = el.attr('scale') ? Utils.parseVector(el.attr('scale')) : new THREE.Vector3(1, 1, 1);
   scale.z = Z_AXIS_SCALE;

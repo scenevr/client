@@ -272,14 +272,14 @@ Connector.prototype.unpublishOpentok = function () {
 Connector.prototype.addFloor = function () {
   var floorTexture = THREE.ImageUtils.loadTexture(grid);
   floorTexture.wrapS = floorTexture.wrapT = THREE.RepeatWrapping;
-  floorTexture.repeat.set(128, 128);
+  floorTexture.repeat.set(64, 64);
 
   var floorMaterial = new THREE.MeshBasicMaterial({
     fog: true,
     map: floorTexture
   });
 
-  var floorGeometry = new THREE.PlaneBufferGeometry(128, 128, 1, 1);
+  var floorGeometry = new THREE.PlaneBufferGeometry(64, 64, 1, 1);
   var floor = new THREE.Mesh(floorGeometry, floorMaterial);
   floor.position.y = 0;
   floor.rotation.x = -Math.PI / 2;

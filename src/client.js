@@ -421,52 +421,76 @@ Client.prototype.inspect = function (el) {
   this.connector.inspectElement(el);
 };
 
-Client.prototype.onClick = function (e) {
-  var self = this;
+Client.prototype.getElementsFromPoint = function (point, distance) {
+  if (!point) {
+    point = new THREE.Vector2(this.container.innerWidth / 2, this.container.innerHeight / 2);
+  }
+
+  if (!distance) {
+    distance = 5.0;
+  }
+
+  var results = [];
+
   var position = this.controls.getObject().position;
   var direction = this.controls.getDirection(new THREE.Vector3());
 
   this.raycaster.set(position, direction);
-  this.raycaster.far = 5.0;
+  this.raycaster.far = distance;
 
   // fixme - the search for the userData node is pretty ganky
-  this.raycaster.intersectObjects(this.getAllClickableObjects()).forEach(function (intersection) {
-    var iEvent = {
+  this.raycaster.intersectObjects(this.getAllClickableObjects()).forEach((intersection) => {
+    if (!intersection.object) {
+      console.log('[assert] No object associated with this intersection');
+      return;
+    }
+
+    var o = intersection.object;
+
+    while (o.parent) {
+      if (o.userData && o.userData instanceof $) {
+        break;
+      }
+
+      o = o.parent;
+    }
+
+    if (!o.userData || !o.userData.attr) {
+      console.log('No userdata');
+      return;
+    }
+
+    results.push({
+      uuid: o.name,
+      point: intersection.point,
+      intersection: intersection,
       position: position,
       direction: direction,
-      intersection: intersection,
-      target: intersection.object.userData
+      object: o,
+      target: o.userData,
+      normal: intersection.face.normal
+    });
+  });
+
+  return results;
+};
+
+// todo - refactor the shit out of this
+Client.prototype.onClick = function (e) {
+  this.getElementsFromPoint().forEach((object) => {
+    // Add button pressed
+    object.button = e.button;
+
+    // Emit event
+    this.emit('click', object);
+
+    // links
+    if (object.object.onClick) {
+      object.object.onClick(object);
     }
 
-    if (iEvent.target && iEvent.target.attr && iEvent.target.attr('uuid')) {
-      self.emit('click', iEvent);
-    }
-
-    if (intersection.object && intersection.object.parent && intersection.object.parent.userData.is && intersection.object.parent.userData.is('link')) {
-      intersection.object.parent.onClick(iEvent);
-    }
-
-    if (intersection.object && intersection.object.onClick) {
-      intersection.object.onClick(iEvent);
-    }
-
-    var obj = intersection.object;
-
-    while (obj.parent) {
-      if (obj.userData instanceof $) {
-        self.connector.onClick({
-          uuid: obj.name,
-          point: intersection.point,
-          direction: direction,
-          normal: intersection.face.normal,
-          button: e.button,
-          selectedColor: this.editor && this.editor.selectedIndex
-        });
-
-        return;
-      }
-      obj = obj.parent;
-    }
+    // Send event to server
+    this.connector.onClick(object);
   });
 };
 

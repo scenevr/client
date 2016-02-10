@@ -373,11 +373,15 @@ Client.prototype.releasePointerLock = function () {
   this.exitPointerLock();
 };
 
-Client.prototype.getDropPosition = function () {
+Client.prototype.getDropPosition = function (distance) {
   var player = this.controls.getObject().position;
   var direction = this.controls.getDirection(new THREE.Vector3());
 
-  return player.clone().add(direction.multiplyScalar(2));
+  if (!distance) {
+    distance = 2;
+  }
+
+  return player.clone().add(direction.multiplyScalar(distance));
 };
 
 Client.prototype.removeAllObjectsFromScene = function () {

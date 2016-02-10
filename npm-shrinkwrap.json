@@ -1,0 +1,45 @@
+{
+  "name": "scene-client",
+  "version": "1.16.0",
+  "dependencies": {
+    "ao-mesher": {
+      "version": "0.2.10",
+      "from": "ao-mesher@>=0.2.10 <0.3.0",
+      "resolved": "https://registry.npmjs.org/ao-mesher/-/ao-mesher-0.2.10.tgz",
+      "dependencies": {
+        "greedy-mesher": {
+          "version": "1.0.1"
+        },
+        "cwise-compiler": {
+          "version": "0.1.0",
+          "from": "cwise-compiler@>=0.1.0 <0.2.0",
+          "resolved": "https://registry.npmjs.org/cwise-compiler/-/cwise-compiler-0.1.0.tgz",
+          "dependencies": {
+            "uniq": {
+              "version": "0.0.2",
+              "from": "uniq@>=0.0.2 <0.1.0",
+              "resolved": "https://registry.npmjs.org/uniq/-/uniq-0.0.2.tgz"
+            }
+          }
+        },
+        "typedarray-pool": {
+          "version": "0.1.2",
+          "from": "typedarray-pool@>=0.1.1 <0.2.0",
+          "resolved": "https://registry.npmjs.org/typedarray-pool/-/typedarray-pool-0.1.2.tgz",
+          "dependencies": {
+            "bit-twiddle": {
+              "version": "0.0.2",
+              "from": "bit-twiddle@>=0.0.2 <0.1.0",
+              "resolved": "https://registry.npmjs.org/bit-twiddle/-/bit-twiddle-0.0.2.tgz"
+            },
+            "dup": {
+              "version": "0.0.0",
+              "from": "dup@>=0.0.0 <0.1.0",
+              "resolved": "https://registry.npmjs.org/dup/-/dup-0.0.0.tgz"
+            }
+          }
+        }
+      }
+    }
+  }
+}

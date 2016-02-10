@@ -59,17 +59,21 @@ class Voxel {
   }
 
   generateMeshFromVoxels () {
-    var padding = this.resolution.map((r) => r + 2);
+    // var padding = this.resolution.map((r) => r + 2);
 
-    var voxelsWithPadding = zeros(padding, 'int32');
+    // var voxelsWithPadding = zeros(padding, 'int32');
 
     var x, y, z;
 
-    for (x = 0; x < padding[0]; x++) {
+    for (x = 0; x < this.resolution[0]; x++) {
       for (y = 0; y < this.resolution[1]; y++) {
-        for (z = 0; z < padding[2]; z++) {
+        for (z = 0; z < this.resolution[2]; z++) {
         // fixme - copy a row at a time for speeed
-          voxelsWithPadding.set(x, y, z, this.voxels.get(x + 1, y, z + 1));
+          var v = this.voxels.get(x, y, z);
+
+          v = v ? (1 << 15) + 1 : 0;
+
+          this.voxels.set(x, y, z, v);
         }
       }
     }
@@ -89,7 +93,7 @@ class Voxel {
     var i = 0
     var j = 0
     while (i < vertData.length) {
-      var v = new THREE.Vector3(-16, -16, -16)
+      var v = new THREE.Vector3(-this.resolution[0] / 2, 0, -this.resolution[0] / 2).round();
       var s = 1.0
       var texture = vertData[i + 7];
 
@@ -125,10 +129,6 @@ class Voxel {
 
       var f = new THREE.Face3( face + 0, face + 1, face + 2 )
       // f.vertexColors = [new THREE.Color(vertData[i - 8 + 3]), new THREE.Color('#00ff00'), new THREE.Color('#0000ff')]
-
-      console.log(vertData[i - 24 + 3]);
-      console.log(vertData[i - 16 + 3]);
-      console.log(vertData[i - 8 + 3]);
 
       f.vertexColors = [
         // new THREE.Color(palette[texture]),

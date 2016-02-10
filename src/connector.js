@@ -1088,7 +1088,15 @@ Connector.prototype.onMessage = function (e) {
   if (e.data instanceof ArrayBuffer) {
     // probably voice message - do something...
   } else {
-    var xml = $.parseXML(e.data);
+    var xml;
+
+    try {
+      xml = $.parseXML(e.data);
+    } catch (e) {
+      console.log('Invalid xml');
+      return;
+    }
+
     var packet = xml.firstChild;
 
     if (packet.nodeName !== 'packet') {

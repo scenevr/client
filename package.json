@@ -22,7 +22,8 @@
     "vox-to-ndarray": "^1.1.0",
     "voxel-crunch": "0.2.1",
     "webvr-polyfill": "0.0.1",
-    "wolfy87-eventemitter": "4.2.9"
+    "wolfy87-eventemitter": "4.2.9",
+    "zeros": "^1.0.0"
   },
   "main": "src/client.js",
   "devDependencies": {

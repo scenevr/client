@@ -4801,9 +4801,7 @@
       }
     },
     "vox-to-ndarray": {
-      "version": "1.1.0",
-      "from": "vox-to-ndarray@>=1.1.0 <2.0.0",
-      "resolved": "https://registry.npmjs.org/vox-to-ndarray/-/vox-to-ndarray-1.1.0.tgz"
+      "version": "1.2.0"
     },
     "voxel-crunch": {
       "version": "0.2.1",

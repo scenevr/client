@@ -19,7 +19,7 @@
     "uri-js": "1.4.2",
     "util": "0.10.3",
     "virtual-dom": "2.1.1",
-    "vox-to-ndarray": "^1.1.0",
+    "vox-to-ndarray": "^1.2.0",
     "voxel-crunch": "0.2.1",
     "webvr-polyfill": "0.0.1",
     "wolfy87-eventemitter": "4.2.9",

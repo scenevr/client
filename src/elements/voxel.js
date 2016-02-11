@@ -19,6 +19,15 @@ class Voxel {
     this.connector = connector;
     this.el = el;
     this.obj = new THREE.Object3D();
+
+    var floorTexture = THREE.ImageUtils.loadTexture(grid);
+    floorTexture.wrapS = floorTexture.wrapT = THREE.RepeatWrapping;
+
+    this.obj.material = new THREE.MeshLambertMaterial({
+      wireframe: false,
+      map: floorTexture,
+      vertexColors: THREE.VertexColors
+    });
   }
 
   load () {
@@ -148,16 +157,7 @@ class Voxel {
     geometry.computeFaceNormals();
     geometry.computeVertexNormals();
 
-    var floorTexture = THREE.ImageUtils.loadTexture(grid);
-    floorTexture.wrapS = floorTexture.wrapT = THREE.RepeatWrapping;
-
-    var mat = new THREE.MeshLambertMaterial({
-      wireframe: false,
-      map: floorTexture,
-      vertexColors: THREE.VertexColors
-    });
-
-    var childObj = new THREE.Mesh(geometry, mat);
+    var childObj = new THREE.Mesh(geometry, this.obj.material);
     this.obj.add(childObj);
 
     var trimeshShape = new CANNON.Trimesh(collisionVertices, collisionIndices);

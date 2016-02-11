@@ -831,7 +831,7 @@ Connector.prototype.addElement = function (el, parentObject) {
       });
     }
 
-    if (el.is('sphere,box,plane') && styles.textureMap) {
+    if (el.is('sphere,box,plane,voxel') && styles.textureMap) {
       var url = this.getAssetHost() + this.getUrlFromStyle(styles.textureMap);
       THREE.ImageUtils.crossOrigin = true;
 

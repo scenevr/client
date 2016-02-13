@@ -11,6 +11,7 @@ var palette = require('../data/magica-colors');
 var grid = require('../data/grid.js');
 var voxToNdarray = require('vox-to-ndarray');
 var zeros = require('zeros');
+var voxelPhysicsModel = require('../lib/voxel-physics-model').default;
 
 var SIZE = 32;
 
@@ -160,13 +161,17 @@ class Voxel {
     var childObj = new THREE.Mesh(geometry, this.obj.material);
     this.obj.add(childObj);
 
-    var trimeshShape = new CANNON.Trimesh(collisionVertices, collisionIndices);
-    var trimeshBody = new CANNON.Body({ mass: 0 });
-    trimeshBody.addShape(trimeshShape);
-    trimeshBody.position.copy(this.obj.position);
-    trimeshBody.quaternion.copy(this.obj.quaternion);
-    trimeshBody.uuid = this.el.getAttribute('uuid');
-    this.obj.body = trimeshBody;
+    // var trimeshShape = new CANNON.Trimesh(collisionVertices, collisionIndices);
+    // var trimeshBody = new CANNON.Body({ mass: 0 });
+    // trimeshBody.addShape(trimeshShape);
+    // trimeshBody.position.copy(this.obj.position);
+    // trimeshBody.quaternion.copy(this.obj.quaternion);
+    // trimeshBody.uuid = this.el.getAttribute('uuid');
+
+    // this.obj.body = trimeshBody;
+    this.obj.body = voxelPhysicsModel(this.voxels);
+    this.obj.body.position.copy(this.obj.position);
+    this.obj.body.quaternion.copy(this.obj.quaternion);
 
     // Be nice to decouple this somehow
     this.connector.physicsWorld.add(this.obj.body);

@@ -4,6 +4,7 @@
   "dependencies": {
     "ao-mesher": "^0.2.4",
     "babel-preset-es2015": "6.3.13",
+    "babelify": "^7.2.0",
     "cannon": "git://github.com/schteppe/cannon.js.git#master",
     "glslify": "2.3.1",
     "howler": "1.1.25",

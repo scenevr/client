@@ -1087,6 +1087,7 @@ Connector.prototype.onMessage = function (e) {
 
   if (e.data instanceof ArrayBuffer) {
     // probably voice message - do something...
+    console.log(e.data.byteLength);
   } else {
     var xml;
 

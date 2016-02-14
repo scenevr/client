@@ -15,6 +15,7 @@ var Editor = require('./editor');
 var Utilities = require('../vendor/webvr-manager/util');
 var VrButton = require('./components/vr-button');
 var WebvrDetector = require('./lib/webvr-detector');
+var Voice = require('./voice');
 
 // sadface
 window.THREE = THREE;
@@ -71,6 +72,9 @@ Client.prototype.initialize = function () {
   var self = this;
 
   $('.sk-spinner').remove();
+
+  this.voice = new Voice(this);
+  this.voice.start();
 
   this.assetManager = new AssetManager(this);
   this.preferences = new Preferences(this);
@@ -876,6 +880,13 @@ Client.prototype.tick = function () {
     this.stats.rendering.end();
 
     this.tickPhysics();
+  }
+
+  // Positional audio
+  this.voice.setPositionAndOrientation(this.getPlayerObject());
+  
+  if (this.voice.player.panner) {
+    this.voice.player.panner.setPosition(-5, 0.5, 0);
   }
 
   if (environment.isLowPowerMode()) {

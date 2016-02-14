@@ -16,6 +16,7 @@ var Utilities = require('../vendor/webvr-manager/util');
 var VrButton = require('./components/vr-button');
 var WebvrDetector = require('./lib/webvr-detector');
 var Voice = require('./voice');
+var DebugStats = require('./debug-stats');
 
 // sadface
 window.THREE = THREE;
@@ -75,6 +76,8 @@ Client.prototype.initialize = function () {
 
   this.voice = new Voice(this);
   this.voice.start();
+
+  this.debug = new DebugStats(this);
 
   this.assetManager = new AssetManager(this);
   this.preferences = new Preferences(this);
@@ -884,7 +887,7 @@ Client.prototype.tick = function () {
 
   // Positional audio
   this.voice.setPositionAndOrientation(this.getPlayerObject());
-  
+
   if (this.voice.player.panner) {
     this.voice.player.panner.setPosition(-5, 0.5, 0);
   }

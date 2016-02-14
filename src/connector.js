@@ -1087,7 +1087,9 @@ Connector.prototype.onMessage = function (e) {
 
   if (e.data instanceof ArrayBuffer) {
     // probably voice message - do something...
-    console.log(e.data.byteLength);
+    // console.log(e.data.byteLength);
+    console.log('binary');
+    this.client.voice.enqueue(e.data);
   } else {
     var xml;
 

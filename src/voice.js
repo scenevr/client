@@ -65,7 +65,7 @@ class Voice{
             this.player.start();
 
             window.setInterval(() => {
-              this.client.debug.set('buffer stats', JSON.stringify(this.player.getBufferStatus()));
+              console.log(this.player.getBufferStatus());
             }, 1000);
           }, this.output_reject_log('player.init error'));
         }, this.output_reject_log('decoder.setup error'));
@@ -92,9 +92,7 @@ class Voice{
               return;
             }
 
-            // this.client.connector.ws.send(packets[0].data);
-            console.log('Sent voice packet');
-            // this.client.debug.addEvent('Sent voice packet');
+            this.client.connector.ws.send(packets[0].data);
 
             // if its not keeping up well we're fucked aren't we?
 
@@ -113,7 +111,6 @@ class Voice{
   }
 
   enqueue (data) {
-    this.client.debug.addEvent('Recieved voice packet');
     this.decoder.decode({data: data }).then((buf) => {
       this.player.enqueue(buf);
       this.working = false;

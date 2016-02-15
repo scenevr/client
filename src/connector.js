@@ -45,7 +45,6 @@ function Connector (client, scene, physicsWorld, uri, isPortal, referrer) {
   if (uri.isLocalServer) {
     this.uri = uri;
     this.assetUri = URI.parse(window.location);
-    this.assetUri.scheme = this.assetUri.scheme === 'wss' ? 'https' : 'http';
   } else {
     this.uri = URI.parse(uri);
     this.assetUri = URI.parse(uri);

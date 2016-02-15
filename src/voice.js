@@ -44,11 +44,6 @@ class Voice{
 
   start () {
     this.reader = new MicrophoneReader();
-
-    if (!this.reader) {
-      console.log('Couldnt create microphone');
-      return;
-    }
   }
 
   createPlayerDecoder (playerObj) {
@@ -108,7 +103,6 @@ class Voice{
         setInterval(() => {
           this.reader.read().then((buf) => {
             this.client.debug.addEvent('encoder#encode', buf.samples.byteLength, 'bytes');
-
             this.encoder.encode(buf, (err, packets) => {
               if (err) {
                 return;
@@ -117,6 +111,8 @@ class Voice{
               if (packets.length === 0) {
                 return;
               }
+
+              this.client.debug.set('Encoder started', true);
 
               this.client.debug.addEvent('voice#packetSend', packets[0].data.byteLength, 'bytes');
               this.sendSamples(packets[0].data);

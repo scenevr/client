@@ -631,6 +631,11 @@ Connector.prototype.tick = function () {
   }
 };
 
+Connector.prototype.resolveUrl = function (href) {
+  var uri = URI.serialize(this.uri);
+  return URI.resolve(uri, href);
+};
+
 Connector.prototype.getAssetHost = function () {
   if (this.assetUri.scheme === 'https') {
     return this.assetUri.scheme + '://' + this.assetUri.host;

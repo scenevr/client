@@ -32,7 +32,7 @@ class Voice{
     this.player.listener.setPosition(obj.position.x, obj.position.y, obj.position.z);
 
     var v = obj.getWorldDirection(new THREE.Vector3(0, 0, 1));
-    this.player.listener.setOrientation(-v.x, -v.y, -v.z, 0, 1, 0);
+    this.player.listener.setOrientation(v.x, v.y, v.z, 0, 1, 0);
   }
 
   // doing it wrong hahaha

@@ -12,10 +12,12 @@ class Voice{
     this.delay_period_count = 4;
     this.ringbuffer_period_count = this.delay_period_count * 4;
 
-    this.sampling_rate = 16000;
+    this.sampling_rate = 8000;
     this.num_of_channels = 1;
-    this.opus_sampling_rate = 16000;
+    this.opus_sampling_rate = 8000;
     this.opus_frame_duration = 60;
+
+    this.ready = false;
   }
 
   setPositionAndOrientation (obj) {
@@ -44,8 +46,6 @@ class Voice{
     this.decoder = new AudioDecoder('/vendor/opus_decoder.js');
 
     var open_params = {
-      sampling_rate: this.sampling_rate,
-      num_of_channels: this.num_of_channels
     };
 
     this.reader.open(this.period_size, open_params).then((info) => {
@@ -53,47 +53,55 @@ class Voice{
           sampling_rate: info.sampling_rate,
           num_of_channels: info.num_of_channels,
           params: {
-              application: 2048, // VOIP
+              application: 2049, // Audio
               sampling_rate: this.opus_sampling_rate,
               frame_duration: this.opus_frame_duration
           }
       };
 
+      console.log(JSON.stringify(enc_cfg));
+
       this.encoder.setup(enc_cfg).then((packets) => {
         this.decoder.setup({}, packets).then((info) => {
           this.player.init(info.sampling_rate, info.num_of_channels, this.period_size, this.delay_period_count, this.ringbuffer_period_count).then(() => {
             this.player.start();
-
-            window.setInterval(() => {
-              console.log(this.player.getBufferStatus());
-            }, 1000);
+            this.ready = true;
           }, this.output_reject_log('player.init error'));
         }, this.output_reject_log('decoder.setup error'));
       }, this.output_reject_log('encoder.setup error'));
     }, this.output_reject_log('open error'));
 
     this.player.onneedbuffer = () => {
-      if (this.reader.in_flight || this.working) {
-        return;
-      }
-      this.working = true;
+      // if (this.reader.in_flight || this.working) {
+      //   return;
+      // }
+      // this.working = true;
       if (this.packet_queue.length > 0) {
         var packet = this.packet_queue.shift();
 
         this.decoder.decode(packet).then((buf) => {
           this.player.enqueue(buf);
-          this.working = false;
+          // this.working = false;
         });
       } else {
         this.reader.read().then((buf) => {
-          this.encoder.encode(buf).then((packets) => {
-            if (packets.length === 0) {
-              this.working = false;
+          this.client.debug.addEvent('encoder#encode', buf.samples.byteLength, 'bytes');
+
+          this.encoder.encode(buf, (err, packets) => {
+            if (err) {
               return;
             }
 
-            this.client.connector.ws.send(packets[0].data);
+            // this.client.debug.addEvent('encoder#encoded ' + packets.length);
+            if (packets.length === 0) {
+              // this.working = false;
+              return;
+            }
 
+            this.client.debug.addEvent('voice#packetSend', packets[0].data.byteLength, 'bytes');
+            this.client.connector.ws.send(packets[0].data);
+            // this.working = false;
+            this.ready = true;
             // if its not keeping up well we're fucked aren't we?
 
             // for (var i = 1; i < packets.length; ++i) {
@@ -111,14 +119,26 @@ class Voice{
   }
 
   enqueue (data) {
+    if (!this.ready) {
+      return;
+    }
+
+    this.client.debug.addEvent('decoder#decode');
     this.decoder.decode({data: data }).then((buf) => {
       this.player.enqueue(buf);
-      this.working = false;
+      // this.working = false;
     });
   }
 
-  output_reject_log (message) {
-    console.error(message);
+  close () {
+    this.player.close();
+  }
+
+  output_reject_log (prefix) {
+    return (e) => {
+      this.close();
+      console.error(prefix, e);
+    };
   }
 
   startLoopback () {
@@ -151,10 +171,6 @@ class Voice{
       this.sampling_rate, this.num_of_channels, this.period_size, this.delay_period_count, this.ringbuffer_period_count
     ).then(() => {
       this.player.start();
-
-      window.setInterval(() => {
-        console.log(this.player.getBufferStatus());
-      }, 1000);
     });
   }
 }

@@ -153,10 +153,6 @@ class Voice{
   }
 
   enqueue (buffer) {
-    if (!this.readyToRecieve) {
-      return;
-    }
-
     var view = new DataView(buffer);
     var uuid = '';
 
@@ -169,12 +165,20 @@ class Voice{
       uuid += (Math.floor(view.getUint8(i + 2) / 16)).toString(16);
       uuid += (view.getUint8(i + 2) % 16).toString(16);
 
-      if (i === 4 || i === 6 || i === 8 || i === 10) {
+      if (i === 3 || i === 5 || i === 7 || i === 9) {
         uuid += '-';
       }
     }
 
-    var playerObj = this.client.connector.findPlayerByUUID(uuid);
+    window.uuid = uuid;
+
+    var p = this.client.connector.getByUUID(uuid);
+
+    if (!p) {
+      return;
+    }
+
+    var playerObj = p.obj;
 
     if (!playerObj) {
       console.log('Could not find player');

@@ -45,11 +45,11 @@ function Connector (client, scene, physicsWorld, uri, isPortal, referrer) {
   if (uri.isLocalServer) {
     this.uri = uri;
     this.assetUri = URI.parse(window.location);
-    this.assetUri.scheme = 'http';
+    this.assetUri.scheme = this.assetUri.scheme === 'wss' ? 'https' : 'http';
   } else {
     this.uri = URI.parse(uri);
     this.assetUri = URI.parse(uri);
-    this.assetUri.scheme = 'http';
+    this.assetUri.scheme = this.assetUri.scheme === 'wss' ? 'https' : 'http';
   }
 
   this.isPortal = isPortal || false;
@@ -633,7 +633,11 @@ Connector.prototype.tick = function () {
 };
 
 Connector.prototype.getAssetHost = function () {
-  return 'http://' + this.assetUri.host + ':' + (this.assetUri.port || 80);
+  if (this.assetUri.scheme === 'https') {
+    return this.assetUri.scheme + '://' + this.assetUri.host;
+  } else {
+    return this.assetUri.scheme + '://' + this.assetUri.host + ':' + (this.assetUri.port || 80);
+  }
 };
 
 Connector.prototype.createLink = function (el) {

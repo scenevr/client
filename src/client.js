@@ -889,10 +889,6 @@ Client.prototype.tick = function () {
   // Positional audio
   this.voice.setPositionAndOrientation(this.getPlayerObject());
 
-  if (this.voice.player.panner) {
-    this.voice.player.panner.setPosition(-5, 0.5, 0);
-  }
-
   if (environment.isLowPowerMode()) {
     setTimeout(this.tick.bind(this), 1000 / 12);
   } else {

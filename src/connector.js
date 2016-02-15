@@ -1039,6 +1039,11 @@ Connector.prototype.processMessage = function (el) {
         if (obj.body) {
           obj.body.position.set(this.x, this.y, this.z);
         }
+
+        // Positional audio
+        if (obj.player) {
+          obj.player.panner.setPosition(this.x, this.y, this.z);
+        }
       }).easing(TWEEN.Easing.Linear.None).start();
     }
   }

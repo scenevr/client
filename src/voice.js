@@ -20,6 +20,8 @@ class Voice{
     this.opus_frame_duration = 60;
 
     this.ready = false;
+
+    this.player = null;
   }
 
   setPositionAndOrientation (obj) {
@@ -33,24 +35,27 @@ class Voice{
     this.player.listener.setOrientation(-v.x, -v.y, -v.z, 0, 1, 0);
   }
 
+  // doing it wrong hahaha
+  opusHeader () {
+    // 8k: var header = [79, 112, 117, 115, 72, 101, 97, 100, 1, 2, 0, 0, 64, 31, 0, 0, 0, 0, 0];
+    // 16k:
+    return [79, 112, 117, 115, 72, 101, 97, 100, 1, 2, 0, 0, 128, 62, 0, 0, 0, 0, 0];
+  }
+
   start () {
-    this.player = new WebAudioPlayer();
     this.reader = new MicrophoneReader();
 
     if (!this.reader) {
       console.log('Couldnt create microphone');
       return;
     }
+  }
 
-    this.working = false;
-    this.packet_queue = [];
-    this.encoder = new AudioEncoder('/vendor/opus_encoder.js');
-    this.decoder = new AudioDecoder('/vendor/opus_decoder.js');
+  createPlayerDecoder (playerObj) {
+    playerObj.decoder = new AudioDecoder('/vendor/opus_decoder.js');
+    playerObj.player = new WebAudioPlayer();
 
-    // 8k: var header = [79, 112, 117, 115, 72, 101, 97, 100, 1, 2, 0, 0, 64, 31, 0, 0, 0, 0, 0];
-
-    // 16k:
-    var header = [79, 112, 117, 115, 72, 101, 97, 100, 1, 2, 0, 0, 128, 62, 0, 0, 0, 0, 0];
+    var header = this.opusHeader();
     var buffer = new ArrayBuffer(header.length);
     var view = new Uint8Array(buffer);
 
@@ -58,14 +63,14 @@ class Voice{
       view[i] = header[i];
     }
 
-    this.decoder.setup({}, [{ data: buffer }]).then((info) => {
+    playerObj.decoder.setup({}, [{ data: buffer }]).then((info) => {
       console.log(info);
 
-      this.player.init(info.sampling_rate, info.num_of_channels, this.period_size, this.delay_period_count, this.ringbuffer_period_count).then(() => {
-        this.player.start();
-        this.readyToRecieve = true;
-        this.player.onneedbuffer = () => {
-          console.log('buffer empty')
+      playerObj.player.init(info.sampling_rate, info.num_of_channels, this.period_size, this.delay_period_count, this.ringbuffer_period_count).then(() => {
+        playerObj.player.start();
+        playerObj.player.ready = true;
+        playerObj.player.onneedbuffer = () => {
+          console.log('oh knoes buffer empty')
         };
 
       }, this.output_reject_log('player.init error'));
@@ -73,6 +78,8 @@ class Voice{
   }
 
   listen () {
+    this.encoder = new AudioEncoder('/vendor/opus_encoder.js');
+
     this.reader.open(this.period_size, {}).then((info) => {
       var enc_cfg = {
           sampling_rate: info.sampling_rate,
@@ -113,7 +120,6 @@ class Voice{
 
               this.client.debug.addEvent('voice#packetSend', packets[0].data.byteLength, 'bytes');
               this.sendSamples(packets[0].data);
-              this.ready = true;
             });
           });
         }, this.opus_frame_duration);
@@ -172,23 +178,30 @@ class Voice{
       }
     }
 
-    var player = client.connector.findPlayerByUUID(uuid);
+    var playerObj = this.client.connector.findPlayerByUUID(uuid);
 
-    if (!player) {
+    if (!playerObj) {
       console.log('Could not find player');
       return;
-    });
+    };
 
-    if (!player.decoder) {
-
+    if (!playerObj.decoder) {
+      this.createPlayerDecoder(playerObj);
+      // sorry - we're gonna lose some packets here
+      return;
     }
 
-    this.client.debug.addEvent('decoder#decode', buffer.byteLength, 'bytes');
+    if (playerObj.player.ready) {
+      this.client.debug.addEvent('decoder#decode' + uuid, buffer.byteLength, 'bytes');
 
-    this.decoder.decode({data: buffer.slice(18) }).then((buf) => {
-      this.client.debug.addEvent('decoder#decoded', buf.byteLength, 'bytes');
-      this.player.enqueue(buf);
-    });
+      playerObj.decoder.decode({data: buffer.slice(18) }).then((buf) => {
+        this.client.debug.addEvent('decoder#decoded ' + uuid, buf.byteLength, 'bytes');
+        playerObj.player.enqueue(buf);
+      });
+
+      // :'(
+      this.player = playerObj.player;
+    }
   }
 
   close () {

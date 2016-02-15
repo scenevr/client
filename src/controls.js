@@ -56,7 +56,7 @@ function PointerLockControls (camera, client, mobile, supportsPointerLock) {
       }
 
       // If contactNormal.dot(upAxis) is between 0 and 1, we know that the contact normal is somewhat in the up direction.
-      if (contactNormal.dot(upAxis) > 0.5) { // Use a "good" threshold value between 0 and 1 here!
+      if (contactNormal.dot(upAxis) >= 0) { // Use a "good" threshold value between 0 and 1 here!
         canJump = true;
       }
     });

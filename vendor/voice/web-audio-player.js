@@ -83,23 +83,35 @@ WebAudioPlayer.prototype.enqueue = function (buf) {
     });
 };
 WebAudioPlayer.prototype._onaudioprocess = function (ev) {
-    client.debug.set('buffering', this.buffering);
+  window.client.debug.set('buffering', this.buffering);
 
-    this.check_buffer();
+  this.check_buffer();
 
-    if (this.buffering) {
-        client.debug.addEvent('missed buffers');
-        return;
+  if (this.buffering) {
+    window.client.debug.addEvent('missed buffers');
+
+    for (var channel = 0; channel < ev.outputBuffer.numberOfChannels; channel++) {
+      var outputData = ev.outputBuffer.getChannelData(channel);
+
+      // Loop through the 4096 samples
+      for (var sample = 0; sample < ev.outputBuffer.length; sample++) {
+        // make output equal to the same as the input
+        outputData[sample] = 0.0;
+      }
     }
 
-    var N = ev.outputBuffer.numberOfChannels;
-    var buf = new Float32Array(ev.outputBuffer.getChannelData(0).length * N);
-    var size = this.ringbuf.read_some(buf) / N;
-    for (var i = 0; i < N; ++i) {
-        var ch = ev.outputBuffer.getChannelData(i);
-        for (var j = 0; j < size; ++j)
-            ch[j] = buf[j * N + i];
+    return;
+  }
+
+  var N = ev.outputBuffer.numberOfChannels;
+  var buf = new Float32Array(ev.outputBuffer.getChannelData(0).length * N);
+  var size = this.ringbuf.read_some(buf) / N;
+  for (var i = 0; i < N; ++i) {
+    var ch = ev.outputBuffer.getChannelData(i);
+    for (var j = 0; j < size; ++j) {
+      ch[j] = buf[j * N + i];
     }
+  }
 };
 
 WebAudioPlayer.prototype.check_buffer = function () {
@@ -112,11 +124,16 @@ WebAudioPlayer.prototype.check_buffer = function () {
     client.debug.set('ringbuffer size', size);
     client.debug.set('delay_samples', this.delay_samples);
 
-    if (size >= this.delay_samples)
-        this.buffering = false;
-    if (this.period_samples <= avail)
-        return true;
-    return false;
+    if (size >= this.delay_samples) {
+      this.buffering = false;
+    }
+
+    if (size < this.period_samples) {
+      this.buffering = true;
+    }
+    // if (this.period_samples <= avail)
+    //     return true;
+    // return false;
 };
 
 WebAudioPlayer.prototype.start = function () {

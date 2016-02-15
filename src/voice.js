@@ -8,7 +8,7 @@ class Voice{
   constructor (client) {
     this.client = client;
 
-    this.period_size = 2048;
+    this.period_size = 8192;
     this.delay_period_count = 4;
     this.ringbuffer_period_count = this.delay_period_count * 4;
 
@@ -37,7 +37,7 @@ class Voice{
 
   // doing it wrong hahaha
   opusHeader () {
-    // 8k: var header = [79, 112, 117, 115, 72, 101, 97, 100, 1, 2, 0, 0, 64, 31, 0, 0, 0, 0, 0];
+    var header = [79, 112, 117, 115, 72, 101, 97, 100, 1, 2, 0, 0, 64, 31, 0, 0, 0, 0, 0];
     // 16k:
     return [79, 112, 117, 115, 72, 101, 97, 100, 1, 2, 0, 0, 128, 62, 0, 0, 0, 0, 0];
   }
@@ -192,7 +192,7 @@ class Voice{
     }
 
     if (playerObj.player.ready) {
-      this.client.debug.addEvent('decoder#decode' + uuid, buffer.byteLength, 'bytes');
+      this.client.debug.addEvent('decoder#packetRecieve' + uuid, buffer.byteLength - 18, 'bytes');
 
       playerObj.decoder.decode({data: buffer.slice(18) }).then((buf) => {
         this.client.debug.addEvent('decoder#decoded ' + uuid, buf.byteLength, 'bytes');

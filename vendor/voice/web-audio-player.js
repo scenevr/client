@@ -83,10 +83,15 @@ WebAudioPlayer.prototype.enqueue = function (buf) {
     });
 };
 WebAudioPlayer.prototype._onaudioprocess = function (ev) {
+    client.debug.set('buffering', this.buffering);
+
+    this.check_buffer();
+
     if (this.buffering) {
-        this.check_buffer();
+        client.debug.addEvent('missed buffers');
         return;
     }
+
     var N = ev.outputBuffer.numberOfChannels;
     var buf = new Float32Array(ev.outputBuffer.getChannelData(0).length * N);
     var size = this.ringbuf.read_some(buf) / N;
@@ -95,39 +100,25 @@ WebAudioPlayer.prototype._onaudioprocess = function (ev) {
         for (var j = 0; j < size; ++j)
             ch[j] = buf[j * N + i];
     }
-    this.check_buffer(true);
 };
-WebAudioPlayer.prototype.check_buffer = function (useTimeOut) {
-    var _this = this;
-    if (useTimeOut === void 0) { useTimeOut = false; }
-    if (this.in_requesting_check_buffer || !this.onneedbuffer)
-        return;
-    var needbuf = this.check_buffer_internal();
-    if (!needbuf)
-        return;
-    if (useTimeOut) {
-        this.in_requesting_check_buffer = true;
-        window.setTimeout(function () {
-            _this.in_requesting_check_buffer = false;
-            if (_this.check_buffer_internal())
-                _this.onneedbuffer();
-        }, 0);
-    }
-    else {
-        this.onneedbuffer();
-    }
-};
-WebAudioPlayer.prototype.check_buffer_internal = function () {
-    if (this.in_writing)
-        return false;
+
+WebAudioPlayer.prototype.check_buffer = function () {
+    // if (this.in_writing)
+    //     return false;
+
     var avail = this.ringbuf.available();
     var size = this.ringbuf.size();
+
+    client.debug.set('ringbuffer size', size);
+    client.debug.set('delay_samples', this.delay_samples);
+
     if (size >= this.delay_samples)
         this.buffering = false;
     if (this.period_samples <= avail)
         return true;
     return false;
 };
+
 WebAudioPlayer.prototype.start = function () {
     if (this.node) {
         var panner = this.context.createPanner();
@@ -151,6 +142,7 @@ WebAudioPlayer.prototype.start = function () {
         panner.connect(this.context.destination);
     }
 };
+
 WebAudioPlayer.prototype.stop = function () {
     if (this.node) {
         this.ringbuf.clear();

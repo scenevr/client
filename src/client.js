@@ -51,7 +51,8 @@ var Templates = {
 window.CANNON = CANNON;
 
 var DEFAULT_OPTIONS = {
-  mouselook: true
+  mouselook: true,
+  debug: false
 };
 
 function Client (container, options) {

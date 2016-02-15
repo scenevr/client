@@ -8,7 +8,7 @@ class Voice{
   constructor (client) {
     this.client = client;
 
-    this.period_size = 1024;
+    this.period_size = 2048;
     this.delay_period_count = 4;
     this.ringbuffer_period_count = this.delay_period_count * 4;
 
@@ -16,7 +16,7 @@ class Voice{
     this.sampling_rate = 22050;
     this.num_of_channels = 2;
 
-    this.opus_sampling_rate = 8000;
+    this.opus_sampling_rate = 16000;
     this.opus_frame_duration = 60;
 
     this.ready = false;
@@ -47,7 +47,10 @@ class Voice{
     this.encoder = new AudioEncoder('/vendor/opus_encoder.js');
     this.decoder = new AudioDecoder('/vendor/opus_decoder.js');
 
-    var header = [79, 112, 117, 115, 72, 101, 97, 100, 1, 2, 0, 0, 64, 31, 0, 0, 0, 0, 0];
+    // 8k: var header = [79, 112, 117, 115, 72, 101, 97, 100, 1, 2, 0, 0, 64, 31, 0, 0, 0, 0, 0];
+
+    // 16k:
+    var header = [79, 112, 117, 115, 72, 101, 97, 100, 1, 2, 0, 0, 128, 62, 0, 0, 0, 0, 0];
     var buffer = new ArrayBuffer(header.length);
     var view = new Uint8Array(buffer);
 
@@ -62,13 +65,14 @@ class Voice{
         this.player.start();
         this.readyToRecieve = true;
         this.player.onneedbuffer = () => {
+          console.log('buffer empty')
         };
 
       }, this.output_reject_log('player.init error'));
     }, this.output_reject_log('decoder.setup error'));
   }
 
-  startReader () {
+  listen () {
     this.reader.open(this.period_size, {}).then((info) => {
       var enc_cfg = {
           sampling_rate: info.sampling_rate,
@@ -80,11 +84,19 @@ class Voice{
           }
       };
 
+      console.log('Microphone info');
       console.log(info);
 
       this.encoder.setup(enc_cfg).then((packets) => {
         console.log('Encoder started');
         this.readyToTransmit = true;
+
+        // var header = [];
+        // var view = new Uint8Array(packets[0].data);
+        // for (var i = 0; i < view.length; i++) {
+        //   header[i] = view[i];
+        // }
+        // console.log(header.join(', '));
 
         setInterval(() => {
           this.reader.read().then((buf) => {

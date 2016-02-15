@@ -12,8 +12,10 @@ class Voice{
     this.delay_period_count = 4;
     this.ringbuffer_period_count = this.delay_period_count * 4;
 
-    this.sampling_rate = 8000;
-    this.num_of_channels = 1;
+    // Hardcoded for my PC in ff / chrome
+    this.sampling_rate = 22050;
+    this.num_of_channels = 2;
+
     this.opus_sampling_rate = 8000;
     this.opus_frame_duration = 60;
 
@@ -45,10 +47,29 @@ class Voice{
     this.encoder = new AudioEncoder('/vendor/opus_encoder.js');
     this.decoder = new AudioDecoder('/vendor/opus_decoder.js');
 
-    var open_params = {
-    };
+    var header = [79, 112, 117, 115, 72, 101, 97, 100, 1, 2, 0, 0, 64, 31, 0, 0, 0, 0, 0];
+    var buffer = new ArrayBuffer(header.length);
+    var view = new Uint8Array(buffer);
 
-    this.reader.open(this.period_size, open_params).then((info) => {
+    for (var i = 0; i < header.length; i++) {
+      view[i] = header[i];
+    }
+
+    this.decoder.setup({}, [{ data: buffer }]).then((info) => {
+      console.log(info);
+
+      this.player.init(info.sampling_rate, info.num_of_channels, this.period_size, this.delay_period_count, this.ringbuffer_period_count).then(() => {
+        this.player.start();
+        this.readyToRecieve = true;
+        this.player.onneedbuffer = () => {
+        };
+
+      }, this.output_reject_log('player.init error'));
+    }, this.output_reject_log('decoder.setup error'));
+  }
+
+  startReader () {
+    this.reader.open(this.period_size, {}).then((info) => {
       var enc_cfg = {
           sampling_rate: info.sampling_rate,
           num_of_channels: info.num_of_channels,
@@ -59,74 +80,46 @@ class Voice{
           }
       };
 
-      console.log(JSON.stringify(enc_cfg));
+      console.log(info);
 
       this.encoder.setup(enc_cfg).then((packets) => {
-        this.decoder.setup({}, packets).then((info) => {
-          this.player.init(info.sampling_rate, info.num_of_channels, this.period_size, this.delay_period_count, this.ringbuffer_period_count).then(() => {
-            this.player.start();
-            this.ready = true;
-          }, this.output_reject_log('player.init error'));
-        }, this.output_reject_log('decoder.setup error'));
+        console.log('Encoder started');
+        this.readyToTransmit = true;
+
+        setInterval(() => {
+          this.reader.read().then((buf) => {
+            this.client.debug.addEvent('encoder#encode', buf.samples.byteLength, 'bytes');
+
+            this.encoder.encode(buf, (err, packets) => {
+              if (err) {
+                return;
+              }
+
+              if (packets.length === 0) {
+                return;
+              }
+
+              this.client.debug.addEvent('voice#packetSend', packets[0].data.byteLength, 'bytes');
+              this.client.connector.ws.send(packets[0].data);
+              this.ready = true;
+            });
+          });
+        }, this.opus_frame_duration);
+
       }, this.output_reject_log('encoder.setup error'));
     }, this.output_reject_log('open error'));
-
-    this.player.onneedbuffer = () => {
-      // if (this.reader.in_flight || this.working) {
-      //   return;
-      // }
-      // this.working = true;
-      if (this.packet_queue.length > 0) {
-        var packet = this.packet_queue.shift();
-
-        this.decoder.decode(packet).then((buf) => {
-          this.player.enqueue(buf);
-          // this.working = false;
-        });
-      } else {
-        this.reader.read().then((buf) => {
-          this.client.debug.addEvent('encoder#encode', buf.samples.byteLength, 'bytes');
-
-          this.encoder.encode(buf, (err, packets) => {
-            if (err) {
-              return;
-            }
-
-            // this.client.debug.addEvent('encoder#encoded ' + packets.length);
-            if (packets.length === 0) {
-              // this.working = false;
-              return;
-            }
-
-            this.client.debug.addEvent('voice#packetSend', packets[0].data.byteLength, 'bytes');
-            this.client.connector.ws.send(packets[0].data);
-            // this.working = false;
-            this.ready = true;
-            // if its not keeping up well we're fucked aren't we?
-
-            // for (var i = 1; i < packets.length; ++i) {
-            //   this.packet_queue.push(packets[i]);
-            // }
-
-            // this.decoder.decode(packets[0]).then((buf) => {
-            //   this.player.enqueue(buf);
-            //   this.working = false;
-            // });
-          });
-        });
-      }
-    };
   }
 
   enqueue (data) {
-    if (!this.ready) {
+    if (!this.readyToRecieve) {
       return;
     }
 
-    this.client.debug.addEvent('decoder#decode');
+    this.client.debug.addEvent('decoder#decode', data.byteLength, 'bytes');
+
     this.decoder.decode({data: data }).then((buf) => {
+      this.client.debug.addEvent('decoder#decoded', buf.byteLength, 'bytes');
       this.player.enqueue(buf);
-      // this.working = false;
     });
   }
 

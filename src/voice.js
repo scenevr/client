@@ -112,7 +112,7 @@ class Voice{
               }
 
               this.client.debug.addEvent('voice#packetSend', packets[0].data.byteLength, 'bytes');
-              this.client.connector.ws.send(packets[0].data);
+              this.sendSamples(packets[0].data);
               this.ready = true;
             });
           });
@@ -122,14 +122,70 @@ class Voice{
     }, this.output_reject_log('open error'));
   }
 
-  enqueue (data) {
+  getSampleHeader () {
+    var uuid = this.client.connector.uuid.replace(/-/g, '').split('');
+    var header = new Uint8Array(18);
+
+    header[0] = 0x50;
+    header[1] = 0x00;
+
+    for (var i = 0; i < 16; i++) {
+      header[i + 2] = parseInt(uuid[i * 2 + 0], 16) * 16 + parseInt(uuid[i * 2 + 1], 16);
+    }
+
+    return header;
+  }
+
+  sendSamples (samples) {
+    if (!this.client.connector) {
+      return;
+    }
+
+    var header = this.getSampleHeader();
+
+    var packet = new Uint8Array(header.byteLength + samples.byteLength);
+    packet.set(header, 0);
+    packet.set(new Uint8Array(samples), header.byteLength);
+
+    this.client.connector.ws.send(packet);
+  }
+
+  enqueue (buffer) {
     if (!this.readyToRecieve) {
       return;
     }
 
-    this.client.debug.addEvent('decoder#decode', data.byteLength, 'bytes');
+    var view = new DataView(buffer);
+    var uuid = '';
 
-    this.decoder.decode({data: data }).then((buf) => {
+    if (view.getUint8(0) !== 0x50) {
+      console.log('Bad packet');
+      return;
+    }
+
+    for (var i = 0; i < 16; i++) {
+      uuid += (Math.floor(view.getUint8(i + 2) / 16)).toString(16);
+      uuid += (view.getUint8(i + 2) % 16).toString(16);
+
+      if (i === 4 || i === 6 || i === 8 || i === 10) {
+        uuid += '-';
+      }
+    }
+
+    var player = client.connector.findPlayerByUUID(uuid);
+
+    if (!player) {
+      console.log('Could not find player');
+      return;
+    });
+
+    if (!player.decoder) {
+
+    }
+
+    this.client.debug.addEvent('decoder#decode', buffer.byteLength, 'bytes');
+
+    this.decoder.decode({data: buffer.slice(18) }).then((buf) => {
       this.client.debug.addEvent('decoder#decoded', buf.byteLength, 'bytes');
       this.player.enqueue(buf);
     });
@@ -144,39 +200,6 @@ class Voice{
       this.close();
       console.error(prefix, e);
     };
-  }
-
-  startLoopback () {
-    this.player = new WebAudioPlayer();
-    this.reader = new MicrophoneReader();
-
-    if (!this.reader) {
-      console.log('Couldnt create microphone');
-      return;
-    }
-
-    this.reader.open(this.period_size, {}).then((info) => {
-      this.player.onneedbuffer = () => {
-        if (this.reader.in_flight) {
-          return;
-        }
-
-        this.reader.read().then((buf) => {
-          this.player.enqueue(buf).catch(() => {
-            console.log('ringbuf enqueue error?');
-          });
-        }, (e) => {
-          console.log('reader.read error');
-          console.error(e);
-        });
-      };
-    });
-
-    this.player.init(
-      this.sampling_rate, this.num_of_channels, this.period_size, this.delay_period_count, this.ringbuffer_period_count
-    ).then(() => {
-      this.player.start();
-    });
   }
 }
 

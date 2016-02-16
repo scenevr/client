@@ -1,5 +1,5 @@
 var $ = require('jquery');
-var THREE = require('three.js');
+var THREE = require('three');
 var util = require('util');
 var Connector = require('./connector');
 var environment = require('./environment');
@@ -20,12 +20,19 @@ var DebugStats = require('./debug-stats');
 
 // sadface
 window.THREE = THREE;
-window.WebVRConfig = {};
+
+window.WebVRConfig = {
+  // Complementary filter coefficient. 0 for accelerometer, 1 for gyro.
+  // K_FILTER: 0.98, // Default: 0.98.
+
+  // How far into the future to predict during fast motion.
+  // PREDICTION_TIME_S: 0.100 // Default: 0.050s.
+};
 
 // VR Controls
 require('webvr-polyfill');
-require('../vendor/vr-controls.js');
-require('../vendor/vr-effect.js');
+require('three/examples/js/controls/VRControls.js');
+require('three/examples/js/effects/VREffect.js');
 
 var Effects = {
   Vanilla: require('./effects/vanilla'),
@@ -311,6 +318,7 @@ Client.prototype.createRenderer = function () {
   var height = this.container.height();
 
   this.domElement = $('<canvas />');
+  this.canvas = this.domElement[0];
   this.container.append(this.domElement);
 
   this.domElement.css({
@@ -323,7 +331,6 @@ Client.prototype.createRenderer = function () {
   this.renderer = new THREE.WebGLRenderer({
     antialias: environment.antiAliasingEnabled(),
     alpha: false,
-    // precision: 'lowp',
     canvas: this.domElement[0],
     preserveDrawingBuffer: true
   });
@@ -789,26 +796,6 @@ Client.prototype.addControls = function () {
   this.controls.enabled = false;
 
   this.addReticule();
-
-  $('body').keydown(function (e) {
-    if ($('input:focus')[0] === undefined) {
-      if ((e.keyCode === 84) || (e.keyCode === 86)) {
-        self.connector.startTalking();
-      }
-
-      if (e.charCode === 'f'.charCodeAt(0)) {
-        self.consoleLog('Rift support has been deprecated. Use JanusVR to view scenes in the rift.');
-      }
-    }
-  });
-
-  $('body').keyup(function (e) {
-    if ($('input:focus')[0] === undefined) {
-      if ((e.keyCode === 84) || (e.keyCode === 86)) {
-        self.connector.stopTalking();
-      }
-    }
-  });
 };
 
 Client.prototype.removeControls = function () {
@@ -868,14 +855,12 @@ Client.prototype.tick = function () {
     this.connector.update(this.getPlayerObject());
   }
 
-  if (Utilities.isMobile()) {
-    this.effect = this.vreffect;
-  }
-
   if (!this.stopped && this.scene) {
     this.stats.rendering.begin();
 
-    if (this.hmd) {
+    if (Utilities.isMobile()) {
+      this.vreffect.render(this.scene, this.camera);
+    } else if (this.hmd) {
       this.vreffect.render(this.scene, this.camera);
     } else {
       this.effect.render(this.scene, this.camera);

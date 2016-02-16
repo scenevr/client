@@ -1,4 +1,4 @@
-var THREE = require('three.js');
+var THREE = require('three');
 
 /**
  * @author zz85 / http://www.lab4games.net/zz85/blog

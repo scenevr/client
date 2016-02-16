@@ -1,7 +1,7 @@
 /* globals fetch, atob, FileReader */
 
 var CANNON = require('cannon');
-var THREE = require('three.js');
+var THREE = require('three');
 var ndarray = require('ndarray');
 var createAOMesh = require('ao-mesher');
 var crunch = require('voxel-crunch');

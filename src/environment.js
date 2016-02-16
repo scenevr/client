@@ -16,7 +16,11 @@ Environment.prototype.ambientOcclusionEnabled = function () {
 };
 
 Environment.prototype.antiAliasingEnabled = function () {
-  return true;
+  if (this.isMobile()) {
+    return false;
+  } else {
+    return true;
+  }
 };
 
 Environment.prototype.getDownsampling = function () {
@@ -69,7 +73,11 @@ Environment.prototype.unpublishTimeout = function () {
 
 // degrees
 Environment.prototype.getViewAngle = function () {
-  return 60;
+  if (this.isMobile()) {
+    return 75;
+  } else {
+    return 60;
+  }
 };
 
 // Near and far clipping panes in meters
@@ -82,7 +90,11 @@ Environment.prototype.getFar = function () {
 };
 
 Environment.prototype.getShadowMapSize = function () {
-  return 2048;
+  if (this.isMobile()) {
+    return 512;
+  } else {
+    return 2048;
+  }
 };
 
 Environment.prototype.shadowMappingEnabled = function () {

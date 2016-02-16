@@ -58,9 +58,9 @@ class DebugStats {
   }
 
   update () {
-    // if (!this.client.options.debug) {
-    //   this.el.style.display = 'none';
-    // } else {
+    if (!this.client.options.debug) {
+      this.el.style.display = 'none';
+    } else {
       this.el.style.display = 'block';
 
       this.updateEvents();
@@ -74,7 +74,7 @@ class DebugStats {
       html.push('</dl>');
 
       this.el.innerHTML = html.join('');
-    // }
+    }
   }
 }
 

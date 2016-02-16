@@ -1,5 +1,5 @@
 var $ = require('jquery');
-var THREE = require('three.js');
+var THREE = require('three');
 var CANNON = require('cannon');
 var environment = require('./environment');
 var Utilities = require('../vendor/webvr-manager/util');
@@ -77,13 +77,25 @@ function PointerLockControls (camera, client, mobile, supportsPointerLock) {
     client.onClick(event);
   }, false);
 
+  document.addEventListener('touchstart', function (event) {
+    if (Utilities.isMobile()) {
+      moveForward = true;
+    }
+  });
+
+  document.addEventListener('touchend', function (event) {
+    if (Utilities.isMobile()) {
+      moveForward = false;
+    }
+  });
+
   document.addEventListener('mousedown', function (event) {
     if (scope.enabled === false) {
       return;
     }
 
     event.preventDefault();
-    //client.trigger('mousedown', [event]);
+    // client.trigger('mousedown', [event]);
   }, false);
 
   document.addEventListener('mouseup', function (event) {
@@ -92,7 +104,7 @@ function PointerLockControls (camera, client, mobile, supportsPointerLock) {
     }
 
     event.preventDefault();
-    //client.trigger('mouseup', [event]);
+    // client.trigger('mouseup', [event]);
   }, false);
 
   document.addEventListener('mousemove', function (event) {
@@ -357,7 +369,12 @@ function PointerLockControls (camera, client, mobile, supportsPointerLock) {
     euler.y = yawObject.rotation.y;
     euler.order = 'XYZ';
     quat.setFromEuler(euler);
-    inputVelocity.applyQuaternion(quat);
+
+    if (this.vrcontrols) {
+      inputVelocity.applyQuaternion(yawObject.quaternion);
+    } else {
+      inputVelocity.applyQuaternion(quat);
+    }
 
     // Add to the object
     velocity.x = velocity.x * dampingFactor + inputVelocity.x;

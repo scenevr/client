@@ -1,4 +1,4 @@
-var THREE = require('three.js');
+var THREE = require('three');
 var MicrophoneReader = require('../vendor/voice/microphone-reader');
 var WebAudioPlayer = require('../vendor/voice/web-audio-player');
 var AudioEncoder = require('../vendor/voice/audio-encoder');

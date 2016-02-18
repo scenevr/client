@@ -216,6 +216,9 @@ Client.prototype.loadScene = function (sceneProxy, position) {
   connector.on('connected', function () {
     if (environment.isMobile()) {
       self.takePointerLock();
+    } else if (this.controls && this.controls.gamepad.present()) {
+      self.controls.enabled = true;
+      self.hideInstructions();
     } else {
       self.addInstructions();
     }
@@ -795,12 +798,18 @@ Client.prototype.addControls = function () {
   this.controls = new PointerLockControls(this.camera, this, environment.isMobile(), this.supportsPointerLock());
   this.controls.enabled = false;
 
+  this.controls.on('gamepad-detected', () => {
+    this.controls.enabled = true;
+    this.hideInstructions();
+    // this.consoleLog('Detected gamepad ' + this.controls.gamepad.getName());
+  });
+
   this.addReticule();
 };
 
 Client.prototype.removeControls = function () {
   delete this.controls;
-}
+};
 
 Client.prototype.getPlayerObject = function () {
   return this.controls.getObject();

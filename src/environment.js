@@ -16,15 +16,23 @@ Environment.prototype.ambientOcclusionEnabled = function () {
 };
 
 Environment.prototype.antiAliasingEnabled = function () {
-  if (this.isMobile()) {
+  if (this.isAndroidTV()) {
+    return true;
+  } else if (this.isMobile()) {
     return false;
   } else {
     return true;
   }
 };
 
+Environment.prototype.isAndroidTV = function () {
+  return navigator.userAgent.match(/X11; Linux x86_64/) && navigator.platform.match(/aarch64/);
+};
+
 Environment.prototype.getDownsampling = function () {
-  if (this.isMobile()) {
+  if (this.isAndroidTV()) {
+    return 1.0;
+  } else if (this.isMobile()) {
     return 1.0;
   } else if (window.devicePixelRatio && window.devicePixelRatio > 1) {
     return 2.0;
@@ -92,6 +100,8 @@ Environment.prototype.getFar = function () {
 Environment.prototype.getShadowMapSize = function () {
   if (this.isMobile()) {
     return 512;
+  } else if (this.isAndroidTV()) {
+    return 1024;
   } else {
     return 2048;
   }

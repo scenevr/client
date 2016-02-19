@@ -1,4 +1,4 @@
-var THREE = require('three.js');
+var THREE = require('three');
 var $ = require('jquery');
 var Utils = require('../utils');
 var URI = require('uri-js');

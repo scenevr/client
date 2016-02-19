@@ -1,7 +1,7 @@
 var Utils = require('../utils');
 var StyleMap = require('../style-map');
 var CANNON = require('cannon');
-var THREE = require('three.js');
+var THREE = require('three');
 
 // For 3d text
 var TextGeometry = require('../../vendor/text-geometry.js');

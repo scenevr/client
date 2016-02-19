@@ -1,6 +1,6 @@
 var Utils = require('../utils');
 var CANNON = require('cannon');
-var THREE = require('three.js');
+var THREE = require('three');
 
 var Z_AXIS_SCALE = 0.01;
 

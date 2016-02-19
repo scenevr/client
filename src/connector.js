@@ -32,9 +32,14 @@ var PLAYER_MIN_HEAD_ANGLE = -Math.PI / 4;
 var Y_AXIS = new THREE.Vector3(0, 1, 0);
 var Z_AXIS = new THREE.Vector3(0, 0, 1);
 
-function Connector (client, scene, physicsWorld, uri, isPortal, referrer) {
+function Connector (client, scene, physicsWorld, uri, options) {
   // The version of the scene from the server
   this.version = { scene: 1.0 };
+
+  options = options || {
+    portal: false,
+    referrer: null
+  };
 
   this.client = client;
   this.scene = scene;
@@ -51,8 +56,8 @@ function Connector (client, scene, physicsWorld, uri, isPortal, referrer) {
     this.assetUri.scheme = 'http';
   }
 
-  this.isPortal = isPortal || false;
-  this.referrer = referrer || null;
+  this.isPortal = options.portal;
+  this.referrer = options.referral;
   this.elementMap = {};
   this.renderQueue = new RenderQueue();
 
@@ -118,7 +123,7 @@ Connector.prototype.vectorToWire = function (a) {
 };
 
 Connector.prototype.onAuthenticationReady = function () {
-  if (!this.client) {
+  if (true) { // !this.client) {
     console.log('Authentication not enabled.');
     return;
   }
@@ -302,38 +307,6 @@ Connector.prototype.addSky = function () {
   this.scene.add(this.sky.mesh);
 };
 
-Connector.prototype.update = function (player) {
-  var p = player.position;
-
-  if (this.sunlight) {
-    this.sunlight.position.copy(p.clone().add(new THREE.Vector3(0.75, 1, 0.5).multiplyScalar(100)));
-    this.sunlight.lookAt(p);
-  }
-};
-
-Connector.prototype.addLights = function () {
-  var light = new THREE.SpotLight(0xffffff, 1.1);
-  light.position.copy(new THREE.Vector3(0.75, 1, 0.5).multiplyScalar(50));
-  light.lookAt(new THREE.Vector3(0, 0, 0));
-
-  if (environment.shadowMappingEnabled()) {
-    light.castShadow = true;
-    light.shadowDarkness = 0.5;
-
-    light.shadowCameraNear = 10;
-    light.shadowCameraFar = 200;
-    light.shadowCameraFov = 45;
-    light.shadowMapWidth = environment.getShadowMapSize();
-    light.shadowMapHeight = environment.getShadowMapSize();
-  }
-
-  this.scene.add(light);
-  this.sunlight = light;
-
-  var ambientLight = new THREE.AmbientLight(0x303030);
-  this.scene.add(ambientLight);
-};
-
 Connector.prototype.getPortalObject = function () {
   return this.portal.obj;
 };
@@ -478,7 +451,7 @@ Connector.prototype.addViewSourceButton = function () {
 };
 
 Connector.prototype.addDefaultSceneElements = function () {
-  this.addLights();
+  // this.addLights();
   this.addFloor();
   // return;
   
@@ -609,7 +582,8 @@ Connector.prototype.onClick = function (e) {
 };
 
 Connector.prototype.tick = function () {
-  if (this.spawned && this.isConnected()) {
+  // fixme
+  if (false) { // this.spawned && this.isConnected()) {
     var position = new THREE.Vector3(0, -0.75, 0).add(this.client.getPlayerObject().position);
     var rotation = this.client.getRotation();
     var velocity = this.client.getVelocity();
@@ -738,7 +712,8 @@ Connector.prototype.addElement = function (el, parentObject) {
   } else if (el.is('plane')) {
     obj = Plane.create(this, el);
   } else if (el.is('skybox')) {
-    obj = Skybox.create(this, el);
+    return;
+    // obj = Skybox.create(this, el);
     // if (this.version.scene === 1.0) {
     // } else {
     //   return

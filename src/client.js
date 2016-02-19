@@ -144,6 +144,29 @@ Client.prototype.onEnterVR = function (hmd) {
   this.hmd = hmd;
 };
 
+Client.prototype.addLights = function () {
+  var light = new THREE.SpotLight(0xffffff, 1.1);
+  light.position.copy(new THREE.Vector3(0.75, 1, 0.5).multiplyScalar(50));
+  light.lookAt(new THREE.Vector3(0, 0, 0));
+
+  if (environment.shadowMappingEnabled()) {
+    light.castShadow = true;
+    // light.shadowDarkness = 0.5;
+
+    light.shadow.camera.near = 10;
+    light.shadow.camera.far = 200;
+    light.shadow.camera.fov = 45;
+    light.shadow.mapSize.width = environment.getShadowMapSize();
+    light.shadow.mapSize.height = environment.getShadowMapSize();
+  }
+
+  this.scene.add(light);
+  this.sunlight = light;
+
+  var ambientLight = new THREE.AmbientLight(0x303030);
+  this.scene.add(ambientLight);
+};
+
 Client.prototype.addEditor = function () {
   this.editor = new Editor(this);
 };
@@ -211,6 +234,7 @@ Client.prototype.loadScene = function (sceneProxy) {
   // Init scene
   this.setScene(new THREE.Scene());
   this.scene.add(this.controls.getObject());
+  this.addLights();
 
   // Init physics
   this.world = new CANNON.World();
@@ -352,7 +376,7 @@ Client.prototype.createRenderer = function () {
   this.renderer.setClearColor(0xFFFFFF);
   this.renderer.autoClear = true;
   this.renderer.sortObjects = false;
-  this.renderer.shadowMapEnabled = environment.shadowMappingEnabled();
+  this.renderer.shadowMap.enabled = environment.shadowMappingEnabled();
 
   if (environment.shadowMappingEnabled()) {
     this.renderer.shadowMapType = THREE.PCFSoftShadowMap;
@@ -863,7 +887,11 @@ Client.prototype.tick = function () {
       this.effect = new Effects.Vanilla(this, this.renderer);
     }
 
-    this.connector.update(this.getPlayerObject());
+    if (this.sunlight) {
+      var p = this.getPlayerObject().position;
+      this.sunlight.position.copy(p.clone().add(new THREE.Vector3(0.75, 1, 0.5).multiplyScalar(100)));
+      this.sunlight.lookAt(p);
+    }
   }
 
   if (Utilities.isMobile()) {
@@ -877,6 +905,12 @@ Client.prototype.tick = function () {
       this.vreffect.render(this.scene, this.camera);
     } else {
       this.renderer.clear(true, true, true);
+
+      // if (this.grid) {
+      //   this.grid.getVisibleConnectors().forEach((connector) => {
+      //     this.renderer.render(connector.scene, this.camera);
+      //   });
+      // } else {
       this.renderer.render(this.scene, this.camera);
     }
     this.stats.rendering.end();

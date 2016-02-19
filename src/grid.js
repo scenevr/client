@@ -32,7 +32,8 @@ class Grid {
     });
   }
 
-  getVisibleConnectors (position) {
+  getVisibleConnectors () {
+    // var position = this.getPlayerPosition();
     var results = [];
 
     this.forEach((connector) => {
@@ -95,7 +96,12 @@ class Grid {
         return;
       }
 
-      var connector = new Connector(this.client, new THREE.Scene(), new CANNON.World(), url);
+      var obj = new THREE.Object3D();
+      obj.position.copy(this.getWorldOffset(coord));
+      this.client.scene.add(obj);
+
+      var connector = new Connector(this.client, obj, new CANNON.World(), url);
+      connector.connect();
       this.addConnector(connector, coord);
     });
   };

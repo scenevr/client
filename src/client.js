@@ -1,5 +1,5 @@
 var $ = require('jquery');
-var THREE = require('three.js');
+var THREE = require('three');
 var util = require('util');
 var Connector = require('./connector');
 var environment = require('./environment');
@@ -183,29 +183,13 @@ Client.prototype.addConnectorToGrid = function (coord, url) {
   this.connectors.push(connector);
 };
 
-Client.prototype.loadGridConnector = function (coord) {
-  this.grid.getConnectorUrl(coord, (err, url) => {
-    if (err) {
-      console.log(err);
-      return;
-    }
-
-    this.addConnectorToGrid(coord, url);
-  });
-};
-
-Client.prototype.loadGridConnectors = function () {
-  var coordinates = this.grid.getAdjacentGridCoordinates(this.getPlayerObject().position);
-
-  coordinates.forEach((coord) => {
-    this.loadGridConnector(coord);
-  });
-};
-
 Client.prototype.connectToGrid = function (position) {
-  this.grid = new Grid();
-  this.getPlayerObject().position.copy(position);
-  this.loadGridConnectors();
+  this.loadScene('wss://grid.scenevr.com/scenes/12');
+
+  this.grid = new Grid(this);
+  this.grid.loadConnectors();
+  // this.getPlayerObject().position.copy(position);
+  // this.loadGridConnectors();
 };
 
 Client.prototype.loadScene = function (sceneProxy) {

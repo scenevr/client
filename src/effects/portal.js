@@ -1,5 +1,5 @@
 var Utils = require('../utils');
-var THREE = require('three.js');
+var THREE = require('three');
 
 function Portal (client, renderer, portal, portalScene) {
   this.client = client;

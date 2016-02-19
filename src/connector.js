@@ -3,7 +3,7 @@
 var $ = require('jquery');
 var util = require('util');
 var Utils = require('./utils');
-var THREE = require('three.js');
+var THREE = require('three');
 var URI = require('uri-js');
 var environment = require('./environment');
 var StyleMap = require('./style-map');
@@ -137,7 +137,6 @@ Connector.prototype.authenticate = function () {
     if (!ok) {
       console.error('Unable to get token');
     } else {
-      console.log('Authenticating....');
       self.sendMessage($('<event />').attr('name', 'authenticate').attr('token', token));
     }
   });

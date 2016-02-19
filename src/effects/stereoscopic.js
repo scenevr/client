@@ -1,4 +1,4 @@
-var THREE = require('three.js');
+var THREE = require('three');
 var Y_AXIS = new THREE.Vector3(0, 1, 0);
 
 function StereoscopicEffect (client, renderer, controls, hmd, hmdSensor) {

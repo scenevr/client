@@ -1,5 +1,5 @@
 /* globals Worker, Blob */
-var THREE = require('three.js');
+var THREE = require('three');
 var MTLLoader = require('./mtl-loader');
 var util = require('util');
 var EventEmitter = require('wolfy87-eventemitter');

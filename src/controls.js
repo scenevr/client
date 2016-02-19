@@ -1,5 +1,5 @@
 var $ = require('jquery');
-var THREE = require('three.js');
+var THREE = require('three');
 var CANNON = require('cannon');
 var environment = require('./environment');
 var Utilities = require('../vendor/webvr-manager/util');

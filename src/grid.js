@@ -1,9 +1,12 @@
 /* globals fetch */
 
-var THREE = require('three.js');
+var THREE = require('three');
+var CANNON = require('cannon');
+var Connector = require('./connector');
 
 class Grid {
-  constructor () {
+  constructor (client) {
+    this.client = client;
     this.connectors = {};
   }
 
@@ -73,20 +76,44 @@ class Grid {
     var coord = this.getGridCoordinate(position);
     var results = [coord];
 
-    results.push(coord.clone().add(new THREE.Vector2(-1, -1)));
+    // results.push(coord.clone().add(new THREE.Vector2(-1, -1)));
     results.push(coord.clone().add(new THREE.Vector2(0, -1)));
-    results.push(coord.clone().add(new THREE.Vector2(1, -1)));
+    // results.push(coord.clone().add(new THREE.Vector2(1, -1)));
     results.push(coord.clone().add(new THREE.Vector2(-1, 0)));
     results.push(coord.clone().add(new THREE.Vector2(1, 0)));
-    results.push(coord.clone().add(new THREE.Vector2(-1, 1)));
+    // results.push(coord.clone().add(new THREE.Vector2(-1, 1)));
     results.push(coord.clone().add(new THREE.Vector2(0, 1)));
-    results.push(coord.clone().add(new THREE.Vector2(1, 1)));
+    // results.push(coord.clone().add(new THREE.Vector2(1, 1)));
 
     return results;
   }
 
+  loadGridConnector (coord) {
+    this.getConnectorUrl(coord, (err, url) => {
+      if (err) {
+        console.log(err);
+        return;
+      }
+
+      var connector = new Connector(this.client, new THREE.Scene(), new CANNON.World(), url);
+      this.addConnector(connector, coord);
+    });
+  };
+
+  getPlayerPosition () {
+    return this.client.getPlayerObject().position;
+  }
+
+  loadConnectors () {
+    var coordinates = this.getAdjacentGridCoordinates(this.getPlayerPosition());
+
+    coordinates.forEach((coord) => {
+      this.loadGridConnector(coord);
+    });
+  };
+
   getConnectorUrl (coordinate, callback) {
-    var url = 'http://www.scenevr.com/scenes/grid.json?x=' + coordinate.x + '&y=' + coordinate.y;
+    var url = 'https://www.scenevr.com/scenes/grid.json?x=' + coordinate.x + '&y=' + coordinate.y;
 
     console.log(url);
 

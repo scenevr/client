@@ -1,4 +1,4 @@
-var THREE = require('three.js');
+var THREE = require('three');
 
 var Utils = {
   parseVector: function (value) {

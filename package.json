@@ -14,7 +14,7 @@
     "ndarray-ops": "1.2.2",
     "stats-js": "1.0.0-alpha1",
     "stringify": "3.1.0",
-    "three.js": "0.73.0",
+    "three": "^0.74.0",
     "tween.js": "0.14.0",
     "uri-js": "1.4.2",
     "util": "0.10.3",
@@ -33,7 +33,17 @@
     "test": "semistandard && browserify -t stringify src/client.js > /dev/null"
   },
   "browserify": {
-    "transform": ["stringify", ["babelify", { "presets": ["es2015"] }]]
+    "transform": [
+      "stringify",
+      [
+        "babelify",
+        {
+          "presets": [
+            "es2015"
+          ]
+        }
+      ]
+    ]
   },
   "semistandard": {
     "ignore": [

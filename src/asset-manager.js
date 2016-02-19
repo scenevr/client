@@ -53,6 +53,9 @@ Asset.prototype.onLoad = function (data) {
 
 Asset.prototype.onError = function (xhr, status, err) {
   console.error('Error loading ' + this.url + ': ' + err.toString());
+  console.log(xhr);
+  console.log(status);
+  console.log(err);
 };
 
 function AssetManager () {

@@ -16,15 +16,24 @@ var Utilities = require('../vendor/webvr-manager/util');
 var VrButton = require('./components/vr-button');
 var WebvrDetector = require('./lib/webvr-detector');
 var Grid = require('./grid');
+var Voice = require('./voice');
+var DebugStats = require('./debug-stats');
 
 // sadface
 window.THREE = THREE;
-window.WebVRConfig = {};
+
+window.WebVRConfig = {
+  // Complementary filter coefficient. 0 for accelerometer, 1 for gyro.
+  // K_FILTER: 0.98, // Default: 0.98.
+
+  // How far into the future to predict during fast motion.
+  // PREDICTION_TIME_S: 0.100 // Default: 0.050s.
+};
 
 // VR Controls
 require('webvr-polyfill');
-require('../vendor/vr-controls.js');
-require('../vendor/vr-effect.js');
+require('three/examples/js/controls/VRControls.js');
+require('three/examples/js/effects/VREffect.js');
 
 var Effects = {
   Vanilla: require('./effects/vanilla'),
@@ -50,7 +59,8 @@ var Templates = {
 window.CANNON = CANNON;
 
 var DEFAULT_OPTIONS = {
-  mouselook: true
+  mouselook: true,
+  debug: false
 };
 
 function Client (container, options) {
@@ -73,6 +83,11 @@ Client.prototype.initialize = function () {
   var self = this;
 
   $('.sk-spinner').remove();
+
+  this.voice = new Voice(this);
+  this.voice.start();
+
+  this.debug = new DebugStats(this);
 
   this.assetManager = new AssetManager(this);
   this.preferences = new Preferences(this);
@@ -257,6 +272,9 @@ Client.prototype.loadScene = function (sceneProxy) {
   connector.on('connected', () => {
     if (environment.isMobile()) {
       this.takePointerLock();
+    } else if (this.controls && this.controls.gamepad.present()) {
+      this.controls.enabled = true;
+      this.hideInstructions();
     } else {
       this.addInstructions();
     }
@@ -354,6 +372,7 @@ Client.prototype.createRenderer = function () {
   var height = this.container.height();
 
   this.domElement = $('<canvas />');
+  this.canvas = this.domElement[0];
   this.container.append(this.domElement);
 
   this.domElement.css({
@@ -366,7 +385,6 @@ Client.prototype.createRenderer = function () {
   this.renderer = new THREE.WebGLRenderer({
     antialias: environment.antiAliasingEnabled(),
     alpha: false,
-    // precision: 'lowp',
     canvas: this.domElement[0],
     preserveDrawingBuffer: true
   });
@@ -424,11 +442,15 @@ Client.prototype.releasePointerLock = function () {
   this.exitPointerLock();
 };
 
-Client.prototype.getDropPosition = function () {
+Client.prototype.getDropPosition = function (distance) {
   var player = this.controls.getObject().position;
   var direction = this.controls.getDirection(new THREE.Vector3());
 
-  return player.clone().add(direction.multiplyScalar(2));
+  if (!distance) {
+    distance = 2;
+  }
+
+  return player.clone().add(direction.multiplyScalar(distance));
 };
 
 Client.prototype.removeAllObjectsFromScene = function () {
@@ -479,52 +501,76 @@ Client.prototype.inspect = function (el) {
   }
 };
 
-Client.prototype.onClick = function (e) {
-  var self = this;
+Client.prototype.getElementsFromPoint = function (point, distance) {
+  if (!point) {
+    point = new THREE.Vector2(this.container.innerWidth / 2, this.container.innerHeight / 2);
+  }
+
+  if (!distance) {
+    distance = 5.0;
+  }
+
+  var results = [];
+
   var position = this.controls.getObject().position;
   var direction = this.controls.getDirection(new THREE.Vector3());
 
   this.raycaster.set(position, direction);
-  this.raycaster.far = 5.0;
+  this.raycaster.far = distance;
 
   // fixme - the search for the userData node is pretty ganky
-  this.raycaster.intersectObjects(this.getAllClickableObjects()).forEach(function (intersection) {
-    var iEvent = {
+  this.raycaster.intersectObjects(this.getAllClickableObjects()).forEach((intersection) => {
+    if (!intersection.object) {
+      console.log('[assert] No object associated with this intersection');
+      return;
+    }
+
+    var o = intersection.object;
+
+    while (o.parent) {
+      if (o.userData && o.userData instanceof $) {
+        break;
+      }
+
+      o = o.parent;
+    }
+
+    if (!o.userData || !o.userData.attr) {
+      console.log('No userdata');
+      return;
+    }
+
+    results.push({
+      uuid: o.name,
+      point: intersection.point,
+      intersection: intersection,
       position: position,
       direction: direction,
-      intersection: intersection,
-      target: intersection.object.userData
-    };
+      object: o,
+      target: o.userData,
+      normal: intersection.face.normal
+    });
+  });
 
-    if (iEvent.target && iEvent.target.attr && iEvent.target.attr('uuid')) {
-      self.emit('click', iEvent);
+  return results;
+};
+
+// todo - refactor the shit out of this
+Client.prototype.onClick = function (e) {
+  this.getElementsFromPoint().forEach((object) => {
+    // Add button pressed
+    object.button = e.button;
+
+    // Emit event
+    this.emit('click', object);
+
+    // links
+    if (object.object.onClick) {
+      object.object.onClick(object);
     }
 
-    if (intersection.object && intersection.object.parent && intersection.object.parent.userData.is && intersection.object.parent.userData.is('link')) {
-      intersection.object.parent.onClick(iEvent);
-    }
-
-    if (intersection.object && intersection.object.onClick) {
-      intersection.object.onClick(iEvent);
-    }
-
-    var obj = intersection.object;
-
-    while (obj.parent) {
-      if (obj.userData instanceof $) {
-        self.connector.onClick({
-          uuid: obj.name,
-          point: intersection.point,
-          direction: direction,
-          normal: intersection.face.normal,
-          button: e.button,
-          selectedColor: this.editor && this.editor.selectedIndex
-        });
-
-        return;
-      }
-      obj = obj.parent;
-    }
+    // Send event to server
+    this.connector.onClick(object);
   });
 };
 
@@ -810,32 +856,18 @@ Client.prototype.addControls = function () {
   this.controls = new PointerLockControls(this.camera, this, environment.isMobile(), this.supportsPointerLock());
   this.controls.enabled = false;
 
+  this.controls.on('gamepad-detected', () => {
+    this.controls.enabled = true;
+    this.hideInstructions();
+    // this.consoleLog('Detected gamepad ' + this.controls.gamepad.getName());
+  });
+
   this.addReticule();
-
-  $('body').keydown(function (e) {
-    if ($('input:focus')[0] === undefined) {
-      if ((e.keyCode === 84) || (e.keyCode === 86)) {
-        self.connector.startTalking();
-      }
-
-      if (e.charCode === 'f'.charCodeAt(0)) {
-        self.consoleLog('Rift support has been deprecated. Use JanusVR to view scenes in the rift.');
-      }
-    }
-  });
-
-  $('body').keyup(function (e) {
-    if ($('input:focus')[0] === undefined) {
-      if ((e.keyCode === 84) || (e.keyCode === 86)) {
-        self.connector.stopTalking();
-      }
-    }
-  });
 };
 
 Client.prototype.removeControls = function () {
   delete this.controls;
-}
+};
 
 Client.prototype.getPlayerObject = function () {
   return this.controls.getObject();
@@ -894,14 +926,12 @@ Client.prototype.tick = function () {
     }
   }
 
-  if (Utilities.isMobile()) {
-    this.effect = this.vreffect;
-  }
-
   if (!this.stopped && this.scene) {
     this.stats.rendering.begin();
 
-    if (this.hmd) {
+    if (Utilities.isMobile()) {
+      this.vreffect.render(this.scene, this.camera);
+    } else if (this.hmd) {
       this.vreffect.render(this.scene, this.camera);
     } else {
       this.renderer.clear(true, true, true);
@@ -917,6 +947,9 @@ Client.prototype.tick = function () {
 
     this.tickPhysics();
   }
+
+  // Positional audio
+  this.voice.setPositionAndOrientation(this.getPlayerObject());
 
   if (environment.isLowPowerMode()) {
     setTimeout(this.tick.bind(this), 1000 / 12);

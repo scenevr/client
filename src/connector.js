@@ -49,11 +49,10 @@ function Connector (client, scene, physicsWorld, uri, options) {
   if (uri.isLocalServer) {
     this.uri = uri;
     this.assetUri = URI.parse(window.location);
-    this.assetUri.scheme = 'http';
   } else {
     this.uri = URI.parse(uri);
     this.assetUri = URI.parse(uri);
-    this.assetUri.scheme = 'http';
+    this.assetUri.scheme = this.assetUri.scheme === 'wss' ? 'https' : 'http';
   }
 
   this.isPortal = options.portal;
@@ -603,8 +602,17 @@ Connector.prototype.tick = function () {
   }
 };
 
+Connector.prototype.resolveUrl = function (href) {
+  var uri = URI.serialize(this.uri);
+  return URI.resolve(uri, href);
+};
+
 Connector.prototype.getAssetHost = function () {
-  return 'http://' + this.assetUri.host + ':' + (this.assetUri.port || 80);
+  if (this.assetUri.scheme === 'https') {
+    return this.assetUri.scheme + '://' + this.assetUri.host;
+  } else {
+    return this.assetUri.scheme + '://' + this.assetUri.host + ':' + (this.assetUri.port || 80);
+  }
 };
 
 Connector.prototype.createLink = function (el) {
@@ -803,7 +811,7 @@ Connector.prototype.addElement = function (el, parentObject) {
       });
     }
 
-    if (el.is('sphere,box,plane') && styles.textureMap) {
+    if (el.is('sphere,box,plane,voxel') && styles.textureMap) {
       var url = this.getAssetHost() + this.getUrlFromStyle(styles.textureMap);
       THREE.ImageUtils.crossOrigin = true;
 
@@ -1007,6 +1015,11 @@ Connector.prototype.processMessage = function (el) {
         if (obj.body) {
           obj.body.position.set(this.x, this.y, this.z);
         }
+
+        // Positional audio
+        if (obj.player) {
+          obj.player.panner.setPosition(this.x, this.y, this.z);
+        }
       }).easing(TWEEN.Easing.Linear.None).start();
     }
   }
@@ -1059,8 +1072,17 @@ Connector.prototype.onMessage = function (e) {
 
   if (e.data instanceof ArrayBuffer) {
     // probably voice message - do something...
+    // console.log(e.data.byteLength);
+    this.client.voice.enqueue(e.data);
   } else {
-    var xml = $.parseXML(e.data);
+    var xml;
+
+    try {
+      xml = $.parseXML(e.data);
+    } catch (e) {
+      console.log('Invalid xml');
+      return;
+    }
     var packet = xml.firstChild;
 
     if (packet.nodeName !== 'packet') {

@@ -6,7 +6,8 @@ var Utils = {
     if (isFinite(vector.length())) {
       return vector;
     } else {
-      throw new Error('Invalid vector string');
+      console.log('Invalid vector string');
+      return new THREE.Vector3(0, 0, 0);
     }
   },
   parseEuler: function (value) {
@@ -14,7 +15,8 @@ var Utils = {
     if (isFinite(euler.x) && isFinite(euler.y) && isFinite(euler.z)) {
       return euler;
     } else {
-      throw new Error('Invalid euler string');
+      console.log('Invalid euler string');
+      return new THREE.Euler(0, 0, 0);
     }
   }
 };

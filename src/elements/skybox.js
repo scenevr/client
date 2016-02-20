@@ -73,7 +73,10 @@ Skybox.create = function (connector, el) {
       side: THREE.BackSide
     });
   }
-  return new THREE.Mesh(new THREE.BoxGeometry(2000, 2000, 2000), material);
+
+  var distance = 2048;
+  
+  return new THREE.Mesh(new THREE.BoxGeometry(distance, distance, distance), material);
 };
 
 module.exports = Skybox;

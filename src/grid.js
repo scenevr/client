@@ -142,6 +142,6 @@ class Grid {
 
 }
 
-Grid.SIZE = 64;
+Grid.SIZE = 32;
 
 module.exports = Grid;

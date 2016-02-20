@@ -36,7 +36,7 @@ function Connector (client, scene, physicsWorld, uri, options) {
   // The version of the scene from the server
   this.version = { scene: 1.0 };
 
-  options = options || {
+  this.options = Object.assignoptions || {
     portal: false,
     referrer: null
   };
@@ -55,8 +55,8 @@ function Connector (client, scene, physicsWorld, uri, options) {
     this.assetUri.scheme = this.assetUri.scheme === 'wss' ? 'https' : 'http';
   }
 
-  this.isPortal = options.portal;
-  this.referrer = options.referral;
+  this.isPortal = this.options.portal;
+  this.referrer = this.options.referral;
   this.elementMap = {};
   this.renderQueue = new RenderQueue();
 
@@ -332,7 +332,10 @@ Connector.prototype.loadPortal = function (el, obj) {
   this.portal.obj = obj;
   this.portal.scene = new THREE.Scene();
   this.portal.world = new CANNON.World();
-  this.portal.connector = new Connector(this.client, this.portal.scene, this.portal.world, destinationUri, true, uri);
+  this.portal.connector = new Connector(this.client, this.portal.scene, this.portal.world, destinationUri, {
+    portal: true,
+    referrer: uri
+  });
   this.portal.connector.connect();
 
   if (el.attr('backlink') === 'true') {
@@ -720,8 +723,8 @@ Connector.prototype.addElement = function (el, parentObject) {
   } else if (el.is('plane')) {
     obj = Plane.create(this, el);
   } else if (el.is('skybox')) {
-    return;
-    // obj = Skybox.create(this, el);
+    obj = Skybox.create(this, el);
+    this.skybox = obj;
     // if (this.version.scene === 1.0) {
     // } else {
     //   return

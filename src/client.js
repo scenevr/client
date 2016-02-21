@@ -341,13 +341,13 @@ Client.prototype.createRenderer = function () {
 
   this.renderer.setSize(width / environment.getDownsampling(), height / environment.getDownsampling());
   this.renderer.setClearColor(0xFFFFFF);
-  this.renderer.autoClear = true;
-  this.renderer.sortObjects = false;
-  this.renderer.shadowMapEnabled = environment.shadowMappingEnabled();
+  // this.renderer.autoClear = true;
+  // this.renderer.sortObjects = false;
+  this.renderer.shadowMap.enabled = environment.shadowMappingEnabled();
 
   if (environment.shadowMappingEnabled()) {
-    this.renderer.shadowMapType = THREE.PCFSoftShadowMap;
-    this.renderer.shadowBias = -0.0001;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.shadowMap.bias = -0.0001;
   }
 
   this.domElement[0].style.width = '100%';

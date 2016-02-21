@@ -273,10 +273,15 @@ Connector.prototype.addFloor = function () {
   floorTexture.wrapS = floorTexture.wrapT = THREE.RepeatWrapping;
   floorTexture.repeat.set(64, 64);
 
-  var floorMaterial = new THREE.MeshBasicMaterial({
+  var floorMaterial = new THREE.MeshLambertMaterial({
     fog: true,
+    emissive: new THREE.Color('#ffffff'),
+    color: new THREE.Color('#ffffff'),
+    emissiveIntensity: 0.35,
     map: floorTexture
   });
+
+  window.floor = floorMaterial;
 
   var floorGeometry = new THREE.PlaneBufferGeometry(64, 64, 1, 1);
   var floor = new THREE.Mesh(floorGeometry, floorMaterial);
@@ -304,15 +309,6 @@ Connector.prototype.addSky = function () {
   this.scene.add(this.sky.mesh);
 };
 
-Connector.prototype.update = function (player) {
-  var p = player.position;
-
-  if (this.sunlight) {
-    this.sunlight.position.copy(p.clone().add(new THREE.Vector3(0.75, 1, 0.5).multiplyScalar(100)));
-    this.sunlight.lookAt(p);
-  }
-};
-
 Connector.prototype.addLights = function () {
   var light = new THREE.SpotLight(0xffffff, 1.1);
   light.position.copy(new THREE.Vector3(0.75, 1, 0.5).multiplyScalar(50));
@@ -320,13 +316,12 @@ Connector.prototype.addLights = function () {
 
   if (environment.shadowMappingEnabled()) {
     light.castShadow = true;
-    light.shadowDarkness = 0.5;
 
-    light.shadowCameraNear = 10;
-    light.shadowCameraFar = 200;
-    light.shadowCameraFov = 45;
-    light.shadowMapWidth = environment.getShadowMapSize();
-    light.shadowMapHeight = environment.getShadowMapSize();
+    light.shadow.camera.near = 10;
+    light.shadow.camera.far = 200;
+    light.shadow.camera.fov = 45;
+    light.shadow.mapSize.width = environment.getShadowMapSize();
+    light.shadow.mapSize.height = environment.getShadowMapSize();
   }
 
   this.scene.add(light);
@@ -334,6 +329,15 @@ Connector.prototype.addLights = function () {
 
   var ambientLight = new THREE.AmbientLight(0x303030);
   this.scene.add(ambientLight);
+};
+
+Connector.prototype.update = function (player) {
+  var p = player.position;
+
+  if (this.sunlight) {
+    this.sunlight.position.copy(p.clone().add(new THREE.Vector3(0.75, 1, 0.5).multiplyScalar(100)));
+    this.sunlight.lookAt(p);
+  }
 };
 
 Connector.prototype.getPortalObject = function () {
@@ -814,8 +818,7 @@ Connector.prototype.addElement = function (el, parentObject) {
 
     if (el.is('sphere,box,plane,text') && styles.color) {
       material.setValues({
-        color: styles.color,
-        ambient: styles.color
+        color: styles.color
       });
     }
 

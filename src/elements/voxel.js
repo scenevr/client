@@ -49,7 +49,7 @@ class Voxel {
       this.voxels = ndarray(result, this.resolution);
       this.generateMeshFromVoxels();
     } else if (src.match(/\.vox$/i)) {
-      fetch(this.connector.resolveUrl(src)).then((response) => {
+      fetch(this.connector.resolveAssetUrl(src)).then((response) => {
         return response.blob();
       }).then((blob) => {
         var reader = new FileReader();

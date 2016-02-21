@@ -277,7 +277,7 @@ Connector.prototype.addFloor = function () {
     fog: true,
     emissive: new THREE.Color('#ffffff'),
     color: new THREE.Color('#ffffff'),
-    emissiveIntensity: 0.35,
+    emissiveIntensity: 0.2,
     map: floorTexture
   });
 
@@ -637,6 +637,11 @@ Connector.prototype.tick = function () {
 
 Connector.prototype.resolveUrl = function (href) {
   var uri = URI.serialize(this.uri);
+  return URI.resolve(uri, href);
+};
+
+Connector.prototype.resolveAssetUrl = function (href) {
+  var uri = URI.serialize(this.assetUri);
   return URI.resolve(uri, href);
 };
 

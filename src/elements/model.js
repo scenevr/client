@@ -37,7 +37,7 @@ Model.create = function (connector, el) {
 
     loader.crossOrigin = true;
 
-    loader.load(connector.getAssetHost() + StyleMap.parseUrl(styles.lightMap || styles.textureMap), function (image) {
+    loader.load(connector.resolveAssetUrl(StyleMap.parseUrl(styles.lightMap || styles.textureMap)), function (image) {
       texture.image = image;
       texture.needsUpdate = true;
       texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
@@ -63,9 +63,9 @@ Model.create = function (connector, el) {
     });
   }
 
-  connector.client.assetManager.loadObj(connector.getAssetHost() + el.attr('src'), function (object) {
+  connector.client.assetManager.loadObj(connector.resolveAssetUrl(el.attr('src')), function (object) {
     if (el.attr('mtl')) {
-      connector.client.assetManager.loadMtl(connector.getAssetHost() + el.attr('src').replace('.obj', '.mtl'), function (materialsCreator) {
+      connector.client.assetManager.loadMtl(connector.resolveAssetUrl(el.attr('src').replace('.obj', '.mtl')), function (materialsCreator) {
         object.traverse(function (child) {
           if (child instanceof THREE.Mesh) {
             if (child.material.name) {

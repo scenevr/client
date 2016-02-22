@@ -478,7 +478,6 @@ Client.prototype.getElementsFromPoint = function (point, distance) {
     }
 
     if (!o.userData || !o.userData.attr) {
-      console.log('No userdata');
       return;
     }
 
@@ -851,6 +850,8 @@ Client.prototype.tickPhysics = function () {
 };
 
 Client.prototype.tick = function () {
+  this.emit('update');
+
   if (this.connector) {
     if ((this.effect instanceof Effects.Vanilla) && (this.connector.isPortalSceneReady())) {
       var portal = this.connector.portal;

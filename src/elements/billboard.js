@@ -21,8 +21,10 @@ Billboard.getLoadingMaterial = function () {
   if (!this._loadingMaterial) {
     var texture = THREE.ImageUtils.loadTexture(spinner);
 
-    this._loadingMaterial = new THREE.MeshBasicMaterial({
+    this._loadingMaterial = new THREE.MeshLambertMaterial({
       fog: true,
+      emissive: new THREE.Color('#ffffff'),
+      emissiveIntensity: 0.2,
       map: texture,
       side: THREE.DoubleSide
     });
@@ -57,7 +59,7 @@ Billboard.create = function (connector, el) {
     ambient: '#eeeeee'
   });
 
-  var nullMaterial = new THREE.MeshBasicMaterial({ visible: false });
+  var nullMaterial = new THREE.MeshLambertMaterial({ visible: false });
   var box = new THREE.Mesh(geometry, new THREE.MeshFaceMaterial([material, nullMaterial]));
   box.castShadow = true;
   box.recieveShadow = true;
@@ -105,8 +107,10 @@ Billboard.create = function (connector, el) {
       var texture = new THREE.Texture(canvas);
       texture.needsUpdate = true;
 
-      material = new THREE.MeshBasicMaterial({
+      material = new THREE.MeshLambertMaterial({
         map: texture,
+        emissive: new THREE.Color('#ffffff'),
+        emissiveIntensity: 0.2,
         side: THREE.DoubleSide
       });
 

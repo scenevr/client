@@ -138,7 +138,6 @@ Connector.prototype.authenticate = function () {
     if (!ok) {
       console.error('Unable to get token');
     } else {
-      console.log('Authenticating....');
       self.sendMessage($('<event />').attr('name', 'authenticate').attr('token', token));
     }
   });
@@ -275,8 +274,8 @@ Connector.prototype.addFloor = function () {
 
   var floorMaterial = new THREE.MeshLambertMaterial({
     fog: true,
-    emissive: new THREE.Color('#ffffff'),
     color: new THREE.Color('#ffffff'),
+    emissive: new THREE.Color('#ffffff'),
     emissiveIntensity: 0.2,
     map: floorTexture
   });

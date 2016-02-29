@@ -10,13 +10,14 @@ var Authentication = require('./authentication');
 var Preferences = require('./preferences');
 var AssetManager = require('./asset-manager');
 var PointerLockControls = require('./controls');
-var Stats = require('stats-js');
 var Editor = require('./editor');
 var Utilities = require('../vendor/webvr-manager/util');
 var VrButton = require('./components/vr-button');
 var WebvrDetector = require('./lib/webvr-detector');
 var Voice = require('./voice');
 var DebugStats = require('./debug-stats');
+
+require('../vendor/rstats');
 
 // sadface
 window.THREE = THREE;
@@ -290,15 +291,21 @@ Client.prototype.stop = function () {
 };
 
 Client.prototype.createStats = function () {
-  this.stats = {};
+  this.stats = new rStats({
+    values: {
+        fps: { caption: 'Framerate (FPS)', below: 30, color: '#ff7700' },
+      }
+  });
 
-  this.stats.rendering = new Stats();
-  this.stats.rendering.setMode(0);
-  this.stats.rendering.domElement.style.position = 'absolute';
-  this.stats.rendering.domElement.style.bottom = '10px';
-  this.stats.rendering.domElement.style.zIndex = 110;
-  this.stats.rendering.domElement.style.right = '10px';
-  this.container.append(this.stats.rendering.domElement);
+  // this.stats = {};
+
+  // this.stats.rendering = new Stats();
+  // this.stats.rendering.setMode(0);
+  // this.stats.rendering.domElement.style.position = 'absolute';
+  // this.stats.rendering.domElement.style.bottom = '10px';
+  // this.stats.rendering.domElement.style.zIndex = 110;
+  // this.stats.rendering.domElement.style.right = '10px';
+  // this.container.append(this.stats.rendering.domElement);
 
   // this.stats.connector = new Stats();
   // this.stats.connector.setMode(1);
@@ -866,7 +873,9 @@ Client.prototype.tick = function () {
   }
 
   if (!this.stopped && this.scene) {
-    this.stats.rendering.begin();
+    //this.stats('frame').start();
+    this.stats('FPS').frame();
+    this.stats().update();
 
     if (Utilities.isMobile()) {
       this.vreffect.render(this.scene, this.camera);
@@ -876,7 +885,7 @@ Client.prototype.tick = function () {
       this.effect.render(this.scene, this.camera);
     }
 
-    this.stats.rendering.end();
+    //this.stats('frame').end();
 
     this.tickPhysics();
   }

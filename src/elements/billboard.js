@@ -46,6 +46,7 @@ Billboard.create = function (connector, el) {
     height: SIZE,
     padding: '10px',
     border: '1px solid #ccc',
+    fontFamily: '\'Roboto Condensed\', tahoma, sans-serif',
     fontSize: '22px'
   });
 
